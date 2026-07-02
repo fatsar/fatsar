@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kartvizit Tarayıcı</string>
+
+    <!-- Ana ekran -->
+    <string name="scan_with_camera">Kamerayla Tara</string>
+    <string name="pick_from_gallery">Fotoğraf Seç</string>
+    <string name="empty_list">Henüz kayıtlı kartvizit yok.\n\nKamerayla bir kartvizit tarayın, galeriden fotoğraf seçin ya da başka bir uygulamadan bu uygulamaya görsel paylaşın.</string>
+    <string name="no_text_found">Görselde okunabilir metin bulunamadı. Daha net bir fotoğraf deneyin.</string>
+    <string name="scan_failed">Tarama başarısız oldu: %1$s</string>
+    <string name="unnamed_contact">(İsimsiz kayıt)</string>
+
+    <!-- Menü -->
+    <string name="menu_share_excel">Excel\'i Gmail ile gönder</string>
+    <string name="menu_save_excel">Excel\'i İndirilenler\'e kaydet</string>
+    <string name="menu_set_email">Alıcı e-posta adresi</string>
+    <string name="set_email_message">Excel dosyası gönderilirken alıcı olarak kullanılacak e-posta adresi (ör. kendi Gmail adresiniz):</string>
+    <string name="email_hint">ornek@gmail.com</string>
+
+    <!-- Excel / e-posta -->
+    <string name="email_subject">Kartvizit Listesi (Excel)</string>
+    <string name="email_body">Kartvizit Tarayıcı uygulamasından gönderilen güncel kartvizit listesi ektedir.</string>
+    <string name="send_excel_chooser">Excel dosyasını gönder</string>
+    <string name="excel_saved">Excel dosyası kaydedildi: %1$s</string>
+    <string name="excel_save_failed">Excel dosyası kaydedilemedi.</string>
+    <string name="no_records_yet">Önce en az bir kartvizit kaydedin.</string>
+
+    <!-- Excel sütun başlıkları -->
+    <string name="col_name">Ad Soyad</string>
+    <string name="col_title">Unvan</string>
+    <string name="col_company">Şirket</string>
+    <string name="col_phone">Telefon</string>
+    <string name="col_email">E-posta</string>
+    <string name="col_website">Web Sitesi</string>
+    <string name="col_address">Adres</string>
+    <string name="col_notes">Notlar</string>
+    <string name="col_created">Eklenme Tarihi</string>
+
+    <!-- Rehber -->
+    <string name="add_to_contacts">Rehbere Ekle</string>
+    <string name="in_contacts">Rehberde ✓</string>
+    <string name="added_to_contacts">Kişi telefon rehberine eklendi.</string>
+    <string name="add_to_contacts_failed">Kişi rehbere eklenemedi.</string>
+    <string name="contacts_permission_denied">Rehber izni verilmediği için kişi eklenemedi. Kaydınız uygulamada saklandı.</string>
+    <string name="already_in_contacts">Bu kişi rehbere zaten eklendi</string>
+
+    <!-- Düzenleme ekranı -->
+    <string name="edit_title">Kartvizit Bilgileri</string>
+    <string name="hint_name">Ad Soyad</string>
+    <string name="hint_title">Unvan</string>
+    <string name="hint_company">Şirket</string>
+    <string name="hint_phones">Telefon(lar)</string>
+    <string name="hint_phones_helper">Birden fazla numarayı virgülle ayırın</string>
+    <string name="hint_emails">E-posta(lar)</string>
+    <string name="hint_website">Web sitesi</string>
+    <string name="hint_address">Adres</string>
+    <string name="hint_notes">Notlar / Ham metin</string>
+    <string name="check_add_to_contacts">Telefon rehberine de ekle</string>
+    <string name="save">Kaydet</string>
+    <string name="record_saved">Kayıt kaydedildi ve Excel dosyası güncellendi.</string>
+    <string name="saved_and_added_to_contacts">Kayıt kaydedildi, rehbere eklendi ve Excel güncellendi.</string>
+    <string name="nothing_to_save">Kaydedilecek bilgi yok. En az isim, şirket, telefon veya e-posta girin.</string>
+
+    <!-- Silme -->
+    <string name="delete_title">Kaydı sil</string>
+    <string name="delete_message">%1$s kaydı silinsin mi? Excel dosyası da güncellenecek.</string>
+    <string name="delete">Sil</string>
+    <string name="cancel">Vazgeç</string>
+</resources>

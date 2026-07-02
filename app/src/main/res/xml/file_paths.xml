@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Üretilen Excel dosyaları -->
+    <files-path name="exports" path="exports/" />
+    <!-- Kameradan çekilen geçici kartvizit fotoğrafları -->
+    <cache-path name="images" path="images/" />
+</paths>

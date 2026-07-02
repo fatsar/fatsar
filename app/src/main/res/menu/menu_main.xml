@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_share_excel"
+        android:icon="@drawable/ic_share"
+        android:title="@string/menu_share_excel"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_save_excel"
+        android:title="@string/menu_save_excel"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_set_email"
+        android:title="@string/menu_set_email"
+        app:showAsAction="never" />
+</menu>
