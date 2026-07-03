@@ -1,0 +1,45 @@
+name: Android CI
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Test ve APK Derleme
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: JDK 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK kur
+        uses: android-actions/setup-android@v3
+
+      - name: Birim testlerini çalıştır
+        run: ./gradlew --no-daemon :app:testDebugUnitTest
+
+      - name: Debug APK derle
+        run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: APK bilgisi
+        run: ls -lh app/build/outputs/apk/debug/
+
+      - name: APK artefaktını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kartvizit-tarayici-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Test raporunu yükle (hata durumunda)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-raporu
+          path: app/build/reports/

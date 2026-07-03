@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Kartvizit gövdesi -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,38 h52 a4,4 0 0 1 4,4 v24 a4,4 0 0 1 -4,4 h-52 a4,4 0 0 1 -4,-4 v-24 a4,4 0 0 1 4,-4 z" />
+    <!-- Fotoğraf alanı -->
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M32,44 h14 v14 h-14 z" />
+    <!-- Metin satırları -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M50,46 h26 v4 h-26 z" />
+    <path
+        android:fillColor="#64B5F6"
+        android:pathData="M50,54 h26 v3 h-26 z" />
+    <path
+        android:fillColor="#64B5F6"
+        android:pathData="M32,62 h44 v3 h-44 z" />
+</vector>
