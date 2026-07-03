@@ -9,8 +9,18 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/action_share_vcf"
+        android:title="@string/menu_share_vcf"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_save_excel"
         android:title="@string/menu_save_excel"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_filter_category"
+        android:title="@string/menu_filter_category"
         app:showAsAction="never" />
 
     <item

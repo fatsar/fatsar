@@ -10,7 +10,10 @@ Tüm işlemler **cihaz üzerinde** çalışır: metin tanıma (OCR) için Google
 - 🖼️ **Galeriden seçme** – telefondaki hazır fotoğrafları (ör. bilgisayarda taranıp telefona aktarılmış görselleri) seçin.
 - 📤 **Paylaşarak açma** – başka uygulamalardan (WhatsApp, Drive, Dosyalar…) herhangi bir görseli bu uygulamaya "Paylaş" ile gönderin.
 - 🔍 **Cihaz içi OCR + akıllı alan ayrıştırma** – ad, unvan, şirket, telefon(lar), e-posta, web sitesi ve adres otomatik tanınır (Türkçe ve İngilizce kartvizitlere göre ayarlandı). Kaydetmeden önce tüm alanları düzenleyebilirsiniz.
-- 👤 **Telefon rehberine ekleme** – tek dokunuşla kişi; numara, e-posta, şirket, unvan ve adres bilgileriyle rehbere kaydedilir.
+- ✨ **Otomatik metin düzeltme** – fazla boşluklar temizlenir; TAMAMEN BÜYÜK yazılmış ad/unvan/şirket/adres Türkçe kurallarına göre düzgün büyük-küçük harfe çevrilir ("AHMET YILMAZ" → "Ahmet Yılmaz", kısaltmalar korunur: "A.Ş.", "LTD"). Kişi adı, e-posta adresiyle eşleştirilerek firma adının isim sanılması önlenir.
+- 👤 **Telefon rehberine ekleme** – kişinin **adı ve soyadı ayrı alanlar** olarak rehbere yazılır; şirket, unvan, numara, e-posta ve adres de eklenir.
+- 🗂️ **Kategoriler** – kayıtları isteğe bağlı kategorilere ayırın ("Müşteriler", "Tedarikçiler"…); ana ekranda kategoriye göre filtreleyin. Kategori Excel'de ayrı sütun, vCard'da CATEGORIES alanı olarak dışa aktarılır.
+- 📇 **Rehber dosyası (.vcf) paylaşımı** – tüm kayıtları standart vCard dosyası olarak WhatsApp/e-posta/Bluetooth ile paylaşın; alıcı dosyaya dokunarak kişileri kendi telefon rehberine aktarır.
 - 📊 **Excel dosyası** – her kayıtta `kartvizitler.xlsx` otomatik güncellenir (harici kütüphane olmadan üretilen standart Office Open XML; Excel, Google E-Tablolar ve LibreOffice ile açılır).
 - ✉️ **Gmail ile gönderme** – menüden tek dokunuşla Excel dosyası, telefonunuzdaki Gmail hesabı üzerinden istediğiniz adrese (ör. kendi adresinize) eklenti olarak gönderilir. Dosya ayrıca İndirilenler klasörüne de kaydedilebilir.
 
@@ -53,8 +56,10 @@ app/src/main/java/com/fatsar/kartvizit/
 ├── MainActivity.kt              # Liste, tarama girişleri, Excel/Gmail menüsü
 ├── EditContactActivity.kt       # OCR sonucunu düzenleme ve kaydetme
 ├── ocr/CardTextParser.kt        # Ham OCR metnini alanlara ayıran çözümleyici
+├── ocr/TextNormalizer.kt        # Boşluk/büyük-küçük harf düzeltme, ad-soyad ayırma
 ├── export/XlsxWriter.kt         # Sıfır bağımlılıkla .xlsx üretimi
-├── export/ExcelManager.kt       # Excel oluşturma / Gmail / İndirilenler
+├── export/VcfWriter.kt          # vCard 3.0 (.vcf) rehber dosyası üretimi
+├── export/ExportManager.kt      # Excel/vCard oluşturma, Gmail, paylaşım, İndirilenler
 ├── contacts/DeviceContacts.kt   # Rehbere kişi ekleme
 ├── data/ContactRepository.kt    # Cihazda JSON tabanlı kayıt deposu
 └── ui/ContactsAdapter.kt        # Kayıt listesi

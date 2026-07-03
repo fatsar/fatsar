@@ -22,9 +22,10 @@ class CardTextParserTest {
 
         val card = CardTextParser.parse(lines)
 
-        assertEquals("AHMET YILMAZ", card.name)
+        // BÜYÜK HARFLE yazılmış alanlar düzgün büyük/küçük harfe çevrilir
+        assertEquals("Ahmet Yılmaz", card.name)
         assertEquals("Satış Müdürü", card.title)
-        assertEquals("YILDIZ TEKSTİL SAN. VE TİC. A.Ş.", card.company)
+        assertEquals("Yıldız Tekstil San. ve Tic. A.Ş.", card.company)
         assertEquals(2, card.phones.size)
         assertEquals("+90 212 555 44 33", card.phones[0])
         assertEquals("+90 532 123 45 67", card.phones[1])
@@ -88,5 +89,31 @@ class CardTextParserTest {
         val card = CardTextParser.parse("ayse.demir@gmail.com")
         assertEquals("Ayse Demir", card.name)
         assertEquals("", card.company)
+    }
+
+    @Test
+    fun `firma adi daha buyuk yazilsa bile kisi adi isim olarak secilir`() {
+        val lines = listOf(
+            OcrLine("PANDORA", height = 40f), // firma adı en büyük puntoyla
+            OcrLine("ALİ VELİ", height = 20f),
+            OcrLine("ali.veli@pandora.com.tr", height = 16f)
+        )
+
+        val card = CardTextParser.parse(lines)
+
+        assertEquals("Ali Veli", card.name)
+        assertEquals("Pandora", card.company)
+    }
+
+    @Test
+    fun `fazla bosluklar temizlenir`() {
+        val lines = listOf(
+            OcrLine("  MEHMET   ÖZ  ", height = 30f),
+            OcrLine("Tel: 0532 111 22 33", height = 16f)
+        )
+
+        val card = CardTextParser.parse(lines)
+
+        assertEquals("Mehmet Öz", card.name)
     }
 }

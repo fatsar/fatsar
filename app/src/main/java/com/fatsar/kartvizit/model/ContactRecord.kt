@@ -15,6 +15,7 @@ data class ContactRecord(
     var website: String = "",
     var address: String = "",
     var notes: String = "",
+    var category: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     var addedToContacts: Boolean = false
 ) {
@@ -29,6 +30,7 @@ data class ContactRecord(
         put("website", website)
         put("address", address)
         put("notes", notes)
+        put("category", category)
         put("createdAt", createdAt)
         put("addedToContacts", addedToContacts)
     }
@@ -44,6 +46,7 @@ data class ContactRecord(
             website = o.optString("website"),
             address = o.optString("address"),
             notes = o.optString("notes"),
+            category = o.optString("category"),
             createdAt = o.optLong("createdAt", System.currentTimeMillis()),
             addedToContacts = o.optBoolean("addedToContacts", false)
         )

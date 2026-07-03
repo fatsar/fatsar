@@ -156,14 +156,31 @@ object CardTextParser {
         }
         if (titleIndex >= 0) title = remaining.removeAt(titleIndex).text
 
-        // 5) İsim: kalan satırlar arasından en "isim gibi" olanı seç
+        // 5) İsim: kalan satırlar arasından en "isim gibi" olanı seç.
+        //    Kişi adları genellikle 2-3 kelimedir; e-posta adresiyle örtüşen
+        //    satır güçlü bir işarettir (firma adının isim sanılmasını önler).
         var name = ""
         val candidates = remaining.withIndex().filter { (_, l) -> looksLikeName(l.text) }
         if (candidates.isNotEmpty()) {
-            val best = candidates.sortedWith(
-                compareByDescending<IndexedValue<OcrLine>> { it.value.height }
-                    .thenBy { it.index }
-            ).first()
+            val maxHeight = candidates.maxOf { it.value.height }.coerceAtLeast(1f)
+            val emailTokens = emails.firstOrNull()
+                ?.substringBefore('@')
+                ?.split('.', '_', '-')
+                ?.map { TextNormalizer.foldTr(it) }
+                ?.filter { it.length >= 2 }
+                .orEmpty()
+
+            fun score(line: OcrLine, index: Int): Double {
+                val tokens = line.text.split(Regex("""\s+""")).filter { it.isNotBlank() }
+                var s = 0.0
+                if (tokens.size in 2..3) s += 2.0
+                s += tokens.count { TextNormalizer.foldTr(it.trim('.', ',')) in emailTokens } * 3.0
+                s += (line.height / maxHeight) * 1.5
+                s -= index * 0.01 // eşitlikte üstteki satır kazanır
+                return s
+            }
+
+            val best = candidates.maxByOrNull { (i, l) -> score(l, i) }!!
             name = best.value.text
             remaining.removeAt(best.index)
         }
@@ -182,13 +199,13 @@ object CardTextParser {
         }
 
         return ParsedCard(
-            name = name,
-            title = title,
-            company = company,
+            name = TextNormalizer.smartTitleCase(name),
+            title = TextNormalizer.smartTitleCase(title),
+            company = TextNormalizer.smartTitleCase(company),
             phones = phonesByDigits.values.toList(),
             emails = emails.toList(),
             website = website,
-            address = addressLines.joinToString(", "),
+            address = addressLines.joinToString(", ") { TextNormalizer.smartTitleCase(it) },
             rawText = rawText
         )
     }

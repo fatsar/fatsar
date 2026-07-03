@@ -12,8 +12,12 @@
 
     <!-- Menü -->
     <string name="menu_share_excel">Excel\'i Gmail ile gönder</string>
+    <string name="menu_share_vcf">Rehber dosyası (.vcf) paylaş</string>
     <string name="menu_save_excel">Excel\'i İndirilenler\'e kaydet</string>
+    <string name="menu_filter_category">Kategori filtresi</string>
     <string name="menu_set_email">Alıcı e-posta adresi</string>
+    <string name="filter_all">Tümü</string>
+    <string name="filter_uncategorized">Kategorisiz</string>
     <string name="set_email_message">Excel dosyası gönderilirken alıcı olarak kullanılacak e-posta adresi (ör. kendi Gmail adresiniz):</string>
     <string name="email_hint">ornek@gmail.com</string>
 
@@ -21,6 +25,8 @@
     <string name="email_subject">Kartvizit Listesi (Excel)</string>
     <string name="email_body">Kartvizit Tarayıcı uygulamasından gönderilen güncel kartvizit listesi ektedir.</string>
     <string name="send_excel_chooser">Excel dosyasını gönder</string>
+    <string name="share_vcf_chooser">Rehber dosyasını paylaş</string>
+    <string name="vcf_subject">Kartvizit Rehberi (.vcf)</string>
     <string name="excel_saved">Excel dosyası kaydedildi: %1$s</string>
     <string name="excel_save_failed">Excel dosyası kaydedilemedi.</string>
     <string name="no_records_yet">Önce en az bir kartvizit kaydedin.</string>
@@ -34,6 +40,7 @@
     <string name="col_website">Web Sitesi</string>
     <string name="col_address">Adres</string>
     <string name="col_notes">Notlar</string>
+    <string name="col_category">Kategori</string>
     <string name="col_created">Eklenme Tarihi</string>
 
     <!-- Rehber -->
@@ -54,6 +61,8 @@
     <string name="hint_emails">E-posta(lar)</string>
     <string name="hint_website">Web sitesi</string>
     <string name="hint_address">Adres</string>
+    <string name="hint_category">Kategori (isteğe bağlı)</string>
+    <string name="hint_category_helper">Mevcut bir kategori seçin veya yenisini yazın</string>
     <string name="hint_notes">Notlar / Ham metin</string>
     <string name="check_add_to_contacts">Telefon rehberine de ekle</string>
     <string name="save">Kaydet</string>

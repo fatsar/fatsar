@@ -2,6 +2,7 @@ package com.fatsar.kartvizit
 
 import android.Manifest
 import android.os.Bundle
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -9,7 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.databinding.ActivityEditContactBinding
-import com.fatsar.kartvizit.export.ExcelManager
+import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,6 +52,8 @@ class EditContactActivity : AppCompatActivity() {
             existing = ContactRepository.get(this, id)
         }
 
+        setupCategoryField()
+
         val record = existing
         if (record != null) {
             binding.inputName.setText(record.name)
@@ -60,6 +63,7 @@ class EditContactActivity : AppCompatActivity() {
             binding.inputEmails.setText(record.emails.joinToString(", "))
             binding.inputWebsite.setText(record.website)
             binding.inputAddress.setText(record.address)
+            binding.inputCategory.setText(record.category, false)
             binding.inputNotes.setText(record.notes)
             binding.checkAddToContacts.isChecked = false
             binding.checkAddToContacts.isEnabled = !record.addedToContacts
@@ -86,6 +90,18 @@ class EditContactActivity : AppCompatActivity() {
         return true
     }
 
+    /** Mevcut kategorileri öneri olarak sunar; kullanıcı yenisini de yazabilir. */
+    private fun setupCategoryField() {
+        val categories = ContactRepository.getAll(this)
+            .map { it.category }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+        binding.inputCategory.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_list_item_1, categories)
+        )
+    }
+
     private fun save() {
         val record = (existing ?: ContactRecord()).apply {
             name = binding.inputName.text?.toString()?.trim().orEmpty()
@@ -95,6 +111,7 @@ class EditContactActivity : AppCompatActivity() {
             emails = splitList(binding.inputEmails.text?.toString())
             website = binding.inputWebsite.text?.toString()?.trim().orEmpty()
             address = binding.inputAddress.text?.toString()?.trim().orEmpty()
+            category = binding.inputCategory.text?.toString()?.trim().orEmpty()
             notes = binding.inputNotes.text?.toString()?.trim().orEmpty()
         }
 
@@ -109,7 +126,7 @@ class EditContactActivity : AppCompatActivity() {
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 ContactRepository.upsert(this@EditContactActivity, record)
-                ExcelManager.regenerate(this@EditContactActivity)
+                ExportManager.regenerateExcel(this@EditContactActivity)
             }
             if (binding.checkAddToContacts.isChecked && !record.addedToContacts) {
                 pendingRecord = record

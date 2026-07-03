@@ -12,6 +12,7 @@ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import android.provider.ContactsContract.CommonDataKinds.Website
 import android.util.Log
 import com.fatsar.kartvizit.model.ContactRecord
+import com.fatsar.kartvizit.ocr.TextNormalizer
 
 /** Kayıtları telefon rehberine (kişilere) ekler. */
 object DeviceContacts {
@@ -33,11 +34,20 @@ object DeviceContacts {
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, mimeType)
 
-        val displayName = record.name.ifBlank { record.company }
-        if (displayName.isNotBlank()) {
+        // Kişinin adı ve soyadı ayrı alanlar olarak eklenir; firma adı yalnızca
+        // isim hiç yoksa görünen ad olarak kullanılır.
+        if (record.name.isNotBlank()) {
+            val (givenName, familyName) = TextNormalizer.splitName(record.name)
             ops.add(
                 data(StructuredName.CONTENT_ITEM_TYPE)
-                    .withValue(StructuredName.DISPLAY_NAME, displayName)
+                    .withValue(StructuredName.GIVEN_NAME, givenName)
+                    .withValue(StructuredName.FAMILY_NAME, familyName)
+                    .build()
+            )
+        } else if (record.company.isNotBlank()) {
+            ops.add(
+                data(StructuredName.CONTENT_ITEM_TYPE)
+                    .withValue(StructuredName.DISPLAY_NAME, record.company)
                     .build()
             )
         }
@@ -53,7 +63,7 @@ object DeviceContacts {
         }
 
         record.phones.forEach { phone ->
-            val type = if (isTurkishMobile(phone)) Phone.TYPE_MOBILE else Phone.TYPE_WORK
+            val type = if (TextNormalizer.isTurkishMobile(phone)) Phone.TYPE_MOBILE else Phone.TYPE_WORK
             ops.add(
                 data(Phone.CONTENT_ITEM_TYPE)
                     .withValue(Phone.NUMBER, phone)
@@ -89,8 +99,11 @@ object DeviceContacts {
             )
         }
 
-        if (record.notes.isNotBlank()) {
-            ops.add(data(Note.CONTENT_ITEM_TYPE).withValue(Note.NOTE, record.notes).build())
+        val noteText = listOf(record.category, record.notes)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+        if (noteText.isNotBlank()) {
+            ops.add(data(Note.CONTENT_ITEM_TYPE).withValue(Note.NOTE, noteText).build())
         }
 
         return try {
@@ -102,9 +115,4 @@ object DeviceContacts {
         }
     }
 
-    private fun isTurkishMobile(phone: String): Boolean {
-        val digits = phone.filter { it.isDigit() }
-        return digits.startsWith("905") || digits.startsWith("05") ||
-            (digits.length == 10 && digits.startsWith("5"))
-    }
 }

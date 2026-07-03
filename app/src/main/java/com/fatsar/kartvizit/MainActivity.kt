@@ -18,7 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.databinding.ActivityMainBinding
-import com.fatsar.kartvizit.export.ExcelManager
+import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
 import com.fatsar.kartvizit.ocr.CardTextParser
 import com.fatsar.kartvizit.ocr.OcrLine
@@ -41,6 +41,9 @@ class MainActivity : AppCompatActivity() {
 
     private var cameraImageUri: Uri? = null
     private var pendingContactAdd: ContactRecord? = null
+
+    /** null = tüm kategoriler, "" = kategorisiz, diğer = tam eşleşme. */
+    private var categoryFilter: String? = null
 
     // Tembel oluşturma: tanıyıcı yalnızca ilk tarama sırasında yüklenir.
     private val recognizer by lazy {
@@ -121,8 +124,14 @@ class MainActivity : AppCompatActivity() {
         R.id.action_share_excel -> {
             shareExcelByEmail(); true
         }
+        R.id.action_share_vcf -> {
+            shareVcf(); true
+        }
         R.id.action_save_excel -> {
             saveExcelToDownloads(); true
+        }
+        R.id.action_filter_category -> {
+            showCategoryFilterDialog(); true
         }
         R.id.action_set_email -> {
             showEmailDialog(); true
@@ -192,9 +201,60 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshList() {
-        val records = ContactRepository.getAll(this)
+        val all = ContactRepository.getAll(this)
+        val records = when (val filter = categoryFilter) {
+            null -> all
+            "" -> all.filter { it.category.isBlank() }
+            else -> all.filter { it.category == filter }
+        }
         adapter.submit(records)
         binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
+        supportActionBar?.subtitle = when (val filter = categoryFilter) {
+            null -> null
+            "" -> getString(R.string.filter_uncategorized)
+            else -> filter
+        }
+    }
+
+    private fun showCategoryFilterDialog() {
+        val categories = ContactRepository.getAll(this)
+            .map { it.category }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+        val labels = mutableListOf(getString(R.string.filter_all), getString(R.string.filter_uncategorized))
+        labels.addAll(categories)
+        val checked = when (val filter = categoryFilter) {
+            null -> 0
+            "" -> 1
+            else -> (categories.indexOf(filter) + 2).coerceAtLeast(0)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_filter_category)
+            .setSingleChoiceItems(labels.toTypedArray(), checked) { dialog, which ->
+                categoryFilter = when (which) {
+                    0 -> null
+                    1 -> ""
+                    else -> categories[which - 2]
+                }
+                refreshList()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun shareVcf() {
+        if (ContactRepository.getAll(this).isEmpty()) {
+            toast(getString(R.string.no_records_yet))
+            return
+        }
+        lifecycleScope.launch {
+            val chooser = withContext(Dispatchers.IO) {
+                ExportManager.buildVcfShareIntent(this@MainActivity)
+            }
+            startActivity(chooser)
+        }
     }
 
     private fun requestAddToContacts(record: ContactRecord) {
@@ -228,7 +288,7 @@ class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) {
                         ContactRepository.delete(this@MainActivity, record.id)
-                        ExcelManager.regenerate(this@MainActivity)
+                        ExportManager.regenerateExcel(this@MainActivity)
                     }
                     refreshList()
                 }
@@ -244,7 +304,7 @@ class MainActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             val chooser = withContext(Dispatchers.IO) {
-                ExcelManager.buildEmailIntent(this@MainActivity, recipientEmail())
+                ExportManager.buildEmailIntent(this@MainActivity, recipientEmail())
             }
             startActivity(chooser)
         }
@@ -253,7 +313,7 @@ class MainActivity : AppCompatActivity() {
     private fun saveExcelToDownloads() {
         lifecycleScope.launch {
             val path = withContext(Dispatchers.IO) {
-                runCatching { ExcelManager.saveToDownloads(this@MainActivity) }.getOrNull()
+                runCatching { ExportManager.saveToDownloads(this@MainActivity) }.getOrNull()
             }
             toast(
                 if (path != null) getString(R.string.excel_saved, path)

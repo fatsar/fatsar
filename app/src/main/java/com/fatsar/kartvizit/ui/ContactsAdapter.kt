@@ -52,6 +52,10 @@ class ContactsAdapter(
             binding.textDetails.visibility =
                 if (details.isBlank()) android.view.View.GONE else android.view.View.VISIBLE
 
+            binding.textCategory.text = record.category
+            binding.textCategory.visibility =
+                if (record.category.isBlank()) android.view.View.GONE else android.view.View.VISIBLE
+
             if (record.addedToContacts) {
                 binding.btnAddContact.isEnabled = false
                 binding.btnAddContact.text = context.getString(R.string.in_contacts)
