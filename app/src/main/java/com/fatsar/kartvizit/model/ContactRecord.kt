@@ -10,7 +10,7 @@ data class ContactRecord(
     var name: String = "",
     var title: String = "",
     var company: String = "",
-    var phones: List<String> = emptyList(),
+    var phones: List<TypedPhone> = emptyList(),
     var emails: List<String> = emptyList(),
     var website: String = "",
     var address: String = "",
@@ -20,12 +20,16 @@ data class ContactRecord(
     var addedToContacts: Boolean = false
 ) {
 
+    /** Belirtilen türdeki numaraları döndürür. */
+    fun phonesOf(type: PhoneType): List<String> =
+        phones.filter { it.type == type }.map { it.number }
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
         put("name", name)
         put("title", title)
         put("company", company)
-        put("phones", JSONArray(phones))
+        put("phones", JSONArray().apply { phones.forEach { put(it.toJson()) } })
         put("emails", JSONArray(emails))
         put("website", website)
         put("address", address)
@@ -41,7 +45,7 @@ data class ContactRecord(
             name = o.optString("name"),
             title = o.optString("title"),
             company = o.optString("company"),
-            phones = o.optJSONArray("phones").toStringList(),
+            phones = parsePhones(o.optJSONArray("phones")),
             emails = o.optJSONArray("emails").toStringList(),
             website = o.optString("website"),
             address = o.optString("address"),
@@ -50,6 +54,25 @@ data class ContactRecord(
             createdAt = o.optLong("createdAt", System.currentTimeMillis()),
             addedToContacts = o.optBoolean("addedToContacts", false)
         )
+
+        /**
+         * Telefonları okur. Yeni biçim {number,type} nesneleridir; eski
+         * kayıtlar (düz metin dizisi) da geriye dönük uyumlu okunur.
+         */
+        private fun parsePhones(array: JSONArray?): List<TypedPhone> {
+            if (array == null) return emptyList()
+            val result = mutableListOf<TypedPhone>()
+            for (i in 0 until array.length()) {
+                when (val item = array.opt(i)) {
+                    is JSONObject -> {
+                        val phone = TypedPhone.fromJson(item)
+                        if (phone.number.isNotBlank()) result.add(phone)
+                    }
+                    is String -> if (item.isNotBlank()) result.add(TypedPhone(item, PhoneType.OTHER))
+                }
+            }
+            return result
+        }
 
         private fun JSONArray?.toStringList(): List<String> {
             if (this == null) return emptyList()

@@ -47,7 +47,8 @@ class ContactsAdapter(
             binding.textCompany.visibility =
                 if (companyLine.isBlank()) android.view.View.GONE else android.view.View.VISIBLE
 
-            val details = (record.phones + record.emails).joinToString("  •  ")
+            val details = (record.phones.map { "${it.type.trLabel()}: ${it.number}" } + record.emails)
+                .joinToString("  •  ")
             binding.textDetails.text = details
             binding.textDetails.visibility =
                 if (details.isBlank()) android.view.View.GONE else android.view.View.VISIBLE

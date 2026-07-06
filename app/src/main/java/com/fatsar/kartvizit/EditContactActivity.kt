@@ -12,9 +12,12 @@ import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.databinding.ActivityEditContactBinding
 import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
+import com.fatsar.kartvizit.model.PhoneType
+import com.fatsar.kartvizit.model.TypedPhone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 /**
  * OCR sonucunu gözden geçirme / düzenleme ekranı. Kaydetme sırasında Excel
@@ -48,39 +51,36 @@ class EditContactActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val id = intent.getStringExtra(EXTRA_ID)
-        if (id != null) {
-            existing = ContactRepository.get(this, id)
-        }
+        if (id != null) existing = ContactRepository.get(this, id)
 
         setupCategoryField()
 
-        val record = existing
-        if (record != null) {
-            binding.inputName.setText(record.name)
-            binding.inputTitle.setText(record.title)
-            binding.inputCompany.setText(record.company)
-            binding.inputPhones.setText(record.phones.joinToString(", "))
-            binding.inputEmails.setText(record.emails.joinToString(", "))
-            binding.inputWebsite.setText(record.website)
-            binding.inputAddress.setText(record.address)
-            binding.inputCategory.setText(record.category, false)
-            binding.inputNotes.setText(record.notes)
-            binding.checkAddToContacts.isChecked = false
-            binding.checkAddToContacts.isEnabled = !record.addedToContacts
-            if (record.addedToContacts) {
-                binding.checkAddToContacts.setText(R.string.already_in_contacts)
-            }
-        } else {
-            binding.inputName.setText(intent.getStringExtra(EXTRA_NAME).orEmpty())
-            binding.inputTitle.setText(intent.getStringExtra(EXTRA_TITLE).orEmpty())
-            binding.inputCompany.setText(intent.getStringExtra(EXTRA_COMPANY).orEmpty())
-            binding.inputPhones.setText(intent.getStringExtra(EXTRA_PHONES).orEmpty())
-            binding.inputEmails.setText(intent.getStringExtra(EXTRA_EMAILS).orEmpty())
-            binding.inputWebsite.setText(intent.getStringExtra(EXTRA_WEBSITE).orEmpty())
-            binding.inputAddress.setText(intent.getStringExtra(EXTRA_ADDRESS).orEmpty())
-            binding.inputNotes.setText(intent.getStringExtra(EXTRA_RAW_TEXT).orEmpty())
-            binding.checkAddToContacts.isChecked = true
+        // Var olan kayıt düzenleniyorsa ondan, değilse taramadan gelen ön dolu
+        // JSON'dan alanları doldur.
+        val source = existing ?: intent.getStringExtra(EXTRA_PREFILL_JSON)
+            ?.let { runCatching { ContactRecord.fromJson(JSONObject(it)) }.getOrNull() }
+
+        if (source != null) {
+            binding.inputName.setText(source.name)
+            binding.inputTitle.setText(source.title)
+            binding.inputCompany.setText(source.company)
+            binding.inputMobile.setText(source.phonesOf(PhoneType.MOBILE).joinToString(", "))
+            binding.inputWork.setText(
+                (source.phonesOf(PhoneType.WORK) + source.phonesOf(PhoneType.OTHER)).joinToString(", ")
+            )
+            binding.inputFax.setText(source.phonesOf(PhoneType.FAX).joinToString(", "))
+            binding.inputHome.setText(source.phonesOf(PhoneType.HOME).joinToString(", "))
+            binding.inputEmails.setText(source.emails.joinToString(", "))
+            binding.inputWebsite.setText(source.website)
+            binding.inputAddress.setText(source.address)
+            binding.inputCategory.setText(source.category, false)
+            binding.inputNotes.setText(source.notes)
         }
+
+        val isSaved = existing != null && existing!!.addedToContacts
+        binding.checkAddToContacts.isChecked = existing == null
+        binding.checkAddToContacts.isEnabled = !isSaved
+        if (isSaved) binding.checkAddToContacts.setText(R.string.already_in_contacts)
 
         binding.btnSave.setOnClickListener { save() }
     }
@@ -103,11 +103,18 @@ class EditContactActivity : AppCompatActivity() {
     }
 
     private fun save() {
+        val phones = buildList {
+            addAll(typedPhones(binding.inputMobile.text?.toString(), PhoneType.MOBILE))
+            addAll(typedPhones(binding.inputWork.text?.toString(), PhoneType.WORK))
+            addAll(typedPhones(binding.inputFax.text?.toString(), PhoneType.FAX))
+            addAll(typedPhones(binding.inputHome.text?.toString(), PhoneType.HOME))
+        }
+
         val record = (existing ?: ContactRecord()).apply {
             name = binding.inputName.text?.toString()?.trim().orEmpty()
             title = binding.inputTitle.text?.toString()?.trim().orEmpty()
             company = binding.inputCompany.text?.toString()?.trim().orEmpty()
-            phones = splitList(binding.inputPhones.text?.toString())
+            this.phones = phones
             emails = splitList(binding.inputEmails.text?.toString())
             website = binding.inputWebsite.text?.toString()?.trim().orEmpty()
             address = binding.inputAddress.text?.toString()?.trim().orEmpty()
@@ -163,6 +170,9 @@ class EditContactActivity : AppCompatActivity() {
         finish()
     }
 
+    private fun typedPhones(value: String?, type: PhoneType): List<TypedPhone> =
+        splitList(value).map { TypedPhone(it, type) }
+
     private fun splitList(value: String?): List<String> =
         value.orEmpty()
             .split(',', ';', '\n')
@@ -174,13 +184,6 @@ class EditContactActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ID = "extra_id"
-        const val EXTRA_NAME = "extra_name"
-        const val EXTRA_TITLE = "extra_title"
-        const val EXTRA_COMPANY = "extra_company"
-        const val EXTRA_PHONES = "extra_phones"
-        const val EXTRA_EMAILS = "extra_emails"
-        const val EXTRA_WEBSITE = "extra_website"
-        const val EXTRA_ADDRESS = "extra_address"
-        const val EXTRA_RAW_TEXT = "extra_raw_text"
+        const val EXTRA_PREFILL_JSON = "extra_prefill_json"
     }
 }

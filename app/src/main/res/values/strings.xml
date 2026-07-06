@@ -7,6 +7,7 @@
     <string name="pick_from_gallery">Fotoğraf Seç</string>
     <string name="empty_list">Henüz kayıtlı kartvizit yok.\n\nKamerayla bir kartvizit tarayın, galeriden fotoğraf seçin ya da başka bir uygulamadan bu uygulamaya görsel paylaşın.</string>
     <string name="no_text_found">Görselde okunabilir metin bulunamadı. Daha net bir fotoğraf deneyin.</string>
+    <string name="multiple_cards_saved">%1$d kartvizit bulundu ve kaydedildi. Düzenlemek için listeden dokunun.</string>
     <string name="scan_failed">Tarama başarısız oldu: %1$s</string>
     <string name="unnamed_contact">(İsimsiz kayıt)</string>
 
@@ -35,7 +36,10 @@
     <string name="col_name">Ad Soyad</string>
     <string name="col_title">Unvan</string>
     <string name="col_company">Şirket</string>
-    <string name="col_phone">Telefon</string>
+    <string name="col_mobile">Cep Telefonu</string>
+    <string name="col_work_phone">İş Telefonu</string>
+    <string name="col_fax">Faks</string>
+    <string name="col_home_phone">Ev Telefonu</string>
     <string name="col_email">E-posta</string>
     <string name="col_website">Web Sitesi</string>
     <string name="col_address">Adres</string>
@@ -56,7 +60,10 @@
     <string name="hint_name">Ad Soyad</string>
     <string name="hint_title">Unvan</string>
     <string name="hint_company">Şirket</string>
-    <string name="hint_phones">Telefon(lar)</string>
+    <string name="hint_mobile">Cep Telefonu</string>
+    <string name="hint_work_phone">İş Telefonu</string>
+    <string name="hint_fax">Faks</string>
+    <string name="hint_home_phone">Ev Telefonu</string>
     <string name="hint_phones_helper">Birden fazla numarayı virgülle ayırın</string>
     <string name="hint_emails">E-posta(lar)</string>
     <string name="hint_website">Web sitesi</string>

@@ -52,6 +52,10 @@ dependencies {
 
     // Cihaz üzerinde (offline) metin tanıma - model uygulamayla birlikte gelir
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Cihaz üzerinde (offline) karekod/barkod tanıma
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     testImplementation("junit:junit:4.13.2")
+    // Birim testlerinde gerçek org.json (android.jar'ın sahte sürümü yerine)
+    testImplementation("org.json:json:20240303")
 }

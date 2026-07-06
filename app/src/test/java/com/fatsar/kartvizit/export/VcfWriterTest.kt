@@ -1,6 +1,8 @@
 package com.fatsar.kartvizit.export
 
 import com.fatsar.kartvizit.model.ContactRecord
+import com.fatsar.kartvizit.model.PhoneType
+import com.fatsar.kartvizit.model.TypedPhone
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,7 +13,10 @@ class VcfWriterTest {
         name = "Ahmet Can Yılmaz",
         title = "Satış Müdürü",
         company = "Yıldız Tekstil A.Ş.",
-        phones = listOf("+90 532 123 45 67", "0212 555 44 33"),
+        phones = listOf(
+            TypedPhone("+90 532 123 45 67", PhoneType.MOBILE),
+            TypedPhone("0212 555 44 33", PhoneType.FAX)
+        ),
         emails = listOf("ahmet@yildiz.com.tr"),
         website = "www.yildiz.com.tr",
         address = "Atatürk Mah. No: 12, İstanbul",
@@ -31,7 +36,7 @@ class VcfWriterTest {
         assertTrue(vcf.contains("ORG:Yıldız Tekstil A.Ş."))
         assertTrue(vcf.contains("TITLE:Satış Müdürü"))
         assertTrue(vcf.contains("TEL;TYPE=CELL:+90 532 123 45 67"))
-        assertTrue(vcf.contains("TEL;TYPE=WORK:0212 555 44 33"))
+        assertTrue(vcf.contains("TEL;TYPE=FAX:0212 555 44 33"))
         assertTrue(vcf.contains("EMAIL;TYPE=WORK:ahmet@yildiz.com.tr"))
         assertTrue(vcf.contains("URL:www.yildiz.com.tr"))
         assertTrue(vcf.contains("CATEGORIES:Müşteriler"))

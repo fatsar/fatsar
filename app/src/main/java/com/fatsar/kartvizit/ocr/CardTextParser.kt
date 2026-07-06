@@ -1,5 +1,7 @@
 package com.fatsar.kartvizit.ocr
 
+import com.fatsar.kartvizit.model.PhoneType
+import com.fatsar.kartvizit.model.TypedPhone
 import java.util.Locale
 
 /** Kartvizitten okunan alanlar. */
@@ -7,7 +9,7 @@ data class ParsedCard(
     val name: String = "",
     val title: String = "",
     val company: String = "",
-    val phones: List<String> = emptyList(),
+    val phones: List<TypedPhone> = emptyList(),
     val emails: List<String> = emptyList(),
     val website: String = "",
     val address: String = "",
@@ -34,6 +36,12 @@ object CardTextParser {
     private val CONTACT_LABELS = Regex(
         """(?i)\b(tel|telefon|phone|gsm|cep|mobile|mob|fax|faks|office|ofis|e-?posta|e-?mail|mail|web|www|adres|address)\b\s*[:.]?"""
     )
+
+    // Telefon türünü belirleyen etiketler (satırdaki ilk eşleşme kazanır)
+    private val FAX_LABEL = Regex("""(?i)\b(faks?|fax|f)\s*[:.]""")
+    private val MOBILE_LABEL = Regex("""(?i)\b(gsm|cep|mobil|mobile|mob|cell|m)\s*[:.]|\bgsm\b""")
+    private val HOME_LABEL = Regex("""(?i)\b(ev|home|h)\s*[:.]""")
+    private val WORK_LABEL = Regex("""(?i)\b(tel|telefon|phone|ofis|office|iş|is|t)\s*[:.]""")
 
     private val TITLE_KEYWORDS = listOf(
         "müdür", "koordinatör", "uzman", "mühendis", "direktör", "danışman",
@@ -82,7 +90,7 @@ object CardTextParser {
         val rawText = cleaned.joinToString("\n") { it.text }
 
         val emails = LinkedHashSet<String>()
-        val phonesByDigits = LinkedHashMap<String, String>() // rakamlar -> orijinal
+        val phonesByDigits = LinkedHashMap<String, TypedPhone>() // rakamlar -> tür+numara
         var website = ""
         val addressLines = mutableListOf<String>()
         val remaining = mutableListOf<OcrLine>()
@@ -119,10 +127,18 @@ object CardTextParser {
                 }
             }
 
+            val lineLabelType = detectPhoneType(line.text)
             for (m in PHONE.findAll(work)) {
                 val digits = m.value.filter { it.isDigit() }
                 if (digits.length >= 9) {
-                    phonesByDigits.putIfAbsent(digits, normalizePhone(m.value))
+                    val type = lineLabelType ?: defaultPhoneType(digits)
+                    val existing = phonesByDigits[digits]
+                    // Aynı numara için açık etiket, tahmine tercih edilir
+                    if (existing == null) {
+                        phonesByDigits[digits] = TypedPhone(normalizePhone(m.value), type)
+                    } else if (existing.type == PhoneType.OTHER && type != PhoneType.OTHER) {
+                        phonesByDigits[digits] = existing.copy(type = type)
+                    }
                     extracted = true
                 }
             }
@@ -202,7 +218,7 @@ object CardTextParser {
             name = TextNormalizer.smartTitleCase(name),
             title = TextNormalizer.smartTitleCase(title),
             company = TextNormalizer.smartTitleCase(company),
-            phones = phonesByDigits.values.toList(),
+            phones = phonesByDigits.values.toList().sortedBy { it.type.ordinal },
             emails = emails.toList(),
             website = website,
             address = addressLines.joinToString(", ") { TextNormalizer.smartTitleCase(it) },
@@ -221,6 +237,19 @@ object CardTextParser {
 
     private fun normalizePhone(raw: String): String =
         raw.replace(Regex("""\s+"""), " ").trim()
+
+    /** Satırdaki etiketten telefon türünü belirler; etiket yoksa null döner. */
+    private fun detectPhoneType(line: String): PhoneType? = when {
+        FAX_LABEL.containsMatchIn(line) -> PhoneType.FAX
+        MOBILE_LABEL.containsMatchIn(line) -> PhoneType.MOBILE
+        HOME_LABEL.containsMatchIn(line) -> PhoneType.HOME
+        WORK_LABEL.containsMatchIn(line) -> PhoneType.WORK
+        else -> null
+    }
+
+    /** Etiket yoksa numaranın biçimine göre tahmin yürütür. */
+    private fun defaultPhoneType(digits: String): PhoneType =
+        if (TextNormalizer.isTurkishMobile(digits)) PhoneType.MOBILE else PhoneType.WORK
 
     private fun cleanUrl(raw: String): String =
         raw.trim().trimEnd('.', ',', ';', ')', '|')

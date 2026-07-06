@@ -1,6 +1,7 @@
 package com.fatsar.kartvizit.export
 
 import com.fatsar.kartvizit.model.ContactRecord
+import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.ocr.TextNormalizer
 import java.io.OutputStream
 
@@ -27,7 +28,7 @@ object VcfWriter {
         fun line(s: String) = sb.append(s).append("\r\n")
 
         val displayName = r.name.ifBlank { r.company }
-            .ifBlank { r.emails.firstOrNull() ?: r.phones.firstOrNull().orEmpty() }
+            .ifBlank { r.emails.firstOrNull() ?: r.phones.firstOrNull()?.number.orEmpty() }
         val (given, family) = TextNormalizer.splitName(r.name.ifBlank { r.company })
 
         line("BEGIN:VCARD")
@@ -37,8 +38,7 @@ object VcfWriter {
         if (r.company.isNotBlank()) line("ORG:${esc(r.company)}")
         if (r.title.isNotBlank()) line("TITLE:${esc(r.title)}")
         r.phones.forEach { phone ->
-            val type = if (TextNormalizer.isTurkishMobile(phone)) "CELL" else "WORK"
-            line("TEL;TYPE=$type:${esc(phone)}")
+            line("TEL;TYPE=${vcardType(phone.type)}:${esc(phone.number)}")
         }
         r.emails.forEach { line("EMAIL;TYPE=WORK:${esc(it)}") }
         if (r.website.isNotBlank()) line("URL:${esc(r.website)}")
@@ -47,6 +47,14 @@ object VcfWriter {
         if (r.notes.isNotBlank()) line("NOTE:${esc(r.notes)}")
         line("END:VCARD")
         return sb.toString()
+    }
+
+    private fun vcardType(type: PhoneType): String = when (type) {
+        PhoneType.MOBILE -> "CELL"
+        PhoneType.FAX -> "FAX"
+        PhoneType.HOME -> "HOME"
+        PhoneType.WORK -> "WORK"
+        PhoneType.OTHER -> "VOICE"
     }
 
     /** vCard 3.0 kaçış kuralları: \ , ; ve satır sonları. */

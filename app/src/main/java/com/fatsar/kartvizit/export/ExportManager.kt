@@ -10,6 +10,7 @@ import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.fatsar.kartvizit.R
 import com.fatsar.kartvizit.data.ContactRepository
+import com.fatsar.kartvizit.model.PhoneType
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -37,7 +38,10 @@ object ExportManager {
             context.getString(R.string.col_name),
             context.getString(R.string.col_title),
             context.getString(R.string.col_company),
-            context.getString(R.string.col_phone),
+            context.getString(R.string.col_mobile),
+            context.getString(R.string.col_work_phone),
+            context.getString(R.string.col_fax),
+            context.getString(R.string.col_home_phone),
             context.getString(R.string.col_email),
             context.getString(R.string.col_website),
             context.getString(R.string.col_address),
@@ -47,11 +51,16 @@ object ExportManager {
         )
         val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr", "TR"))
         val rows = records.map { r ->
+            // OTHER türü, karşılığı olmayan numaraları da göstermek için işe eklenir
+            val work = (r.phonesOf(PhoneType.WORK) + r.phonesOf(PhoneType.OTHER))
             listOf(
                 r.name,
                 r.title,
                 r.company,
-                r.phones.joinToString(", "),
+                r.phonesOf(PhoneType.MOBILE).joinToString(", "),
+                work.joinToString(", "),
+                r.phonesOf(PhoneType.FAX).joinToString(", "),
+                r.phonesOf(PhoneType.HOME).joinToString(", "),
                 r.emails.joinToString(", "),
                 r.website,
                 r.address,

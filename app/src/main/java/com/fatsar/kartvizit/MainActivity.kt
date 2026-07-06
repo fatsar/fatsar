@@ -20,11 +20,19 @@ import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.databinding.ActivityMainBinding
 import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
+import com.fatsar.kartvizit.model.PhoneType
+import com.fatsar.kartvizit.model.TypedPhone
+import com.fatsar.kartvizit.ocr.CardSegmenter
 import com.fatsar.kartvizit.ocr.CardTextParser
 import com.fatsar.kartvizit.ocr.OcrLine
+import com.fatsar.kartvizit.ocr.ScanEnricher
+import com.fatsar.kartvizit.ocr.ScannedBarcode
+import com.fatsar.kartvizit.ocr.ScannedContact
 import com.fatsar.kartvizit.ui.ContactsAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -45,10 +53,12 @@ class MainActivity : AppCompatActivity() {
     /** null = tüm kategoriler, "" = kategorisiz, diğer = tam eşleşme. */
     private var categoryFilter: String? = null
 
-    // Tembel oluşturma: tanıyıcı yalnızca ilk tarama sırasında yüklenir.
+    // Tembel oluşturma: tanıyıcılar yalnızca ilk tarama sırasında yüklenir.
     private val recognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     }
+    private val barcodeScanner by lazy { BarcodeScanning.getClient() }
+    private var scannersUsed = false
 
     private val takePicture =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -110,6 +120,15 @@ class MainActivity : AppCompatActivity() {
         outState.putParcelable(STATE_CAMERA_URI, cameraImageUri)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // Yalnızca en az bir tarama yapıldıysa (tembel oluşturulduysa) kapat
+        if (scannersUsed) {
+            recognizer.close()
+            barcodeScanner.close()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         refreshList()
@@ -155,36 +174,52 @@ class MainActivity : AppCompatActivity() {
         takePicture.launch(uri)
     }
 
-    /** Görüntüyü cihaz üzerinde (çevrimdışı) OCR ile okur ve düzenleme ekranını açar. */
+    /**
+     * Görüntüyü cihaz üzerinde (çevrimdışı) OCR + karekod tanıma ile okur.
+     * Tek fotoğrafta birden fazla kartvizit varsa hepsini ayırır. Tek kart
+     * bulunursa düzenleme ekranını açar; birden fazlaysa hepsini kaydeder.
+     */
     private fun processImage(uri: Uri) {
         binding.progress.visibility = View.VISIBLE
         setButtonsEnabled(false)
+        scannersUsed = true
         lifecycleScope.launch {
             try {
                 val image = withContext(Dispatchers.IO) {
                     InputImage.fromFilePath(this@MainActivity, uri)
                 }
-                val result = recognizer.process(image).await()
-                val lines = result.textBlocks.flatMap { block ->
+                val text = recognizer.process(image).await()
+                val barcodes = runCatching { barcodeScanner.process(image).await() }
+                    .getOrDefault(emptyList())
+
+                val lines = text.textBlocks.flatMap { block ->
                     block.lines.map { line ->
-                        OcrLine(line.text, line.boundingBox?.height()?.toFloat() ?: 0f)
+                        val box = line.boundingBox
+                        OcrLine(
+                            text = line.text,
+                            height = box?.height()?.toFloat() ?: 0f,
+                            left = box?.left ?: 0,
+                            top = box?.top ?: 0,
+                            right = box?.right ?: 0,
+                            bottom = box?.bottom ?: 0
+                        )
                     }
                 }
-                if (lines.isEmpty()) {
+                val scannedBarcodes = barcodes.mapNotNull { convertBarcode(it) }
+
+                if (lines.isEmpty() && scannedBarcodes.isEmpty()) {
                     toast(getString(R.string.no_text_found))
-                } else {
-                    val parsed = CardTextParser.parse(lines)
-                    startActivity(
+                    return@launch
+                }
+
+                val records = buildRecords(lines, scannedBarcodes, image.width, image.height)
+                when (records.size) {
+                    0 -> toast(getString(R.string.no_text_found))
+                    1 -> startActivity(
                         Intent(this@MainActivity, EditContactActivity::class.java)
-                            .putExtra(EditContactActivity.EXTRA_NAME, parsed.name)
-                            .putExtra(EditContactActivity.EXTRA_TITLE, parsed.title)
-                            .putExtra(EditContactActivity.EXTRA_COMPANY, parsed.company)
-                            .putExtra(EditContactActivity.EXTRA_PHONES, parsed.phones.joinToString(", "))
-                            .putExtra(EditContactActivity.EXTRA_EMAILS, parsed.emails.joinToString(", "))
-                            .putExtra(EditContactActivity.EXTRA_WEBSITE, parsed.website)
-                            .putExtra(EditContactActivity.EXTRA_ADDRESS, parsed.address)
-                            .putExtra(EditContactActivity.EXTRA_RAW_TEXT, parsed.rawText)
+                            .putExtra(EditContactActivity.EXTRA_PREFILL_JSON, records[0].toJson().toString())
                     )
+                    else -> saveMultiple(records)
                 }
             } catch (e: Exception) {
                 toast(getString(R.string.scan_failed, e.localizedMessage ?: ""))
@@ -193,6 +228,117 @@ class MainActivity : AppCompatActivity() {
                 setButtonsEnabled(true)
             }
         }
+    }
+
+    /** Satırları kümeleyip her kartı çözümler, karekodları ilgili karta ekler. */
+    private fun buildRecords(
+        lines: List<OcrLine>,
+        barcodes: List<ScannedBarcode>,
+        imageWidth: Int,
+        imageHeight: Int
+    ): List<ContactRecord> {
+        val clusters = if (lines.isEmpty()) listOf(emptyList()) else
+            CardSegmenter.segment(lines, imageWidth, imageHeight)
+
+        return clusters.mapIndexedNotNull { index, cluster ->
+            val parsed = CardTextParser.parse(cluster)
+            // Karekodu içeren/ en yakın kümeye ata (tek küme varsa hepsi ona gider)
+            val assigned = if (clusters.size == 1) barcodes
+            else barcodes.filter { nearestClusterIndex(it, clusters) == index }
+
+            val enriched = ScanEnricher.enrich(parsed, assigned)
+            val card = enriched.card
+            val notes = listOf(card.rawText, enriched.extraNotes)
+                .filter { it.isNotBlank() }.joinToString("\n")
+
+            if (card.name.isBlank() && card.company.isBlank() &&
+                card.phones.isEmpty() && card.emails.isEmpty()
+            ) return@mapIndexedNotNull null
+
+            ContactRecord(
+                name = card.name,
+                title = card.title,
+                company = card.company,
+                phones = card.phones,
+                emails = card.emails,
+                website = card.website,
+                address = card.address,
+                notes = notes
+            )
+        }
+    }
+
+    private fun saveMultiple(records: List<ContactRecord>) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                records.forEach { ContactRepository.upsert(this@MainActivity, it) }
+                ExportManager.regenerateExcel(this@MainActivity)
+            }
+            refreshList()
+            toast(getString(R.string.multiple_cards_saved, records.size))
+        }
+    }
+
+    /** Karekod merkezini içeren kümeyi, yoksa merkezi en yakın kümeyi bulur. */
+    private fun nearestClusterIndex(barcode: ScannedBarcode, clusters: List<List<OcrLine>>): Int {
+        var bestIndex = 0
+        var bestDistance = Long.MAX_VALUE
+        clusters.forEachIndexed { index, cluster ->
+            if (cluster.isEmpty()) return@forEachIndexed
+            val left = cluster.minOf { it.left }
+            val top = cluster.minOf { it.top }
+            val right = cluster.maxOf { it.right }
+            val bottom = cluster.maxOf { it.bottom }
+            if (barcode.centerX in left..right && barcode.centerY in top..bottom) return index
+            val cx = (left + right) / 2L
+            val cy = (top + bottom) / 2L
+            val dx = cx - barcode.centerX
+            val dy = cy - barcode.centerY
+            val distance = dx * dx + dy * dy
+            if (distance < bestDistance) {
+                bestDistance = distance
+                bestIndex = index
+            }
+        }
+        return bestIndex
+    }
+
+    /** ML Kit barkodunu, çözümlemeden bağımsız [ScannedBarcode] modeline çevirir. */
+    private fun convertBarcode(barcode: Barcode): ScannedBarcode? {
+        val raw = barcode.rawValue ?: barcode.displayValue ?: return null
+        val box = barcode.boundingBox
+        val info = barcode.contactInfo
+        val contact = if (info != null && barcode.valueType == Barcode.TYPE_CONTACT_INFO) {
+            ScannedContact(
+                name = info.name?.formattedName.orEmpty(),
+                title = info.title.orEmpty(),
+                org = info.organization.orEmpty(),
+                phones = info.phones.mapNotNull { p ->
+                    p.number?.let { TypedPhone(it, barcodePhoneType(p.type)) }
+                },
+                emails = info.emails.mapNotNull { it.address },
+                urls = info.urls.orEmpty(),
+                address = info.addresses.flatMap { it.addressLines.toList() }.joinToString(", ")
+            )
+        } else null
+        val url = if (barcode.valueType == Barcode.TYPE_URL) barcode.url?.url ?: raw else null
+        return ScannedBarcode(
+            rawValue = raw,
+            url = url,
+            contact = contact,
+            left = box?.left ?: 0,
+            top = box?.top ?: 0,
+            right = box?.right ?: 0,
+            bottom = box?.bottom ?: 0
+        )
+    }
+
+    private fun barcodePhoneType(type: Int): PhoneType = when (type) {
+        Barcode.Phone.TYPE_MOBILE -> PhoneType.MOBILE
+        Barcode.Phone.TYPE_FAX -> PhoneType.FAX
+        Barcode.Phone.TYPE_HOME -> PhoneType.HOME
+        Barcode.Phone.TYPE_WORK -> PhoneType.WORK
+        else -> PhoneType.OTHER
     }
 
     private fun setButtonsEnabled(enabled: Boolean) {

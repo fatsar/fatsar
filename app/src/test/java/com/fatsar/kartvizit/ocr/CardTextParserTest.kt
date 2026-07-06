@@ -1,5 +1,6 @@
 package com.fatsar.kartvizit.ocr
 
+import com.fatsar.kartvizit.model.PhoneType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,8 +28,11 @@ class CardTextParserTest {
         assertEquals("Satış Müdürü", card.title)
         assertEquals("Yıldız Tekstil San. ve Tic. A.Ş.", card.company)
         assertEquals(2, card.phones.size)
-        assertEquals("+90 212 555 44 33", card.phones[0])
-        assertEquals("+90 532 123 45 67", card.phones[1])
+        // "Tel:" iş telefonu, "GSM:" cep telefonu olarak ayrılır
+        val work = card.phones.first { it.type == PhoneType.WORK }
+        val mobile = card.phones.first { it.type == PhoneType.MOBILE }
+        assertEquals("+90 212 555 44 33", work.number)
+        assertEquals("+90 532 123 45 67", mobile.number)
         assertEquals(listOf("ahmet.yilmaz@yildiztekstil.com.tr"), card.emails)
         assertEquals("www.yildiztekstil.com.tr", card.website)
         assertTrue(card.address.contains("Atatürk Mah."))
@@ -52,7 +56,8 @@ class CardTextParserTest {
         assertEquals("John Smith", card.name)
         assertEquals("Software Engineer", card.title)
         assertEquals("Acme Technology Inc.", card.company)
-        assertEquals(listOf("+1 (555) 010-9999"), card.phones)
+        assertEquals(1, card.phones.size)
+        assertEquals("+1 (555) 010-9999", card.phones[0].number)
         assertEquals(listOf("john.smith@acme.com"), card.emails)
         assertEquals("www.acme.com", card.website)
     }
@@ -115,5 +120,34 @@ class CardTextParserTest {
         val card = CardTextParser.parse(lines)
 
         assertEquals("Mehmet Öz", card.name)
+    }
+
+    @Test
+    fun `faks ve cep numaralari ayri turlerle etiketlenir`() {
+        val card = CardTextParser.parse(
+            """
+            Ali Veli
+            Tel: 0212 555 44 33
+            Faks: 0212 555 44 34
+            GSM: 0532 111 22 33
+            """.trimIndent()
+        )
+
+        assertEquals(3, card.phones.size)
+        assertEquals("0212 555 44 33", card.phones.first { it.type == PhoneType.WORK }.number)
+        assertEquals("0212 555 44 34", card.phones.first { it.type == PhoneType.FAX }.number)
+        assertEquals("0532 111 22 33", card.phones.first { it.type == PhoneType.MOBILE }.number)
+    }
+
+    @Test
+    fun `etiketsiz numara bicimine gore tahmin edilir`() {
+        val card = CardTextParser.parse(
+            """
+            Ali Veli
+            0532 111 22 33
+            """.trimIndent()
+        )
+        assertEquals(1, card.phones.size)
+        assertEquals(PhoneType.MOBILE, card.phones[0].type)
     }
 }
