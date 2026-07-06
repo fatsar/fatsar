@@ -5,87 +5,138 @@ import kotlin.math.max
 /**
  * Tek bir fotoğraftaki OCR satırlarını konumlarına göre kümeleyerek birden
  * fazla kartviziti ayırır. Kartlar arasındaki boşluk ("oluk"), satır
- * kutularının kapsamında bir boşluk olarak görünür.
+ * kutularının izdüşümünde bir vadi olarak görünür.
  *
- * Klasik **XY-cut** yaklaşımı kullanılır: her adımda yatay ve dikey
- * oluklara bakılır, en belirgin oluğun bulunduğu eksende o eksendeki
- * **tüm** geçerli oluklardan aynı anda bölünür (10 kart yan yana ise tek
- * adımda 10 sütuna ayrılır) ve her parça özyinelemeli olarak diğer eksende
- * bölünür. Böylece kart sayısında sınır yoktur.
- *
- * Eşik, görüntü boyutuna değil **satır yüksekliğine** göre belirlenir
- * (ölçekten bağımsız): kart içindeki satır aralığı bir satır yüksekliğinden
- * küçük, kartlar arası oluk ise belirgin biçimde büyüktür.
+ * Klasik **XY-cut** yaklaşımı, gerçek fotoğraflara dayanıklı hale getirildi:
+ * - Kutular projeksiyondan önce biraz **içeri çekilir** (erosion); böylece
+ *   hafif eğik/döndürülmüş kartların komşu oluğa taşan kutuları oluğu
+ *   kapatmaz.
+ * - Oluk, "hiç kutu yok" yerine **düşük yoğunluklu vadi** olarak aranır;
+ *   böylece oluğu geçen birkaç hatalı/gürültü kutu bölünmeyi engellemez.
+ * - Eşik, görüntü boyutuna değil **satır yüksekliğine** göredir (ölçekten
+ *   bağımsız).
+ * - En belirgin oluğun bulunduğu eksende o eksendeki **tüm** oluklardan aynı
+ *   anda bölünür (10 kart yan yana ise tek adımda 10 sütuna); kart sayısında
+ *   sınır yoktur.
  */
 object CardSegmenter {
 
     private const val MAX_DEPTH = 24
 
-    /** Oluk, satır yüksekliğinin bu katından büyükse kartlar arası sayılır. */
-    private const val GAP_FACTOR = 1.7f
+    /** Oluk, satır yüksekliğinin bu katından genişse kartlar arası sayılır. */
+    private const val GAP_FACTOR = 1.6f
 
-    private val LETTER_OR_DIGIT = Regex("""[\p{L}\p{Nd}]""")
+    /** Projeksiyon öncesi her kutu, satır yüksekliğinin bu kadarı içeri çekilir. */
+    private const val ERODE_FACTOR = 0.5f
+
+    /** Vadi eşiği: yoğunluk, tepe değerinin bu oranından düşükse "boş" sayılır. */
+    private const val VALLEY_RATIO = 0.06f
+
+    private val ALNUM = Regex("""[\p{L}\p{Nd}]""")
 
     private data class Gap(val start: Int, val end: Int) {
         val size: Int get() = end - start
         val mid: Int get() = (start + end) / 2
     }
 
-    /**
-     * @param imageWidth/imageHeight kullanılmıyor (geriye dönük imza uyumu için
-     * korunur); eşik artık satır yüksekliğinden türetilir.
-     */
     @Suppress("UNUSED_PARAMETER")
     fun segment(lines: List<OcrLine>, imageWidth: Int = 0, imageHeight: Int = 0): List<List<OcrLine>> {
         val usable = lines.filter { it.text.isNotBlank() }
-        // Çok az satır ya da kutu bilgisi yoksa çoklu karta ayırmaya çalışma
         if (usable.size < 4 || !hasBoxes(usable)) return listOf(usable).filter { it.isNotEmpty() }
 
-        val lineHeight = medianLineHeight(usable)
+        // Yalnızca "sinyal" satırları (en az iki harf/rakam ve geçerli kutu)
+        // projeksiyonda kullanılır; tek karakterlik OCR gürültüsü oluğu kapatmaz.
+        val signal = usable.filter {
+            alnumCount(it.text) >= 2 && it.right > it.left && it.bottom > it.top
+        }
+        if (signal.size < 4) return listOf(usable)
+
+        val lineHeight = medianLineHeight(signal)
+        val erode = (lineHeight * ERODE_FACTOR).toInt()
         val minGap = max((lineHeight * GAP_FACTOR).toInt(), 1)
 
-        val cells = xyCut(usable, minGap, 0)
-            .filter { cluster -> cluster.any { LETTER_OR_DIGIT.containsMatchIn(it.text) } }
-
-        val result = if (cells.size > 1) cells else listOf(usable)
-        // Okuma sırası: üstten alta, soldan sağa
-        return result.sortedWith(
-            compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } })
-        )
+        val clusters = xyCut(signal, minGap, erode, 0)
+        return if (clusters.size > 1) {
+            clusters.sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
+        } else {
+            listOf(usable)
+        }
     }
 
-    private fun xyCut(lines: List<OcrLine>, minGap: Int, depth: Int): List<List<OcrLine>> {
+    private fun xyCut(lines: List<OcrLine>, minGap: Int, erode: Int, depth: Int): List<List<OcrLine>> {
         if (lines.size <= 1 || depth >= MAX_DEPTH) return listOf(lines)
 
-        val xGaps = axisGaps(lines) { it.left to it.right }.filter { it.size >= minGap }
-        val yGaps = axisGaps(lines) { it.top to it.bottom }.filter { it.size >= minGap }
-        val xMax = xGaps.maxOfOrNull { it.size } ?: 0
-        val yMax = yGaps.maxOfOrNull { it.size } ?: 0
+        val xValleys = valleys(lines, minGap, erode, { it.left }, { it.right })
+        val yValleys = valleys(lines, minGap, erode, { it.top }, { it.bottom })
+        val xMax = xValleys.maxOfOrNull { it.size } ?: 0
+        val yMax = yValleys.maxOfOrNull { it.size } ?: 0
 
-        // En belirgin oluğun bulunduğu ekseni seç; o eksendeki tüm oluklardan böl
         return when {
-            xGaps.isNotEmpty() && xMax >= yMax ->
-                splitAt(lines, xGaps.map { it.mid }) { it.centerX }
-                    .flatMap { xyCut(it, minGap, depth + 1) }
-            yGaps.isNotEmpty() ->
-                splitAt(lines, yGaps.map { it.mid }) { it.centerY }
-                    .flatMap { xyCut(it, minGap, depth + 1) }
+            xValleys.isNotEmpty() && xMax >= yMax ->
+                splitAt(lines, xValleys.map { it.mid }) { it.centerX }
+                    .flatMap { xyCut(it, minGap, erode, depth + 1) }
+            yValleys.isNotEmpty() ->
+                splitAt(lines, yValleys.map { it.mid }) { it.centerY }
+                    .flatMap { xyCut(it, minGap, erode, depth + 1) }
             else -> listOf(lines)
         }
     }
 
     /**
-     * Verilen eksende satır kutularının birleşik kapsamındaki boşlukları
-     * (oluklar) bulur. Kutuları [start,end] aralıklarına indirger, birleştirir
-     * ve ardışık kapalı bölümler arasındaki boşlukları döndürür.
+     * Verilen eksende, kutuların (içeri çekilmiş) izdüşümündeki düşük yoğunluklu
+     * iç vadileri bulur. Her x/y için o konumu kaplayan satır sayısı hesaplanır;
+     * sayı tepe değerinin küçük bir oranından düşükse orası "boş" kabul edilir.
      */
-    private fun axisGaps(lines: List<OcrLine>, selector: (OcrLine) -> Pair<Int, Int>): List<Gap> {
-        val intervals = lines.map(selector).sortedBy { it.first }
-        var coveredEnd = intervals.first().second
+    private fun valleys(
+        lines: List<OcrLine>,
+        minGap: Int,
+        erode: Int,
+        lo: (OcrLine) -> Int,
+        hi: (OcrLine) -> Int
+    ): List<Gap> {
+        val intervals = lines.map {
+            val a = lo(it) + erode
+            val b = hi(it) - erode
+            if (b > a) a to b else {
+                val m = (lo(it) + hi(it)) / 2
+                m to (m + 1)
+            }
+        }
+        val points = (intervals.map { it.first } + intervals.map { it.second })
+            .distinct().sorted()
+        if (points.size < 2) return emptyList()
+
+        val counts = IntArray(points.size - 1)
+        for ((a, b) in intervals) {
+            var i = points.binarySearch(a)
+            var j = points.binarySearch(b)
+            if (i < 0) i = -i - 1
+            if (j < 0) j = -j - 1
+            for (k in i until j) counts[k]++
+        }
+
+        val peak = counts.maxOrNull() ?: 0
+        if (peak == 0) return emptyList()
+        val emptyThreshold = (peak * VALLEY_RATIO).toInt()
+
         val gaps = mutableListOf<Gap>()
-        for ((start, end) in intervals.drop(1)) {
-            if (start > coveredEnd) gaps.add(Gap(coveredEnd, start))
-            if (end > coveredEnd) coveredEnd = end
+        var k = 0
+        while (k < counts.size) {
+            if (counts[k] <= emptyThreshold) {
+                val start = points[k]
+                var end = points[k + 1]
+                var kk = k
+                while (kk < counts.size && counts[kk] <= emptyThreshold) {
+                    end = points[kk + 1]
+                    kk++
+                }
+                // Yalnızca iç vadiler (iki yanında da metin var); kenar boşlukları değil
+                val interior = k > 0 && kk < counts.size
+                if (interior && end - start >= minGap) gaps.add(Gap(start, end))
+                k = kk
+            } else {
+                k++
+            }
         }
         return gaps
     }
@@ -110,6 +161,8 @@ object CardSegmenter {
         if (heights.isEmpty()) return 1f
         return heights[heights.size / 2].toFloat()
     }
+
+    private fun alnumCount(text: String): Int = ALNUM.findAll(text).count()
 
     private fun hasBoxes(lines: List<OcrLine>): Boolean =
         lines.any { it.right > it.left && it.bottom > it.top }

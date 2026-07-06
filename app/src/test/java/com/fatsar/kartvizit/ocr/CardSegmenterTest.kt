@@ -106,4 +106,51 @@ class CardSegmenterTest {
 
         assertEquals(6, clusters.size)
     }
+
+    @Test
+    fun `kaydirmali uc sutun sekiz kartvizit ayrilir`() {
+        // Kullanıcının fotoğrafına benzer: 3 sütun, orta sütun 2 kart (kaydırmalı)
+        val lines = mutableListOf<OcrLine>()
+        var idx = 0
+        intArrayOf(0, 80, 160).forEach { y -> lines += cardLines(idx++, x0 = 0, y0 = y) }
+        intArrayOf(40, 200).forEach { y -> lines += cardLines(idx++, x0 = 120, y0 = y) }
+        intArrayOf(0, 80, 160).forEach { y -> lines += cardLines(idx++, x0 = 240, y0 = y) }
+
+        val clusters = CardSegmenter.segment(lines, imageWidth = 320, imageHeight = 200)
+
+        assertEquals(8, clusters.size)
+    }
+
+    @Test
+    fun `egik kartin oluga tasan satiri bolunmeyi engellemez`() {
+        // Sol sütun; bir satır eğiklik nedeniyle oluğa doğru taşıyor (x 0..100)
+        val left = listOf(
+            line("Ahmet Yılmaz", 0, 0, 80, 10),
+            line("ahmet@firma.com uzun satir", 0, 14, 100, 24), // oluğa taşan
+            line("0212 111 22 33", 0, 28, 80, 38),
+            line("Satış Müdürü", 0, 42, 80, 52)
+        )
+        val right = listOf(
+            line("Mehmet Kaya", 120, 0, 200, 10),
+            line("mehmet@firma.com", 120, 14, 200, 24),
+            line("0216 333 22 11", 120, 28, 200, 38),
+            line("Mühendis", 120, 42, 200, 52)
+        )
+
+        val clusters = CardSegmenter.segment(left + right, imageWidth = 200, imageHeight = 60)
+
+        assertEquals(2, clusters.size)
+    }
+
+    @Test
+    fun `olukta gurultu kutusu bolunmeyi engellemez`() {
+        val left = (0 until 4).map { i -> line("Sol satır $i", 0, i * 14, 80, i * 14 + 10) }
+        val right = (0 until 4).map { i -> line("Sag satır $i", 200, i * 14, 280, i * 14 + 10) }
+        // Oluğun ortasında tek karakterlik OCR gürültüsü (elenmesi gerekir)
+        val noise = line("·", 130, 20, 140, 30)
+
+        val clusters = CardSegmenter.segment(left + noise + right, imageWidth = 300, imageHeight = 60)
+
+        assertEquals(2, clusters.size)
+    }
 }
