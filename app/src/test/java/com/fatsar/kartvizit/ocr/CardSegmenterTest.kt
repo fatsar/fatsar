@@ -69,4 +69,41 @@ class CardSegmenterTest {
         val clusters = CardSegmenter.segment(lines)
         assertEquals(1, clusters.size)
     }
+
+    /** Bir kart için 3 satır (ad, e-posta, telefon) üretir. */
+    private fun cardLines(index: Int, x0: Int, y0: Int): List<OcrLine> {
+        val w = 80
+        return listOf(
+            line("Ad Soyad $index", x0, y0, x0 + w, y0 + 10),
+            line("kisi$index@firma.com", x0, y0 + 14, x0 + w, y0 + 24),
+            line("0212 000 00 0$index".take(15), x0, y0 + 28, x0 + w, y0 + 38)
+        )
+    }
+
+    @Test
+    fun `tek sirada on kartvizit ayrilir`() {
+        // 10 kart yan yana: kart genişliği 80, aralarında 40 px oluk
+        val lines = (0 until 10).flatMap { i -> cardLines(i, x0 = i * 120, y0 = 0) }
+
+        val clusters = CardSegmenter.segment(lines, imageWidth = 1200, imageHeight = 40)
+
+        assertEquals(10, clusters.size)
+        clusters.forEach { assertEquals(3, it.size) }
+    }
+
+    @Test
+    fun `iki satir uc sutun izgara ayrilir`() {
+        // 2 satır x 3 sütun = 6 kart
+        val lines = mutableListOf<OcrLine>()
+        var idx = 0
+        for (row in 0 until 2) {
+            for (col in 0 until 3) {
+                lines += cardLines(idx++, x0 = col * 120, y0 = row * 100)
+            }
+        }
+
+        val clusters = CardSegmenter.segment(lines, imageWidth = 360, imageHeight = 200)
+
+        assertEquals(6, clusters.size)
+    }
 }

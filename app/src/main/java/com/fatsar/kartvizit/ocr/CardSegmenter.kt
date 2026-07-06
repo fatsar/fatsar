@@ -4,111 +4,113 @@ import kotlin.math.max
 
 /**
  * Tek bir fotoğraftaki OCR satırlarını konumlarına göre kümeleyerek birden
- * fazla kartviziti ayırır. İki kart yan yana ya da alt alta konduğunda
- * aralarındaki boşluk ("oluk") satır kutularının kapsamında bir boşluk
- * olarak görünür; bu boşluktan bölünür.
+ * fazla kartviziti ayırır. Kartlar arasındaki boşluk ("oluk"), satır
+ * kutularının kapsamında bir boşluk olarak görünür.
  *
- * Aşırı bölünmeyi önlemek için muhafazakârdır: yalnızca tüm parçalar
- * bağımsız bir kartvizit gibi görünüyorsa (yeterli metin, e-posta ya da
- * telefon) çoklu karta ayırır; aksi halde tek kart döndürür.
+ * Klasik **XY-cut** yaklaşımı kullanılır: her adımda yatay ve dikey
+ * oluklara bakılır, en belirgin oluğun bulunduğu eksende o eksendeki
+ * **tüm** geçerli oluklardan aynı anda bölünür (10 kart yan yana ise tek
+ * adımda 10 sütuna ayrılır) ve her parça özyinelemeli olarak diğer eksende
+ * bölünür. Böylece kart sayısında sınır yoktur.
+ *
+ * Eşik, görüntü boyutuna değil **satır yüksekliğine** göre belirlenir
+ * (ölçekten bağımsız): kart içindeki satır aralığı bir satır yüksekliğinden
+ * küçük, kartlar arası oluk ise belirgin biçimde büyüktür.
  */
 object CardSegmenter {
 
-    private const val MAX_DEPTH = 3
-    private val PHONE_DIGITS = Regex("""\d""")
+    private const val MAX_DEPTH = 24
+
+    /** Oluk, satır yüksekliğinin bu katından büyükse kartlar arası sayılır. */
+    private const val GAP_FACTOR = 1.7f
+
+    private val LETTER_OR_DIGIT = Regex("""[\p{L}\p{Nd}]""")
+
+    private data class Gap(val start: Int, val end: Int) {
+        val size: Int get() = end - start
+        val mid: Int get() = (start + end) / 2
+    }
 
     /**
-     * @param imageWidth/imageHeight görüntü boyutu (piksel). 0 verilirse
-     * satır kutularının kapsamından tahmin edilir.
+     * @param imageWidth/imageHeight kullanılmıyor (geriye dönük imza uyumu için
+     * korunur); eşik artık satır yüksekliğinden türetilir.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun segment(lines: List<OcrLine>, imageWidth: Int = 0, imageHeight: Int = 0): List<List<OcrLine>> {
         val usable = lines.filter { it.text.isNotBlank() }
-        if (usable.size < 6 || !hasBoxes(usable)) return listOf(usable).filter { it.isNotEmpty() }
+        // Çok az satır ya da kutu bilgisi yoksa çoklu karta ayırmaya çalışma
+        if (usable.size < 4 || !hasBoxes(usable)) return listOf(usable).filter { it.isNotEmpty() }
 
-        val w = if (imageWidth > 0) imageWidth else usable.maxOf { it.right } - usable.minOf { it.left }
-        val h = if (imageHeight > 0) imageHeight else usable.maxOf { it.bottom } - usable.minOf { it.top }
+        val lineHeight = medianLineHeight(usable)
+        val minGap = max((lineHeight * GAP_FACTOR).toInt(), 1)
 
-        val clusters = partition(usable, w, h, 0)
-        return if (clusters.size > 1 && clusters.all { looksLikeCard(it) }) {
-            // Kartları görüntüdeki konumlarına göre sırala: üstten alta, soldan sağa
-            clusters.sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
-        } else {
-            listOf(usable)
+        val cells = xyCut(usable, minGap, 0)
+            .filter { cluster -> cluster.any { LETTER_OR_DIGIT.containsMatchIn(it.text) } }
+
+        val result = if (cells.size > 1) cells else listOf(usable)
+        // Okuma sırası: üstten alta, soldan sağa
+        return result.sortedWith(
+            compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } })
+        )
+    }
+
+    private fun xyCut(lines: List<OcrLine>, minGap: Int, depth: Int): List<List<OcrLine>> {
+        if (lines.size <= 1 || depth >= MAX_DEPTH) return listOf(lines)
+
+        val xGaps = axisGaps(lines) { it.left to it.right }.filter { it.size >= minGap }
+        val yGaps = axisGaps(lines) { it.top to it.bottom }.filter { it.size >= minGap }
+        val xMax = xGaps.maxOfOrNull { it.size } ?: 0
+        val yMax = yGaps.maxOfOrNull { it.size } ?: 0
+
+        // En belirgin oluğun bulunduğu ekseni seç; o eksendeki tüm oluklardan böl
+        return when {
+            xGaps.isNotEmpty() && xMax >= yMax ->
+                splitAt(lines, xGaps.map { it.mid }) { it.centerX }
+                    .flatMap { xyCut(it, minGap, depth + 1) }
+            yGaps.isNotEmpty() ->
+                splitAt(lines, yGaps.map { it.mid }) { it.centerY }
+                    .flatMap { xyCut(it, minGap, depth + 1) }
+            else -> listOf(lines)
         }
     }
-
-    private fun partition(lines: List<OcrLine>, w: Int, h: Int, depth: Int): List<List<OcrLine>> {
-        if (depth >= MAX_DEPTH || lines.size < 4) return listOf(lines)
-
-        val medianLineHeight = lines.map { max(1, it.bottom - it.top) }.sorted()
-            .let { it[it.size / 2] }
-
-        val cut = bestGutter(lines, w, h, medianLineHeight) ?: return listOf(lines)
-        val (a, b) = split(lines, cut)
-        if (a.isEmpty() || b.isEmpty()) return listOf(lines)
-
-        return partition(a, w, h, depth + 1) + partition(b, w, h, depth + 1)
-    }
-
-    private data class Gutter(val axis: Axis, val position: Int, val size: Int)
-    private enum class Axis { X, Y }
-
-    /** İki eksende de en büyük geçerli oluğu arar; yoksa null. */
-    private fun bestGutter(lines: List<OcrLine>, w: Int, h: Int, lineHeight: Int): Gutter? {
-        val candidates = listOfNotNull(
-            largestGap(lines, Axis.X) { it.left to it.right }
-                ?.takeIf { qualifies(it.size, w, lineHeight) },
-            largestGap(lines, Axis.Y) { it.top to it.bottom }
-                ?.takeIf { qualifies(it.size, h, lineHeight) }
-        )
-        return candidates.maxByOrNull { it.size }
-    }
-
-    /** Bir gap, görüntünün %6'sından ve satır yüksekliğinin ~2 katından büyükse geçerli. */
-    private fun qualifies(gapSize: Int, dimension: Int, lineHeight: Int): Boolean =
-        gapSize >= max((dimension * 0.06).toInt(), (lineHeight * 2.0).toInt())
 
     /**
-     * Verilen eksende satır kutularının birleşik kapsamındaki en büyük boşluğu
-     * bulur (oluk). Kutuları [start,end] aralıklarına indirger, birleştirir ve
-     * ardışık kapalı bölümler arasındaki boşlukları ölçer.
+     * Verilen eksende satır kutularının birleşik kapsamındaki boşlukları
+     * (oluklar) bulur. Kutuları [start,end] aralıklarına indirger, birleştirir
+     * ve ardışık kapalı bölümler arasındaki boşlukları döndürür.
      */
-    private inline fun largestGap(
-        lines: List<OcrLine>,
-        axis: Axis,
-        selector: (OcrLine) -> Pair<Int, Int>
-    ): Gutter? {
+    private fun axisGaps(lines: List<OcrLine>, selector: (OcrLine) -> Pair<Int, Int>): List<Gap> {
         val intervals = lines.map(selector).sortedBy { it.first }
         var coveredEnd = intervals.first().second
-        var best: Gutter? = null
+        val gaps = mutableListOf<Gap>()
         for ((start, end) in intervals.drop(1)) {
-            if (start > coveredEnd) {
-                val size = start - coveredEnd
-                if (best == null || size > best!!.size) {
-                    best = Gutter(axis, coveredEnd + size / 2, size)
-                }
-            }
+            if (start > coveredEnd) gaps.add(Gap(coveredEnd, start))
             if (end > coveredEnd) coveredEnd = end
         }
-        return best
+        return gaps
     }
 
-    private fun split(lines: List<OcrLine>, cut: Gutter): Pair<List<OcrLine>, List<OcrLine>> {
-        val (a, b) = lines.partition {
-            val center = if (cut.axis == Axis.X) it.centerX else it.centerY
-            center < cut.position
-        }
-        return a to b
+    /** Satırları, verilen kesim konumlarına göre kova kova ayırır. */
+    private fun splitAt(
+        lines: List<OcrLine>,
+        cuts: List<Int>,
+        center: (OcrLine) -> Int
+    ): List<List<OcrLine>> {
+        if (cuts.isEmpty()) return listOf(lines)
+        val sorted = cuts.sorted()
+        return lines
+            .groupBy { line -> sorted.count { it < center(line) } }
+            .toSortedMap()
+            .values
+            .toList()
+    }
+
+    private fun medianLineHeight(lines: List<OcrLine>): Float {
+        val heights = lines.map { it.bottom - it.top }.filter { it > 0 }.sorted()
+        if (heights.isEmpty()) return 1f
+        return heights[heights.size / 2].toFloat()
     }
 
     private fun hasBoxes(lines: List<OcrLine>): Boolean =
         lines.any { it.right > it.left && it.bottom > it.top }
-
-    /** Bir küme gerçek bir kartvizit gibi mi? En az 3 satır ya da e-posta/telefon. */
-    private fun looksLikeCard(lines: List<OcrLine>): Boolean {
-        if (lines.size >= 3) return true
-        val text = lines.joinToString(" ") { it.text }
-        if (text.contains('@')) return true
-        return PHONE_DIGITS.findAll(text).count() >= 7
-    }
 }
