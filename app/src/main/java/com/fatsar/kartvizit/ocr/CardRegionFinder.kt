@@ -1,51 +1,120 @@
 package com.fatsar.kartvizit.ocr
 
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+
 /**
- * Fotoğraftaki açık renkli kartvizit dikdörtgenlerini parlaklık (gri ton)
- * verisinden bulur: Otsu eşikleme ile kart/zemin ayrılır, bağlı bileşenlerle
- * her kartın kapladığı bölge çıkarılır. Böylece kartın **içindeki** beyaz
- * boşluklar (logo ile iletişim bloğu arası gibi) bölünmeye yol açmaz ve her
- * kart, üzerindeki tüm satırlarla birlikte tek parça kalır.
+ * Fotoğraftaki kartvizit bölgelerini bulur.
  *
- * Saf Kotlin'dir (Android bağımlılığı yok) ve birim testlenebilir; bitmap
- * çözme işi [CardRegionDetector] tarafındadır.
+ * Zemin, parlaklıkla değil **renk kimliğiyle** (kromatiklik) modellenir:
+ * fotoğrafın kenar çerçevesinden zeminin renk oranları (r/toplam, g/toplam)
+ * ve parlaklığı örneklenir. Ahşap zeminin parlak damarları ve gölgeli
+ * bölümleri aynı renk ailesinde kaldığından zemin sayılır; beyaz/renkli
+ * kartlar renk oranlarıyla ayrışır. Böylece parlak zemin çizgilerinin
+ * kartlar arasında köprü kurup hepsini tek parça göstermesi önlenir.
+ *
+ * Ardından ince köprüleri kesen erozyon uygulanır ve bağlı bileşenlerle
+ * kart adayları çıkarılır. [refine], adayları OCR satırlarıyla uzlaştırır:
+ * gölgeyle ikiye bölünen kart parçalarını birleştirir, metin içermeyen
+ * parlama/yansıma bölgelerini eler, bitişik durduğu için tek bölge çıkan
+ * kart çiftlerini metin düzeninden ikiye ayırır.
+ *
+ * Saf Kotlin'dir (Android bağımlılığı yok); bitmap çözme işi
+ * [CardRegionDetector] tarafındadır.
  */
 object CardRegionFinder {
 
     /** Bir kartın görüntüdeki sınırlayıcı kutusu (piksel, uçlar dahil). */
     data class Region(val left: Int, val top: Int, val right: Int, val bottom: Int) {
+        val width: Int get() = right - left + 1
+        val height: Int get() = bottom - top + 1
         val centerX: Int get() = (left + right) / 2
         val centerY: Int get() = (top + bottom) / 2
         fun contains(x: Int, y: Int): Boolean = x in left..right && y in top..bottom
     }
 
-    // Kart adayı filtreleri (görüntü boyutuna oranla)
-    private const val MIN_AREA_RATIO = 0.008f   // görüntünün en az %0,8'i
-    private const val MAX_AREA_RATIO = 0.70f    // tek bileşen görüntünün %70'ini aşamaz
-    private const val MIN_DIM_RATIO = 0.05f     // kısa kenar, min(gen,yük)'ün %5'i
-    private const val MIN_FILL = 0.45f          // bbox doluluk oranı (eğik kart ~0,7+)
-    private const val MIN_ASPECT = 0.30f        // dikey kart + hafif dönme payı
-    private const val MAX_ASPECT = 3.4f
+    // Zemin modeli toleransları (kenar örneklerinin MAD'ine göre büyür)
+    private const val CHROMA_TOL_BASE = 10
+    private const val LUM_TOL_BASE = 60
+
+    // Kart adayı filtreleri
+    private const val MIN_AREA_RATIO = 0.004f
+    private const val MAX_AREA_RATIO = 0.75f
+    private const val MIN_DIM_RATIO = 0.04f
+    private const val MIN_FILL = 0.30f
 
     /**
-     * @param luminance satır-öncelikli 0..255 parlaklık dizisi (width*height)
-     * @return kart adayı bölgeler; kontrast yoksa / kart bulunamazsa boş liste
+     * @param argb satır-öncelikli paketlenmiş ARGB/RGB piksel dizisi
+     * @return kart adayı bölgeler; zemin/kart ayrımı yapılamazsa boş liste
      */
-    fun findCards(luminance: IntArray, width: Int, height: Int): List<Region> {
-        if (width <= 2 || height <= 2 || luminance.size < width * height) return emptyList()
+    fun findCards(argb: IntArray, width: Int, height: Int): List<Region> {
         val total = width * height
-        val threshold = otsuThreshold(luminance, total)
+        if (width <= 8 || height <= 8 || argb.size < total) return emptyList()
 
+        // 1) Kenar çerçevesinden zemin renk modeli
+        val margin = max(2, min(width, height) / 50)
+        val crs = ArrayList<Int>()
+        val cgs = ArrayList<Int>()
+        val lums = ArrayList<Int>()
+        var y = 0
+        while (y < height) {
+            val edgeRow = y < margin || y >= height - margin
+            var x = 0
+            while (x < width) {
+                if (edgeRow || x < margin || x >= width - margin) {
+                    val p = argb[y * width + x]
+                    val r = p ushr 16 and 0xFF
+                    val g = p ushr 8 and 0xFF
+                    val b = p and 0xFF
+                    val sum = r + g + b + 1
+                    crs.add(255 * r / sum)
+                    cgs.add(255 * g / sum)
+                    lums.add((r * 299 + g * 587 + b * 114) / 1000)
+                }
+                x += 2
+            }
+            y += 2
+        }
+        if (crs.size < 16) return emptyList()
+        val medCr = median(crs)
+        val medCg = median(cgs)
+        val medLum = median(lums)
+        val tolCr = max(CHROMA_TOL_BASE, 3 * mad(crs, medCr))
+        val tolCg = max(CHROMA_TOL_BASE, 3 * mad(cgs, medCg))
+        val tolLum = max(LUM_TOL_BASE, 6 * mad(lums, medLum))
+
+        // 2) Ön plan maskesi: zemin renk ailesinden sapan ya da belirgin
+        //    biçimde daha parlak pikseller
+        val mask = BooleanArray(total)
+        for (i in 0 until total) {
+            val p = argb[i]
+            val r = p ushr 16 and 0xFF
+            val g = p ushr 8 and 0xFF
+            val b = p and 0xFF
+            val sum = r + g + b
+            if (sum < 90) continue // çok karanlık: derin gölge/zemin
+            val cr = 255 * r / (sum + 1)
+            val cg = 255 * g / (sum + 1)
+            val lum = (r * 299 + g * 587 + b * 114) / 1000
+            mask[i] = abs(cr - medCr) > tolCr || abs(cg - medCg) > tolCg ||
+                (lum - medLum) > tolLum
+        }
+
+        // 3) Erozyon: ince köprüleri (kenar yumuşaması, dar taşmalar) keser
+        val erosion = max(2, min(width, height) / 160)
+        erode(mask, width, height, erosion)
+
+        // 4) Bağlı bileşenler
         val labels = IntArray(total) { -1 }
         val queue = IntArray(total)
         val regions = mutableListOf<Region>()
         val imgArea = total.toLong()
-        val minDim = maxOf(6, (minOf(width, height) * MIN_DIM_RATIO).toInt())
+        val minDim = max(4, (min(width, height) * MIN_DIM_RATIO).toInt())
+        val pad = erosion + 1
 
         for (start in 0 until total) {
-            if (labels[start] != -1 || luminance[start] <= threshold) continue
-
-            // BFS ile parlak bileşeni topla
+            if (labels[start] != -1 || !mask[start]) continue
             var head = 0
             var tail = 0
             queue[tail++] = start
@@ -53,47 +122,38 @@ object CardRegionFinder {
             var minX = start % width; var maxX = minX
             var minY = start / width; var maxY = minY
             var area = 0L
-
             while (head < tail) {
                 val p = queue[head++]
                 area++
-                val x = p % width
-                val y = p / width
-                if (x < minX) minX = x
-                if (x > maxX) maxX = x
-                if (y < minY) minY = y
-                if (y > maxY) maxY = y
-
-                if (x > 0) {
-                    val q = p - 1
-                    if (labels[q] == -1 && luminance[q] > threshold) { labels[q] = 1; queue[tail++] = q }
-                }
-                if (x < width - 1) {
-                    val q = p + 1
-                    if (labels[q] == -1 && luminance[q] > threshold) { labels[q] = 1; queue[tail++] = q }
-                }
-                if (y > 0) {
-                    val q = p - width
-                    if (labels[q] == -1 && luminance[q] > threshold) { labels[q] = 1; queue[tail++] = q }
-                }
-                if (y < height - 1) {
-                    val q = p + width
-                    if (labels[q] == -1 && luminance[q] > threshold) { labels[q] = 1; queue[tail++] = q }
-                }
+                val px = p % width
+                val py = p / width
+                if (px < minX) minX = px
+                if (px > maxX) maxX = px
+                if (py < minY) minY = py
+                if (py > maxY) maxY = py
+                if (px > 0 && labels[p - 1] == -1 && mask[p - 1]) { labels[p - 1] = 1; queue[tail++] = p - 1 }
+                if (px < width - 1 && labels[p + 1] == -1 && mask[p + 1]) { labels[p + 1] = 1; queue[tail++] = p + 1 }
+                if (py > 0 && labels[p - width] == -1 && mask[p - width]) { labels[p - width] = 1; queue[tail++] = p - width }
+                if (py < height - 1 && labels[p + width] == -1 && mask[p + width]) { labels[p + width] = 1; queue[tail++] = p + width }
             }
 
             val bw = maxX - minX + 1
             val bh = maxY - minY + 1
             val bboxArea = bw.toLong() * bh
-            val aspect = bw.toFloat() / bh
             val fill = area.toFloat() / bboxArea
             if (bw >= minDim && bh >= minDim &&
                 bboxArea >= (imgArea * MIN_AREA_RATIO).toLong() &&
                 bboxArea <= (imgArea * MAX_AREA_RATIO).toLong() &&
-                fill >= MIN_FILL &&
-                aspect in MIN_ASPECT..MAX_ASPECT
+                fill >= MIN_FILL
             ) {
-                regions.add(Region(minX, minY, maxX, maxY))
+                regions.add(
+                    Region(
+                        max(0, minX - pad),
+                        max(0, minY - pad),
+                        min(width - 1, maxX + pad),
+                        min(height - 1, maxY + pad)
+                    )
+                )
             }
         }
 
@@ -101,8 +161,56 @@ object CardRegionFinder {
     }
 
     /**
-     * OCR satırlarını kart bölgelerine dağıtır: merkezini içeren bölge, yoksa
-     * merkezi en yakın bölge. Boş gruplar elenir; okuma sırasına göre döner.
+     * Kart adaylarını OCR satırlarıyla uzlaştırıp satır gruplarını döndürür:
+     * 1. Arada çok ince boşluk kalan bölgeler birleştirilir (kartı ikiye
+     *    bölen gölge çizgisi durumu).
+     * 2. Hiç satır içermeyen bölgeler elenir (parlama/yansıma).
+     * 3. Her satır, merkezini içeren bölgeye; yoksa en yakın bölgeye atanır.
+     * 4. Tek bölge çıkan bitişik kart çiftleri, metin düzeni iki **güçlü**
+     *    karta ayrılabiliyorsa (her parçada telefon ya da e-posta) bölünür.
+     */
+    fun refine(candidates: List<Region>, lines: List<OcrLine>): List<List<OcrLine>> {
+        if (lines.isEmpty()) return emptyList()
+        if (candidates.isEmpty()) return listOf(lines)
+
+        // 1) İnce aralıklı bölgeleri birleştir
+        val regions = candidates.toMutableList()
+        val shortSides = regions.map { min(it.width, it.height) }.sorted()
+        val thinGap = max(3, shortSides[shortSides.size / 2] / 6)
+        var merged = true
+        while (merged && regions.size > 1) {
+            merged = false
+            outer@ for (i in regions.indices) {
+                for (j in i + 1 until regions.size) {
+                    if (rectGap(regions[i], regions[j]) <= thinGap) {
+                        val a = regions[i]
+                        val b = regions.removeAt(j)
+                        regions[i] = Region(
+                            min(a.left, b.left), min(a.top, b.top),
+                            max(a.right, b.right), max(a.bottom, b.bottom)
+                        )
+                        merged = true
+                        break@outer
+                    }
+                }
+            }
+        }
+
+        // 2) + 3) Satırları dağıt, boş bölgeleri ele
+        val groups = group(lines, regions)
+
+        // 4) Güçlü alt bölme: bitişik kart çiftleri tek bölge çıktıysa
+        val result = groups.flatMap { groupLines ->
+            val sub = CardSegmenter.segment(groupLines)
+            if (sub.size >= 2 && sub.all { isStrongCard(it) }) sub else listOf(groupLines)
+        }
+
+        return result.sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
+    }
+
+    /**
+     * OCR satırlarını bölgelere dağıtır: merkezini içeren bölge, yoksa merkezi
+     * en yakın bölge. Boş gruplar elenir; okuma sırasına göre döner.
      */
     fun group(lines: List<OcrLine>, regions: List<Region>): List<List<OcrLine>> {
         if (regions.isEmpty()) return listOf(lines).filter { it.isNotEmpty() }
@@ -124,32 +232,47 @@ object CardRegionFinder {
             .sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
     }
 
-    /** Klasik Otsu eşiği: kart (parlak) / zemin (koyu) ayrımı için. */
-    internal fun otsuThreshold(luminance: IntArray, total: Int): Int {
-        val hist = IntArray(256)
-        for (i in 0 until total) hist[luminance[i].coerceIn(0, 255)]++
-
-        var sum = 0.0
-        for (t in 0..255) sum += t.toDouble() * hist[t]
-
-        var sumB = 0.0
-        var wB = 0L
-        var best = 127
-        var maxVar = -1.0
-        for (t in 0..255) {
-            wB += hist[t]
-            if (wB == 0L) continue
-            val wF = total - wB
-            if (wF == 0L) break
-            sumB += t.toDouble() * hist[t]
-            val mB = sumB / wB
-            val mF = (sum - sumB) / wF
-            val between = wB.toDouble() * wF * (mB - mF) * (mB - mF)
-            if (between > maxVar) {
-                maxVar = between
-                best = t
-            }
+    /** Gerçek bir kart parçası: en az 3 satır ve telefon ya da e-posta. */
+    private fun isStrongCard(cluster: List<OcrLine>): Boolean =
+        cluster.size >= 3 && cluster.any { line ->
+            line.text.contains('@') || line.text.count { it.isDigit() } >= 7
         }
-        return best
+
+    /** İki dikdörtgen arasındaki eksensel boşluk (kesişiyorsa 0). */
+    private fun rectGap(a: Region, b: Region): Int {
+        val dx = max(0, max(a.left, b.left) - min(a.right, b.right))
+        val dy = max(0, max(a.top, b.top) - min(a.bottom, b.bottom))
+        return max(dx, dy)
     }
+
+    /** Maskeyi 4-komşulukla [rounds] tur aşındırır (görüntü kenarı boş sayılır). */
+    private fun erode(mask: BooleanArray, width: Int, height: Int, rounds: Int) {
+        var current = mask
+        var scratch = BooleanArray(mask.size)
+        repeat(rounds) {
+            for (yy in 0 until height) {
+                val row = yy * width
+                for (xx in 0 until width) {
+                    val i = row + xx
+                    scratch[i] = current[i] &&
+                        xx > 0 && current[i - 1] &&
+                        xx < width - 1 && current[i + 1] &&
+                        yy > 0 && current[i - width] &&
+                        yy < height - 1 && current[i + width]
+                }
+            }
+            val tmp = current
+            current = scratch
+            scratch = tmp
+        }
+        if (current !== mask) current.copyInto(mask)
+    }
+
+    private fun median(values: List<Int>): Int {
+        val sorted = values.sorted()
+        return sorted[sorted.size / 2]
+    }
+
+    private fun mad(values: List<Int>, med: Int): Int =
+        median(values.map { abs(it - med) })
 }

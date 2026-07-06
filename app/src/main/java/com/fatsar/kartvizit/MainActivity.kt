@@ -251,8 +251,8 @@ class MainActivity : AppCompatActivity() {
         val regions = runCatching {
             CardRegionDetector.detect(this, uri, imageWidth, imageHeight)
         }.getOrDefault(emptyList())
-        if (regions.size >= 2) {
-            val groups = CardRegionFinder.group(lines, regions)
+        if (regions.isNotEmpty()) {
+            val groups = CardRegionFinder.refine(regions, lines)
             if (groups.size >= 2) return groups
         }
         return CardSegmenter.segment(lines, imageWidth, imageHeight)

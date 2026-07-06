@@ -31,16 +31,10 @@ object CardRegionDetector {
 
             val pixels = IntArray(w * h)
             bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
-            val luminance = IntArray(w * h)
-            for (i in pixels.indices) {
-                val p = pixels[i]
-                luminance[i] =
-                    ((p ushr 16 and 0xFF) * 299 + (p ushr 8 and 0xFF) * 587 + (p and 0xFF) * 114) / 1000
-            }
 
             val scaleX = ocrWidth.toFloat() / w
             val scaleY = ocrHeight.toFloat() / h
-            return CardRegionFinder.findCards(luminance, w, h).map { r ->
+            return CardRegionFinder.findCards(pixels, w, h).map { r ->
                 CardRegionFinder.Region(
                     (r.left * scaleX).toInt(),
                     (r.top * scaleY).toInt(),
