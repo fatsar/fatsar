@@ -22,6 +22,8 @@ import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
 import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.model.TypedPhone
+import com.fatsar.kartvizit.ocr.CardRegionDetector
+import com.fatsar.kartvizit.ocr.CardRegionFinder
 import com.fatsar.kartvizit.ocr.CardSegmenter
 import com.fatsar.kartvizit.ocr.CardTextParser
 import com.fatsar.kartvizit.ocr.OcrLine
@@ -212,7 +214,10 @@ class MainActivity : AppCompatActivity() {
                     return@launch
                 }
 
-                val records = buildRecords(lines, scannedBarcodes, image.width, image.height)
+                val clusters = withContext(Dispatchers.Default) {
+                    detectClusters(uri, lines, image.width, image.height)
+                }
+                val records = buildRecords(clusters, scannedBarcodes)
                 when (records.size) {
                     0 -> toast(getString(R.string.no_text_found))
                     1 -> startActivity(
@@ -230,16 +235,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Satırları kümeleyip her kartı çözümler, karekodları ilgili karta ekler. */
-    private fun buildRecords(
+    /**
+     * Kart kümelerini belirler. Önce görüntüden kart dikdörtgenlerini bulmayı
+     * dener (açık kart / koyu zemin kontrastı); bu, kartın içindeki beyaz
+     * boşlukların kartı bölmesini önler ve her kartı tüm satırlarıyla korur.
+     * Kontrast yetersizse metin-kutusu tabanlı ayırmaya geri düşer.
+     */
+    private fun detectClusters(
+        uri: Uri,
         lines: List<OcrLine>,
-        barcodes: List<ScannedBarcode>,
         imageWidth: Int,
         imageHeight: Int
-    ): List<ContactRecord> {
-        val clusters = if (lines.isEmpty()) listOf(emptyList()) else
-            CardSegmenter.segment(lines, imageWidth, imageHeight)
+    ): List<List<OcrLine>> {
+        if (lines.isEmpty()) return listOf(emptyList())
+        val regions = runCatching {
+            CardRegionDetector.detect(this, uri, imageWidth, imageHeight)
+        }.getOrDefault(emptyList())
+        if (regions.size >= 2) {
+            val groups = CardRegionFinder.group(lines, regions)
+            if (groups.size >= 2) return groups
+        }
+        return CardSegmenter.segment(lines, imageWidth, imageHeight)
+    }
 
+    /** Her kümeyi ayrı kart olarak çözümler, karekodları ilgili karta ekler. */
+    private fun buildRecords(
+        clusters: List<List<OcrLine>>,
+        barcodes: List<ScannedBarcode>
+    ): List<ContactRecord> {
         return clusters.mapIndexedNotNull { index, cluster ->
             val parsed = CardTextParser.parse(cluster)
             // Karekodu içeren/ en yakın kümeye ata (tek küme varsa hepsi ona gider)

@@ -143,6 +143,30 @@ class CardSegmenterTest {
     }
 
     @Test
+    fun `kartin ici buyuk boslukla bolunen logo blogu geri birlestirilir`() {
+        // Sol kart: logo satırı ile iletişim bloğu arasında büyük iç boşluk
+        val leftLogo = line("ACME LOGO", 0, 0, 80, 10)
+        val leftBody = listOf(
+            line("Ahmet Yılmaz", 0, 60, 80, 70),
+            line("ahmet@acme.com", 0, 74, 80, 84),
+            line("0212 111 22 33", 0, 88, 80, 98)
+        )
+        val right = listOf(
+            line("Mehmet Kaya", 200, 0, 280, 10),
+            line("mehmet@firma.com", 200, 14, 280, 24),
+            line("0216 333 22 11", 200, 28, 280, 38),
+            line("Mühendis", 200, 42, 280, 52)
+        )
+
+        val clusters = CardSegmenter.segment(leftLogo.let { listOf(it) } + leftBody + right)
+
+        // Logo bloğu ayrı kart olmamalı; sol kartla birleşmeli
+        assertEquals(2, clusters.size)
+        val leftCluster = clusters.first { c -> c.any { it.text == "ACME LOGO" } }
+        assertEquals(4, leftCluster.size)
+    }
+
+    @Test
     fun `olukta gurultu kutusu bolunmeyi engellemez`() {
         val left = (0 until 4).map { i -> line("Sol satır $i", 0, i * 14, 80, i * 14 + 10) }
         val right = (0 until 4).map { i -> line("Sag satır $i", 200, i * 14, 280, i * 14 + 10) }

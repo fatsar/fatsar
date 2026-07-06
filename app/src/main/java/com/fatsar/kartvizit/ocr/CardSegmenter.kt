@@ -24,7 +24,7 @@ object CardSegmenter {
     private const val MAX_DEPTH = 24
 
     /** Oluk, satır yüksekliğinin bu katından genişse kartlar arası sayılır. */
-    private const val GAP_FACTOR = 1.6f
+    private const val GAP_FACTOR = 2.0f
 
     /** Projeksiyon öncesi her kutu, satır yüksekliğinin bu kadarı içeri çekilir. */
     private const val ERODE_FACTOR = 0.5f
@@ -55,13 +55,56 @@ object CardSegmenter {
         val erode = (lineHeight * ERODE_FACTOR).toInt()
         val minGap = max((lineHeight * GAP_FACTOR).toInt(), 1)
 
-        val clusters = xyCut(signal, minGap, erode, 0)
+        val clusters = xyCut(signal, minGap, erode, 0).map { it.toMutableList() }.toMutableList()
+        if (clusters.size > 1) {
+            // Sinyal dışı satırları (kısa etiketler, gürültü) en yakın kümeye ekle
+            val residual = usable.filter { line -> clusters.none { it.contains(line) } }
+            residual.forEach { nearestCluster(clusters, it.centerX, it.centerY).add(it) }
+            // Kartın iç boşluğundan kopan zayıf parçaları geri birleştir
+            mergeWeakClusters(clusters)
+        }
         return if (clusters.size > 1) {
             clusters.sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
         } else {
             listOf(usable)
         }
     }
+
+    /**
+     * Gerçek bir kartvizitte hemen her zaman telefon ya da e-posta bulunur.
+     * Bunlardan yoksun küçük kümeler (ör. kartın içindeki büyük beyaz boşluk
+     * yüzünden ayrı düşen logo/isim bloğu) en yakın kümeye geri birleştirilir.
+     */
+    private fun mergeWeakClusters(clusters: MutableList<MutableList<OcrLine>>) {
+        while (clusters.size > 1) {
+            val weakIndex = clusters.indexOfFirst { isWeak(it) }
+            if (weakIndex < 0) return
+            val weak = clusters.removeAt(weakIndex)
+            val cx = weak.sumOf { it.centerX } / weak.size
+            val cy = weak.sumOf { it.centerY } / weak.size
+            nearestCluster(clusters, cx, cy).addAll(weak)
+        }
+    }
+
+    private fun isWeak(cluster: List<OcrLine>): Boolean {
+        if (cluster.size < 2) return true
+        if (cluster.size > 3) return false
+        return cluster.none { line ->
+            line.text.contains('@') || line.text.count { it.isDigit() } >= 7
+        }
+    }
+
+    private fun nearestCluster(
+        clusters: List<MutableList<OcrLine>>,
+        x: Int,
+        y: Int
+    ): MutableList<OcrLine> = clusters.minByOrNull { cluster ->
+        val cx = cluster.sumOf { it.centerX } / cluster.size
+        val cy = cluster.sumOf { it.centerY } / cluster.size
+        val dx = (cx - x).toLong()
+        val dy = (cy - y).toLong()
+        dx * dx + dy * dy
+    }!!
 
     private fun xyCut(lines: List<OcrLine>, minGap: Int, erode: Int, depth: Int): List<List<OcrLine>> {
         if (lines.size <= 1 || depth >= MAX_DEPTH) return listOf(lines)
