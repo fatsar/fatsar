@@ -9,6 +9,8 @@ jobs:
   build:
     name: Test ve APK Derleme
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Kaynak kodu al
         uses: actions/checkout@v4
@@ -36,6 +38,20 @@ jobs:
         with:
           name: kartvizit-tarayici-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      # APK'yı doğrudan indirilebilir bir GitHub Release olarak yayınlar.
+      # "guncel" etiketli tek bir yayın her derlemede güncellenir; böylece
+      # telefondan tek tıkla inip kurulabilen kalıcı bir bağlantı oluşur.
+      - name: Güncel APK'yı Release olarak yayınla
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk kartvizit-tarayici.apk
+          gh release delete guncel --yes --cleanup-tag 2>/dev/null || true
+          gh release create guncel kartvizit-tarayici.apk \
+            --title "Kartvizit Tarayıcı — güncel APK" \
+            --notes "Otomatik derlenen en güncel sürüm (${GITHUB_SHA:0:7}). Telefona indirip kurun." \
+            --target "$GITHUB_SHA"
 
       - name: Test raporunu yükle (hata durumunda)
         if: failure()

@@ -15,9 +15,25 @@ android {
         versionName = "1.0"
     }
 
+    // Sabit imza anahtarı: her derleme aynı anahtarla imzalanır; böylece yeni
+    // sürümler eskisinin üzerine (kaldırmadan) kurulabilir. Kendi kendine
+    // dağıtılan bir uygulama olduğundan anahtar depoya dahildir.
+    signingConfigs {
+        create("shared") {
+            storeFile = file("kartvizit.jks")
+            storePassword = "kartvizit"
+            keyAlias = "kartvizit"
+            keyPassword = "kartvizit"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("shared")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
