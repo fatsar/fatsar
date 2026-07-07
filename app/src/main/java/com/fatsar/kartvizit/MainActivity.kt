@@ -23,7 +23,6 @@ import com.fatsar.kartvizit.model.ContactRecord
 import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.model.TypedPhone
 import com.fatsar.kartvizit.ocr.CardRegionDetector
-import com.fatsar.kartvizit.ocr.CardRegionFinder
 import com.fatsar.kartvizit.ocr.CardSegmenter
 import com.fatsar.kartvizit.ocr.CardTextParser
 import com.fatsar.kartvizit.ocr.OcrLine
@@ -197,9 +196,14 @@ class MainActivity : AppCompatActivity() {
                 val lines = text.textBlocks.flatMap { block ->
                     block.lines.map { line ->
                         val box = line.boundingBox
+                        // Yazı boyutu = kutunun KISA kenarı: satır ister yatay
+                        // ister dik (90° döndürülmüş kart) olsun doğru kalır
+                        val textSize = if (box != null) {
+                            minOf(box.width(), box.height()).toFloat()
+                        } else 0f
                         OcrLine(
                             text = line.text,
-                            height = box?.height()?.toFloat() ?: 0f,
+                            height = textSize,
                             left = box?.left ?: 0,
                             top = box?.top ?: 0,
                             right = box?.right ?: 0,
@@ -248,13 +252,11 @@ class MainActivity : AppCompatActivity() {
         imageHeight: Int
     ): List<List<OcrLine>> {
         if (lines.isEmpty()) return listOf(emptyList())
-        val regions = runCatching {
-            CardRegionDetector.detect(this, uri, imageWidth, imageHeight)
-        }.getOrDefault(emptyList())
-        if (regions.isNotEmpty()) {
-            val groups = CardRegionFinder.refine(regions, lines)
-            if (groups.size >= 2) return groups
-        }
+        val groups = runCatching {
+            CardRegionDetector.detectAndGroup(this, uri, imageWidth, imageHeight, lines)
+        }.getOrNull()
+        if (groups != null && groups.size >= 2) return groups
+        if (groups != null && groups.size == 1) return groups
         return CardSegmenter.segment(lines, imageWidth, imageHeight)
     }
 

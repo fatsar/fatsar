@@ -161,51 +161,62 @@ object CardRegionFinder {
     }
 
     /**
-     * Kart adaylarını OCR satırlarıyla uzlaştırıp satır gruplarını döndürür:
-     * 1. Arada çok ince boşluk kalan bölgeler birleştirilir (kartı ikiye
-     *    bölen gölge çizgisi durumu).
-     * 2. Hiç satır içermeyen bölgeler elenir (parlama/yansıma).
-     * 3. Her satır, merkezini içeren bölgeye; yoksa en yakın bölgeye atanır.
-     * 4. Tek bölge çıkan bitişik kart çiftleri, metin düzeni iki **güçlü**
-     *    karta ayrılabiliyorsa (her parçada telefon ya da e-posta) bölünür.
+     * Kart adaylarını OCR satırlarıyla uzlaştırıp satır gruplarını döndürür.
+     * Bağlı bileşenler her kartı zaten tek parça verdiğinden burada
+     * **birleştirme/alt-bölme yapılmaz** (aksi hâlde kaydırmalı yerleşimde
+     * komşu kartlar yanlışlıkla birleşir ya da tek kart ikiye bölünürdü):
+     *
+     * 1. Her satır, merkezini içeren bölgeye; yoksa en yakın bölgeye atanır.
+     * 2. Hiç satır düşmeyen bölgeler elenir (metinsiz parlama/yansıma/nesne).
+     * 3. Tümüyle başka bir bölgenin içinde kalan küçük parça bölgeler, o
+     *    bölgeyle birleştirilir (tek kartın koptuğu kesin durum).
      */
     fun refine(candidates: List<Region>, lines: List<OcrLine>): List<List<OcrLine>> {
         if (lines.isEmpty()) return emptyList()
         if (candidates.isEmpty()) return listOf(lines)
 
-        // 1) İnce aralıklı bölgeleri birleştir
-        val regions = candidates.toMutableList()
-        val shortSides = regions.map { min(it.width, it.height) }.sorted()
-        val thinGap = max(3, shortSides[shortSides.size / 2] / 6)
-        var merged = true
-        while (merged && regions.size > 1) {
-            merged = false
-            outer@ for (i in regions.indices) {
-                for (j in i + 1 until regions.size) {
-                    if (rectGap(regions[i], regions[j]) <= thinGap) {
-                        val a = regions[i]
-                        val b = regions.removeAt(j)
-                        regions[i] = Region(
-                            min(a.left, b.left), min(a.top, b.top),
-                            max(a.right, b.right), max(a.bottom, b.bottom)
-                        )
-                        merged = true
-                        break@outer
-                    }
+        // 3) İçte kalan parça bölgeleri kapsayana katmak için indeks eşlemesi
+        val target = IntArray(candidates.size) { it }
+        for (i in candidates.indices) {
+            for (j in candidates.indices) {
+                if (i != j && contains(candidates[j], candidates[i])) {
+                    target[i] = j
+                    break
                 }
             }
         }
 
-        // 2) + 3) Satırları dağıt, boş bölgeleri ele
-        val groups = group(lines, regions)
-
-        // 4) Güçlü alt bölme: bitişik kart çiftleri tek bölge çıktıysa
-        val result = groups.flatMap { groupLines ->
-            val sub = CardSegmenter.segment(groupLines)
-            if (sub.size >= 2 && sub.all { isStrongCard(it) }) sub else listOf(groupLines)
+        // 1) Satırları (kapsayıcı) bölgelere dağıt
+        val buckets = List(candidates.size) { mutableListOf<OcrLine>() }
+        for (line in lines) {
+            val cx = line.centerX
+            val cy = line.centerY
+            var index = candidates.indexOfFirst { it.contains(cx, cy) }
+            if (index < 0) {
+                index = candidates.indices.minByOrNull { i ->
+                    val dx = (candidates[i].centerX - cx).toLong()
+                    val dy = (candidates[i].centerY - cy).toLong()
+                    dx * dx + dy * dy
+                } ?: 0
+            }
+            buckets[target[index]].add(line)
         }
 
-        return result.sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
+        // 2) Metinsiz bölgeleri ele, okuma sırasına göre döndür
+        return candidates.indices
+            .filter { target[it] == it && buckets[it].isNotEmpty() }
+            .map { buckets[it] }
+            .sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
+    }
+
+    /** [outer], [inner]'ı büyük ölçüde kapsıyor mu (en az %85 alan içinde)? */
+    private fun contains(outer: Region, inner: Region): Boolean {
+        val ix = max(0, min(outer.right, inner.right) - max(outer.left, inner.left))
+        val iy = max(0, min(outer.bottom, inner.bottom) - max(outer.top, inner.top))
+        val interArea = ix.toLong() * iy
+        val innerArea = inner.width.toLong() * inner.height
+        return innerArea > 0 && interArea.toFloat() / innerArea >= 0.85f &&
+            outer.width.toLong() * outer.height > innerArea
     }
 
     /**
@@ -230,19 +241,6 @@ object CardRegionFinder {
         }
         return buckets.filter { it.isNotEmpty() }
             .sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
-    }
-
-    /** Gerçek bir kart parçası: en az 3 satır ve telefon ya da e-posta. */
-    private fun isStrongCard(cluster: List<OcrLine>): Boolean =
-        cluster.size >= 3 && cluster.any { line ->
-            line.text.contains('@') || line.text.count { it.isDigit() } >= 7
-        }
-
-    /** İki dikdörtgen arasındaki eksensel boşluk (kesişiyorsa 0). */
-    private fun rectGap(a: Region, b: Region): Int {
-        val dx = max(0, max(a.left, b.left) - min(a.right, b.right))
-        val dy = max(0, max(a.top, b.top) - min(a.bottom, b.bottom))
-        return max(dx, dy)
     }
 
     /** Maskeyi 4-komşulukla [rounds] tur aşındırır (görüntü kenarı boş sayılır). */

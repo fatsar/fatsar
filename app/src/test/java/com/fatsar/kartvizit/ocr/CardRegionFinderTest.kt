@@ -100,32 +100,31 @@ class CardRegionFinderTest {
         OcrLine(text, height = (y1 - y0).toFloat(), left = x0, top = y0, right = x1, bottom = y1)
 
     @Test
-    fun `golgeyle ikiye bolunen kart tek karta birlesir`() {
-        // Aynı kartın iki yarısı (arada 3 px'lik gölge çizgisi) + uzak ikinci kart
+    fun `yakin komsu kartlar birlesmez`() {
+        // Kullanıcının fotoğraflarındaki gibi kartlar yalnızca birkaç px arayla
+        // duruyor; ayrı bölgeler ayrı kart kalmalı (birleştirme yok).
         val candidates = listOf(
-            CardRegionFinder.Region(10, 10, 60, 80),
-            CardRegionFinder.Region(64, 10, 114, 80),
-            CardRegionFinder.Region(200, 10, 300, 80)
+            CardRegionFinder.Region(0, 0, 145, 260),
+            CardRegionFinder.Region(154, 0, 320, 260)
         )
         val lines = listOf(
-            textLine("Ahmet Yılmaz", 15, 15, 55, 25),
-            textLine("ahmet@firma.com", 66, 30, 112, 40),
-            textLine("Mehmet Kaya", 205, 15, 295, 25),
-            textLine("0216 333 22 11", 205, 40, 295, 50)
+            textLine("Susan Xia", 10, 20, 135, 45),
+            textLine("siwin@siwin.com", 10, 60, 135, 80),
+            textLine("Flora Lu", 160, 20, 310, 45),
+            textLine("lucl@guibao.cn", 160, 60, 310, 80)
         )
 
         val groups = CardRegionFinder.refine(candidates, lines)
 
         assertEquals(2, groups.size)
-        assertTrue(groups[0].any { it.text == "Ahmet Yılmaz" })
-        assertTrue(groups[0].any { it.text == "ahmet@firma.com" })
     }
 
     @Test
     fun `metinsiz parlama bolgesi elenir`() {
+        // 4-kart fotoğrafındaki köşedeki metinsiz nesne/parlama bölgesi
         val candidates = listOf(
             CardRegionFinder.Region(10, 10, 110, 80),
-            CardRegionFinder.Region(300, 200, 360, 240) // parlama: satır yok
+            CardRegionFinder.Region(300, 200, 360, 240) // satır yok
         )
         val lines = listOf(
             textLine("Ahmet Yılmaz", 15, 15, 105, 25),
@@ -139,41 +138,40 @@ class CardRegionFinderTest {
     }
 
     @Test
-    fun `tek bolge cikan bitisik kart cifti metinden ikiye ayrilir`() {
-        // İki kart bitişik durduğu için tek aday bölge çıktı; her iki tarafta
-        // da güçlü kart içeriği (telefon/e-posta) olduğundan ikiye bölünmeli
+    fun `tek bolgedeki iki renkli yari tek kart kalir`() {
+        // 2-kart fotoğrafındaki hata: kartın beyaz ve renkli yarıları ayrı
+        // kayıt oluyordu. Tek bölge = tek kart; içerik ne olursa olsun.
         val candidates = listOf(CardRegionFinder.Region(0, 0, 300, 60))
-        val left = listOf(
-            textLine("Ahmet Yılmaz", 5, 5, 95, 15),
-            textLine("ahmet@a.com", 5, 22, 95, 32),
-            textLine("0212 111 22 33", 5, 40, 95, 50)
-        )
-        val right = listOf(
-            textLine("Mehmet Kaya", 205, 5, 295, 15),
-            textLine("mehmet@b.com", 205, 22, 295, 32),
-            textLine("0216 333 22 11", 205, 40, 295, 50)
-        )
-
-        val groups = CardRegionFinder.refine(candidates, left + right)
-
-        assertEquals(2, groups.size)
-    }
-
-    @Test
-    fun `zayif parca alt bolmede ayri kart yapilmaz`() {
-        // Kartın logo bloğu (iletişimsiz) alt bölmede ayrı kart olmamalı
-        val candidates = listOf(CardRegionFinder.Region(0, 0, 120, 120))
         val lines = listOf(
-            textLine("ACME LOGO", 10, 5, 110, 15),
-            textLine("Ahmet Yılmaz", 10, 70, 110, 80),
-            textLine("ahmet@acme.com", 10, 88, 110, 98),
-            textLine("0212 111 22 33", 10, 105, 110, 115)
+            textLine("Flora Lu", 5, 5, 95, 15),
+            textLine("+86 15950459600", 5, 40, 95, 50),
+            textLine("lucl@guibao.cn", 205, 22, 295, 32),
+            textLine("www.gbxfsilicones.com", 205, 40, 295, 50)
         )
 
         val groups = CardRegionFinder.refine(candidates, lines)
 
         assertEquals(1, groups.size)
         assertEquals(4, groups[0].size)
+    }
+
+    @Test
+    fun `icte kalan parca bolge kapsayana katilir`() {
+        // Kartın içinde kopan küçük bir alt bölge, kapsayan kartla birleşmeli
+        val candidates = listOf(
+            CardRegionFinder.Region(0, 0, 200, 120),
+            CardRegionFinder.Region(20, 80, 120, 110) // tamamen içeride
+        )
+        val lines = listOf(
+            textLine("Ahmet Yılmaz", 10, 5, 110, 15),
+            textLine("ahmet@acme.com", 10, 30, 110, 40),
+            textLine("0212 111 22 33", 25, 85, 115, 105) // iç bölgeye düşüyor
+        )
+
+        val groups = CardRegionFinder.refine(candidates, lines)
+
+        assertEquals(1, groups.size)
+        assertEquals(3, groups[0].size)
     }
 
     @Test

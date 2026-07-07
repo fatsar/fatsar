@@ -9,9 +9,10 @@ import android.net.Uri
 
 /**
  * Fotoğrafı küçültülmüş çözünürlükte çözerek [CardRegionFinder] ile kart
- * bölgelerini bulur ve bunları OCR koordinat uzayına ölçekler. Kart-zemin
- * kontrastı yetersizse (bölge bulunamazsa) boş liste döner; çağıran taraf
- * metin-kutusu tabanlı ayırmaya (CardSegmenter) geri düşer.
+ * bölgelerini bulur ve OCR satırlarını kartlara gruplar. Parça birleştirme
+ * kararları, iki parça arasındaki şeridin kart yüzeyi mi zemin mi olduğuna
+ * piksellerden bakan köprü testiyle verilir. Kart-zemin kontrastı yetersizse
+ * null döner; çağıran taraf metin-kutusu tabanlı ayırmaya geri düşer.
  */
 object CardRegionDetector {
 
@@ -19,22 +20,32 @@ object CardRegionDetector {
 
     /**
      * @param ocrWidth/ocrHeight OCR'ın kullandığı (EXIF yönü uygulanmış) boyutlar
-     * @return OCR koordinatlarına ölçeklenmiş kart bölgeleri
+     * @return kart başına OCR satır grupları; bölge bulunamazsa null
      */
-    fun detect(context: Context, uri: Uri, ocrWidth: Int, ocrHeight: Int): List<CardRegionFinder.Region> {
-        if (ocrWidth <= 0 || ocrHeight <= 0) return emptyList()
-        val bitmap = decodeUpright(context, uri) ?: return emptyList()
+    fun detectAndGroup(
+        context: Context,
+        uri: Uri,
+        ocrWidth: Int,
+        ocrHeight: Int,
+        lines: List<OcrLine>
+    ): List<List<OcrLine>>? {
+        if (ocrWidth <= 0 || ocrHeight <= 0 || lines.isEmpty()) return null
+        val bitmap = decodeUpright(context, uri) ?: return null
         try {
             val w = bitmap.width
             val h = bitmap.height
-            if (w <= 2 || h <= 2) return emptyList()
+            if (w <= 8 || h <= 8) return null
 
             val pixels = IntArray(w * h)
             bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
 
+            val downRegions = CardRegionFinder.findCards(pixels, w, h)
+            if (downRegions.isEmpty()) return null
+
+            // Bölgeleri OCR koordinatlarına ölçekle
             val scaleX = ocrWidth.toFloat() / w
             val scaleY = ocrHeight.toFloat() / h
-            return CardRegionFinder.findCards(pixels, w, h).map { r ->
+            val ocrRegions = downRegions.map { r ->
                 CardRegionFinder.Region(
                     (r.left * scaleX).toInt(),
                     (r.top * scaleY).toInt(),
@@ -42,6 +53,8 @@ object CardRegionDetector {
                     (r.bottom * scaleY).toInt()
                 )
             }
+
+            return CardRegionFinder.refine(ocrRegions, lines)
         } finally {
             bitmap.recycle()
         }

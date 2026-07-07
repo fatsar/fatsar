@@ -200,7 +200,11 @@ object CardSegmenter {
     }
 
     private fun medianLineHeight(lines: List<OcrLine>): Float {
-        val heights = lines.map { it.bottom - it.top }.filter { it > 0 }.sorted()
+        // Kutunun kısa kenarı = yazı boyutu; dik (90° dönmüş) satırlarda da doğru
+        val heights = lines
+            .map { minOf(it.bottom - it.top, it.right - it.left) }
+            .filter { it > 0 }
+            .sorted()
         if (heights.isEmpty()) return 1f
         return heights[heights.size / 2].toFloat()
     }
