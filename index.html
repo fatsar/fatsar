@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nearby Public Restrooms</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <p class="app__eyebrow">Closest public restrooms</p>
+        <h1>Find a restroom near you</h1>
+        <p class="app__subtitle">
+          Use your current location to locate public restrooms (WC) within walking distance.
+        </p>
+      </header>
+
+      <section class="app__controls" aria-label="Search controls">
+        <div class="control">
+          <label for="radius">Search radius</label>
+          <div class="control__row">
+            <input id="radius" type="range" min="250" max="2500" step="250" value="1000" />
+            <span id="radius-value">1000 m</span>
+          </div>
+        </div>
+        <button id="locate" class="button">Use my location</button>
+      </section>
+
+      <section class="app__status" aria-live="polite">
+        <p id="status">Tap “Use my location” to get started.</p>
+      </section>
+
+      <section class="app__results" aria-label="Restroom results">
+        <ul id="results" class="results" role="list"></ul>
+      </section>
+
+      <footer class="app__footer">
+        <p>
+          Data from OpenStreetMap contributors. Results depend on community-supplied data.
+        </p>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
