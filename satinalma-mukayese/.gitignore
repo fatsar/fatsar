@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+kayitlar/
+gelen_teklifler/
+gonderilen_formlar/
+mukayese_*.xlsx
+ornek_talep.xlsx
+ornek_tedarikciler.xlsx
