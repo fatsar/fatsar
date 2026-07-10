@@ -199,6 +199,41 @@ class CardRegionFinderTest {
     }
 
     @Test
+    fun `parcalanan kart kopru ile butunlenir komsu kart ayri kalir`() {
+        // Parlamada kartın gövdesi maskede parçalanır; parçalar arası şerit
+        // KÂĞITTIR ve kart bütünlenmeli. Komşu karta giden şerit ise zemin.
+        val w = 300
+        val h = 120
+        val grid = woodGrid(w, h)
+        drawCard(grid, w, 10, 10, 140, 100)  // kart 1 (parçalanmış varsayalım)
+        drawCard(grid, w, 200, 10, 90, 100)  // kart 2
+
+        val fragmentA = CardRegionFinder.Region(15, 15, 70, 105)
+        val fragmentB = CardRegionFinder.Region(90, 15, 145, 105)
+        val card2 = CardRegionFinder.Region(205, 15, 285, 105)
+
+        // Köprü kararları doğrudan pikselden
+        assertTrue(CardRegionFinder.paperBridge(grid, w, h, fragmentA, fragmentB))
+        assertTrue(!CardRegionFinder.paperBridge(grid, w, h, fragmentB, card2))
+
+        val lines = listOf(
+            textLine("Fatih Saraç", 20, 20, 65, 32),
+            textLine("fatih.sarac@sibakimya.com.tr", 95, 40, 140, 52),
+            textLine("Flora Lu", 210, 20, 280, 32),
+            textLine("+86 15950459600", 210, 50, 280, 62)
+        )
+        val bridge: (CardRegionFinder.Region, CardRegionFinder.Region) -> Boolean = { a, b ->
+            CardRegionFinder.paperBridge(grid, w, h, a, b)
+        }
+
+        val groups = CardRegionFinder.refine(listOf(fragmentA, fragmentB, card2), lines, bridge)
+
+        assertEquals(2, groups.size)
+        val first = groups.first { g -> g.any { it.text == "Fatih Saraç" } }
+        assertTrue(first.any { it.text.contains("sibakimya") })
+    }
+
+    @Test
     fun `icte kalan parca bolge kapsayana katilir`() {
         // Kartın içinde kopan küçük bir alt bölge, kapsayan kartla birleşmeli
         val candidates = listOf(

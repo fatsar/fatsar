@@ -162,29 +162,64 @@ object CardRegionFinder {
 
     /**
      * Kart adaylarını OCR satırlarıyla uzlaştırıp satır gruplarını döndürür.
-     * Bağlı bileşenler her kartı zaten tek parça verdiğinden burada
-     * **birleştirme/alt-bölme yapılmaz** (aksi hâlde kaydırmalı yerleşimde
-     * komşu kartlar yanlışlıkla birleşir ya da tek kart ikiye bölünürdü):
      *
-     * 1. Her satır, merkezini içeren bölgeye; yoksa en yakın bölgeye atanır.
-     * 2. Hiç satır düşmeyen bölgeler elenir (metinsiz parlama/yansıma/nesne).
-     * 3. Tümüyle başka bir bölgenin içinde kalan küçük parça bölgeler, o
-     *    bölgeyle birleştirilir (tek kartın koptuğu kesin durum).
+     * 1. Tümüyle başka bir bölgenin içinde kalan parça, kapsayana katılır.
+     * 2. Yakın bölge çiftleri yalnızca [bridge] "aradaki şerit kart yüzeyi"
+     *    derse birleştirilir: parlamada kart gövdesi parçalara ayrılsa bile
+     *    parçalar arası şerit kâğıttır ve kart bütünlenir; komşu ayrı
+     *    kartların arasında ise zemin görünür ve birleşmezler.
+     * 3. Her satır, merkezini içeren bölgeye; yoksa dikdörtgenine en yakın
+     *    bölgeye atanır; hiç satır düşmeyen bölgeler elenir.
+     * 4. İletişimsiz tek satırlık kırıntılar en yakın gruba katılır.
      */
-    fun refine(candidates: List<Region>, lines: List<OcrLine>): List<List<OcrLine>> {
+    fun refine(
+        candidates: List<Region>,
+        lines: List<OcrLine>,
+        bridge: (Region, Region) -> Boolean = { _, _ -> false }
+    ): List<List<OcrLine>> {
         if (lines.isEmpty()) return emptyList()
         if (candidates.isEmpty()) return listOf(lines)
 
-        // 3) İçte kalan parça bölgeleri kapsayana katmak için indeks eşlemesi
-        val target = IntArray(candidates.size) { it }
-        for (i in candidates.indices) {
-            for (j in candidates.indices) {
-                if (i != j && contains(candidates[j], candidates[i])) {
+        // 2) Köprü onaylı birleştirme: en yakın çiftten başla
+        val merged = candidates.toMutableList()
+        while (merged.size > 1) {
+            var bestI = -1
+            var bestJ = -1
+            var bestGap = Int.MAX_VALUE
+            for (i in merged.indices) {
+                for (j in i + 1 until merged.size) {
+                    val gap = rectGap(merged[i], merged[j])
+                    if (gap >= bestGap) continue
+                    val maxGap = (0.9f * min(
+                        min(merged[i].width, merged[i].height),
+                        min(merged[j].width, merged[j].height)
+                    )).toInt()
+                    if (gap <= maxGap && bridge(merged[i], merged[j])) {
+                        bestI = i; bestJ = j; bestGap = gap
+                    }
+                }
+            }
+            if (bestI < 0) break
+            val b = merged.removeAt(bestJ)
+            val a = merged[bestI]
+            merged[bestI] = Region(
+                min(a.left, b.left), min(a.top, b.top),
+                max(a.right, b.right), max(a.bottom, b.bottom)
+            )
+        }
+
+        // 1) İçte kalan parça bölgeleri kapsayana katmak için indeks eşlemesi
+        val target = IntArray(merged.size) { it }
+        for (i in merged.indices) {
+            for (j in merged.indices) {
+                if (i != j && contains(merged[j], merged[i])) {
                     target[i] = j
                     break
                 }
             }
         }
+        @Suppress("NAME_SHADOWING")
+        val candidates = merged
 
         // 1) Satırları (kapsayıcı) bölgelere dağıt. Bölge dışına taşan satır,
         //    merkezine değil DİKDÖRTGENİNE en yakın bölgeye gider: kart
@@ -246,6 +281,139 @@ object CardRegionFinder {
             else -> 0L
         }
         return dx * dx + dy * dy
+    }
+
+    /**
+     * İki bölge arasındaki şeridin kart yüzeyi olup olmadığını piksellerden
+     * anlar. Bölgeler, findCards'ın eklediği dolgu payından arındırılıp
+     * (içeri çekilerek) kenar bantları KARTIN GERÇEK YÜZEYİNDEN örneklenir;
+     * şerit bu yüzey renklerinden birine benziyorsa kâğıt devam ediyor
+     * demektir (aynı kart), benzemiyorsa arada zemin vardır (ayrı kartlar).
+     */
+    fun paperBridge(argb: IntArray, width: Int, height: Int, a: Region, b: Region): Boolean {
+        // findCards'ın eklediği dolgu payını geri al: gerçek kart kenarları
+        val pad = max(2, min(width, height) / 160) + 1
+        val ua = shrinkRegion(a, pad) ?: return false
+        val ub = shrinkRegion(b, pad) ?: return false
+
+        val dx = max(0, max(ua.left, ub.left) - min(ua.right, ub.right))
+        val dy = max(0, max(ua.top, ub.top) - min(ua.bottom, ub.bottom))
+        // Bitişik/örtüşen: aralarında incelenecek şerit yok; iki ayrı kartın
+        // köşe teması da böyle görünür -> muhafazakâr davran, birleştirme
+        if (dx == 0 && dy == 0) return false
+
+        val horizontal = dx >= dy
+        val first: Region
+        val second: Region
+        if (horizontal) {
+            if (ua.left <= ub.left) { first = ua; second = ub } else { first = ub; second = ua }
+        } else {
+            if (ua.top <= ub.top) { first = ua; second = ub } else { first = ub; second = ua }
+        }
+
+        // Diğer eksende örtüşmenin orta yarısı üzerinde çalış
+        val overlapLo = if (horizontal) max(first.top, second.top) else max(first.left, second.left)
+        val overlapHi = if (horizontal) min(first.bottom, second.bottom) else min(first.right, second.right)
+        if (overlapHi - overlapLo < 4) return false
+        val quarter = (overlapHi - overlapLo) / 4
+        val sLo = overlapLo + quarter
+        val sHi = overlapHi - quarter
+
+        // Şerit: gerçek kenarlar arasındaki salt boşluk (kart kenarı karışmaz)
+        val gapLo = if (horizontal) first.right + 1 else first.bottom + 1
+        val gapHi = if (horizontal) second.left - 1 else second.top - 1
+        if (gapHi < gapLo) return false
+
+        // Kenar bantları: gerçek kenarın belirgin biçimde İÇİNDEN (kart
+        // yüzeyi). Derinlik bölge boyutuyla orantılı: kart fotoğrafta hafif
+        // dönükse bbox kenarı yer yer zemine düşer; derin bant bunu aşar.
+        val inA = max(
+            4,
+            min(
+                min(first.width, first.height),
+                min(second.width, second.height)
+            ) / 7
+        )
+        val band = 6
+        val edgeA: IntArray?
+        val edgeB: IntArray?
+        val strip: List<IntArray>
+        if (horizontal) {
+            edgeA = colorStats(argb, width, height, first.right - inA - band, first.right - inA, sLo, sHi)
+            edgeB = colorStats(argb, width, height, second.left + inA, second.left + inA + band, sLo, sHi)
+            strip = colorSamples(argb, width, height, gapLo, gapHi, sLo, sHi)
+        } else {
+            edgeA = colorStats(argb, width, height, sLo, sHi, first.bottom - inA - band, first.bottom - inA)
+            edgeB = colorStats(argb, width, height, sLo, sHi, second.top + inA, second.top + inA + band)
+            strip = colorSamples(argb, width, height, sLo, sHi, gapLo, gapHi)
+        }
+        if (edgeA == null || edgeB == null || strip.size < 4) return false
+
+        fun matches(p: IntArray, e: IntArray): Boolean =
+            abs(p[0] - e[0]) <= 10 && abs(p[1] - e[1]) <= 10 && abs(p[2] - e[2]) <= 55
+
+        val matching = strip.count { matches(it, edgeA) || matches(it, edgeB) }
+        return matching.toFloat() / strip.size >= 0.7f
+    }
+
+    private fun shrinkRegion(r: Region, amount: Int): Region? {
+        val s = Region(r.left + amount, r.top + amount, r.right - amount, r.bottom - amount)
+        return if (s.right - s.left >= 12 && s.bottom - s.top >= 12) s else null
+    }
+
+    /** Dikdörtgen içinden örneklenen (cr, cg, lum) medyanları; azsa null. */
+    private fun colorStats(
+        argb: IntArray, width: Int, height: Int,
+        xLo: Int, xHi: Int, yLo: Int, yHi: Int
+    ): IntArray? {
+        val samples = colorSamples(argb, width, height, xLo, xHi, yLo, yHi)
+        if (samples.size < 4) return null
+        return intArrayOf(
+            median(samples.map { it[0] }),
+            median(samples.map { it[1] }),
+            median(samples.map { it[2] })
+        )
+    }
+
+    /** Dikdörtgenden en çok ~16x16 örnek: her biri (cr, cg, lum). */
+    private fun colorSamples(
+        argb: IntArray, width: Int, height: Int,
+        xLo: Int, xHi: Int, yLo: Int, yHi: Int
+    ): List<IntArray> {
+        if (xHi < xLo || yHi < yLo) return emptyList()
+        val result = ArrayList<IntArray>()
+        val stepX = max(1, (xHi - xLo + 1) / 16)
+        val stepY = max(1, (yHi - yLo + 1) / 16)
+        var yy = yLo
+        while (yy <= yHi) {
+            var xx = xLo
+            while (xx <= xHi) {
+                if (xx in 0 until width && yy in 0 until height) {
+                    val p = argb[yy * width + xx]
+                    val r = p ushr 16 and 0xFF
+                    val g = p ushr 8 and 0xFF
+                    val bch = p and 0xFF
+                    val sum = r + g + bch + 1
+                    result.add(
+                        intArrayOf(
+                            255 * r / sum,
+                            255 * g / sum,
+                            (r * 299 + g * 587 + bch * 114) / 1000
+                        )
+                    )
+                }
+                xx += stepX
+            }
+            yy += stepY
+        }
+        return result
+    }
+
+    /** İki dikdörtgen arasındaki eksensel boşluk (kesişiyorsa 0). */
+    private fun rectGap(a: Region, b: Region): Int {
+        val dx = max(0, max(a.left, b.left) - min(a.right, b.right))
+        val dy = max(0, max(a.top, b.top) - min(a.bottom, b.bottom))
+        return max(dx, dy)
     }
 
     /** [outer], [inner]'ı büyük ölçüde kapsıyor mu (en az %85 alan içinde)? */

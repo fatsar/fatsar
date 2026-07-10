@@ -54,11 +54,30 @@ object CardRegionDetector {
                 )
             }
 
-            return CardRegionFinder.refine(ocrRegions, lines)
+            // Köprü testi küçültülmüş piksel uzayında çalışır
+            val bridge: (CardRegionFinder.Region, CardRegionFinder.Region) -> Boolean = { a, b ->
+                CardRegionFinder.paperBridge(
+                    pixels, w, h,
+                    scaleRegion(a, 1f / scaleX, 1f / scaleY),
+                    scaleRegion(b, 1f / scaleX, 1f / scaleY)
+                )
+            }
+            return CardRegionFinder.refine(ocrRegions, lines, bridge)
         } finally {
             bitmap.recycle()
         }
     }
+
+    private fun scaleRegion(
+        r: CardRegionFinder.Region,
+        sx: Float,
+        sy: Float
+    ): CardRegionFinder.Region = CardRegionFinder.Region(
+        (r.left * sx).toInt(),
+        (r.top * sy).toInt(),
+        (r.right * sx).toInt(),
+        (r.bottom * sy).toInt()
+    )
 
     /** Görseli küçültülmüş ve EXIF yönü uygulanmış (dik) olarak çözer. */
     private fun decodeUpright(context: Context, uri: Uri): Bitmap? {
