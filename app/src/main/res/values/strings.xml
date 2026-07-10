@@ -17,6 +17,8 @@
     <string name="menu_save_excel">Excel\'i İndirilenler\'e kaydet</string>
     <string name="menu_filter_category">Kategori filtresi</string>
     <string name="menu_set_email">Alıcı e-posta adresi</string>
+    <string name="menu_version">Sürüm bilgisi</string>
+    <string name="version_info">Sürüm %1$s • derleme %2$s</string>
     <string name="filter_all">Tümü</string>
     <string name="filter_uncategorized">Kategorisiz</string>
     <string name="set_email_message">Excel dosyası gönderilirken alıcı olarak kullanılacak e-posta adresi (ör. kendi Gmail adresiniz):</string>

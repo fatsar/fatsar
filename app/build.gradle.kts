@@ -11,8 +11,13 @@ android {
         applicationId = "com.fatsar.kartvizit"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
+
+        // CI, -PbuildSha=<kısa-sha> geçirir; menüdeki "Sürüm" satırında
+        // hangi derlemenin kurulu olduğu görülür (eski APK karışıklığına son)
+        val buildSha = (project.findProperty("buildSha") as? String) ?: "yerel"
+        buildConfigField("String", "BUILD_SHA", "\"$buildSha\"")
     }
 
     // Sabit imza anahtarı: her derleme aynı anahtarla imzalanır; böylece yeni
@@ -52,6 +57,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 

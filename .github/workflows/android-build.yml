@@ -28,7 +28,7 @@ jobs:
         run: ./gradlew --no-daemon :app:testDebugUnitTest
 
       - name: Debug APK derle
-        run: ./gradlew --no-daemon :app:assembleDebug
+        run: ./gradlew --no-daemon :app:assembleDebug -PbuildSha="${GITHUB_SHA:0:7}"
 
       - name: APK bilgisi
         run: ls -lh app/build/outputs/apk/debug/

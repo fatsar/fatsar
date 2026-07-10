@@ -156,6 +156,9 @@ class MainActivity : AppCompatActivity() {
         R.id.action_set_email -> {
             showEmailDialog(); true
         }
+        R.id.action_version -> {
+            toast(getString(R.string.version_info, BuildConfig.VERSION_NAME, BuildConfig.BUILD_SHA)); true
+        }
         else -> super.onOptionsItemSelected(item)
     }
 

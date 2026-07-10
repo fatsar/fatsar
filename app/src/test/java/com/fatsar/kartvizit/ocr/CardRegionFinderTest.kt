@@ -156,6 +156,49 @@ class CardRegionFinderTest {
     }
 
     @Test
+    fun `kart kenarindaki satir uzak bolgeye calinmaz`() {
+        // Satır, kendi kartının hemen dışında ama kart dikdörtgenine 2 px;
+        // merkez uzaklığına göre yakın olan öteki bölgeye gitmemeli
+        val candidates = listOf(
+            CardRegionFinder.Region(0, 0, 100, 200),   // uzun kart
+            CardRegionFinder.Region(160, 90, 220, 130) // küçük bölge (merkezi yakın)
+        )
+        val lines = listOf(
+            textLine("Ahmet Yılmaz", 10, 10, 90, 25),
+            textLine("0212 111 22 33", 10, 40, 90, 55),
+            textLine("kenar satırı", 10, 202, 90, 214), // kartın 2 px altında
+            textLine("Mehmet Kaya", 165, 95, 215, 108),
+            textLine("0216 333 22 11", 165, 112, 215, 125)
+        )
+
+        val groups = CardRegionFinder.refine(candidates, lines)
+
+        assertEquals(2, groups.size)
+        val first = groups.first { g -> g.any { it.text == "Ahmet Yılmaz" } }
+        assertTrue(first.any { it.text == "kenar satırı" })
+    }
+
+    @Test
+    fun `iletisimsiz tek satirlik kirinti grup en yakina katilir`() {
+        val candidates = listOf(
+            CardRegionFinder.Region(0, 0, 120, 80),
+            CardRegionFinder.Region(200, 0, 320, 80),
+            CardRegionFinder.Region(130, 200, 190, 240) // yansıma bölgesi
+        )
+        val lines = listOf(
+            textLine("Ahmet Yılmaz", 10, 10, 110, 25),
+            textLine("0212 111 22 33", 10, 40, 110, 55),
+            textLine("Mehmet Kaya", 210, 10, 310, 25),
+            textLine("0216 333 22 11", 210, 40, 310, 55),
+            textLine("Plaza", 140, 210, 180, 225) // kırıntı: iletişim yok
+        )
+
+        val groups = CardRegionFinder.refine(candidates, lines)
+
+        assertEquals(2, groups.size)
+    }
+
+    @Test
     fun `icte kalan parca bolge kapsayana katilir`() {
         // Kartın içinde kopan küçük bir alt bölge, kapsayan kartla birleşmeli
         val candidates = listOf(

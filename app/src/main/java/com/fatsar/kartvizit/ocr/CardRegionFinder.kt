@@ -186,7 +186,9 @@ object CardRegionFinder {
             }
         }
 
-        // 1) Satırları (kapsayıcı) bölgelere dağıt
+        // 1) Satırları (kapsayıcı) bölgelere dağıt. Bölge dışına taşan satır,
+        //    merkezine değil DİKDÖRTGENİNE en yakın bölgeye gider: kart
+        //    kenarındaki satır, uzaktaki bir parlama bölgesine "çalınmaz".
         val buckets = List(candidates.size) { mutableListOf<OcrLine>() }
         for (line in lines) {
             val cx = line.centerX
@@ -194,19 +196,56 @@ object CardRegionFinder {
             var index = candidates.indexOfFirst { it.contains(cx, cy) }
             if (index < 0) {
                 index = candidates.indices.minByOrNull { i ->
-                    val dx = (candidates[i].centerX - cx).toLong()
-                    val dy = (candidates[i].centerY - cy).toLong()
-                    dx * dx + dy * dy
+                    rectDistanceSq(candidates[i], cx, cy)
                 } ?: 0
             }
             buckets[target[index]].add(line)
         }
 
-        // 2) Metinsiz bölgeleri ele, okuma sırasına göre döndür
-        return candidates.indices
+        // 2) Metinsiz bölgeleri ele
+        val groups = candidates.indices
             .filter { target[it] == it && buckets[it].isNotEmpty() }
-            .map { buckets[it] }
+            .map { buckets[it].toMutableList() }
+            .toMutableList()
+
+        // 3) İletişim bilgisi olmayan tek satırlık kırıntı gruplar (zemin
+        //    yansımasına düşen tek satır gibi) en yakın gruba katılır
+        while (groups.size > 1) {
+            val crumbIndex = groups.indices.firstOrNull { i ->
+                groups[i].size == 1 && groups[i].none { l ->
+                    l.text.contains('@') || l.text.count { c -> c.isDigit() } >= 7
+                }
+            } ?: break
+            val crumb = groups.removeAt(crumbIndex)
+            val cx = crumb[0].centerX
+            val cy = crumb[0].centerY
+            val nearest = groups.minByOrNull { g ->
+                g.minOf { l ->
+                    val dx = (l.centerX - cx).toLong()
+                    val dy = (l.centerY - cy).toLong()
+                    dx * dx + dy * dy
+                }
+            }
+            nearest?.addAll(crumb)
+        }
+
+        return groups
             .sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
+    }
+
+    /** Bir noktanın dikdörtgene (kenarlarına) uzaklığının karesi. */
+    private fun rectDistanceSq(r: Region, x: Int, y: Int): Long {
+        val dx = when {
+            x < r.left -> (r.left - x).toLong()
+            x > r.right -> (x - r.right).toLong()
+            else -> 0L
+        }
+        val dy = when {
+            y < r.top -> (r.top - y).toLong()
+            y > r.bottom -> (y - r.bottom).toLong()
+            else -> 0L
+        }
+        return dx * dx + dy * dy
     }
 
     /** [outer], [inner]'ı büyük ölçüde kapsıyor mu (en az %85 alan içinde)? */
