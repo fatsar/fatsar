@@ -234,6 +234,25 @@ class CardRegionFinderTest {
     }
 
     @Test
+    fun `koyu bantla koparilan kose parcasi ana karta katilir`() {
+        // Zeki Grup kartındaki gerçek durum: kartın içindeki koyu diyagonal
+        // bant + karekod, beyaz köşeyi ayrı bir küçük bölgeye kopardı. Bu
+        // parça ana kartın içinde ama kenardan birkaç px taşıyor (%94 içeride).
+        val card = CardRegionFinder.Region(233, 27, 553, 540)     // 321x514
+        val fragment = CardRegionFinder.Region(446, 405, 558, 532) // 113x128, sağdan 5px taşar
+        val lines = listOf(
+            textLine("Murat Zeki", 300, 60, 360, 120),
+            textLine("info@zekigrup.com", 360, 200, 390, 320),
+            textLine("Çay Mah. No:63 DÜZCE", 470, 430, 540, 460) // parçaya düşer
+        )
+
+        val groups = CardRegionFinder.refine(listOf(card, fragment), lines)
+
+        assertEquals(1, groups.size)
+        assertEquals(3, groups[0].size)
+    }
+
+    @Test
     fun `icte kalan parca bolge kapsayana katilir`() {
         // Kartın içinde kopan küçük bir alt bölge, kapsayan kartla birleşmeli
         val candidates = listOf(

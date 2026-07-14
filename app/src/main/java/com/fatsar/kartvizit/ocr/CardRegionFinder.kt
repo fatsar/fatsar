@@ -416,14 +416,21 @@ object CardRegionFinder {
         return max(dx, dy)
     }
 
-    /** [outer], [inner]'ı büyük ölçüde kapsıyor mu (en az %85 alan içinde)? */
+    /**
+     * [inner], [outer]'ın küçük bir alt parçası mı? Aynı kartın koyu bir bant
+     * ya da karekodla koparılan köşesi böyle görünür: inner çoğunlukla (>=%60)
+     * outer'ın içinde ve outer'dan belirgin biçimde küçüktür. Bu koşul, yalnızca
+     * kenarlarından kısmen örtüşen ayrı (kaydırmalı) kartları birleştirmez.
+     */
     private fun contains(outer: Region, inner: Region): Boolean {
         val ix = max(0, min(outer.right, inner.right) - max(outer.left, inner.left))
         val iy = max(0, min(outer.bottom, inner.bottom) - max(outer.top, inner.top))
         val interArea = ix.toLong() * iy
         val innerArea = inner.width.toLong() * inner.height
-        return innerArea > 0 && interArea.toFloat() / innerArea >= 0.85f &&
-            outer.width.toLong() * outer.height > innerArea
+        val outerArea = outer.width.toLong() * outer.height
+        return innerArea > 0 &&
+            interArea.toFloat() / innerArea >= 0.6f &&
+            innerArea <= 0.6f * outerArea
     }
 
     /**
