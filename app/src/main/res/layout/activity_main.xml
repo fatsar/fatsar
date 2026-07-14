@@ -53,7 +53,17 @@
                 android:visibility="gone" />
         </FrameLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnArchive"
+            style="@style/Widget.Material3.Button.TextButton.Icon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:visibility="gone"
+            app:icon="@drawable/ic_folder" />
+
         <LinearLayout
+            android:id="@+id/scanBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

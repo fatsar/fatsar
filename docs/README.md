@@ -1,4 +1,4 @@
-# Kartvizit Tarayıcı 📇
+# KartCep 📇
 
 Kartvizitleri tarayıp **telefon rehberine ekleyen** ve tüm kayıtları **Excel (.xlsx) dosyası olarak Gmail ile gönderebilen** Android uygulaması.
 
@@ -15,6 +15,7 @@ Tüm işlemler **cihaz üzerinde** çalışır: metin tanıma (OCR) ve karekod o
 - 🖼️➕ **Tek fotoğrafta birden fazla kartvizit** – bir fotoğrafta yan yana/alt alta birden çok kart varsa konumlarına göre ayrılır ve her biri ayrı kayıt olarak oluşturulur.
 - ✨ **Otomatik metin düzeltme** – fazla boşluklar temizlenir; TAMAMEN BÜYÜK yazılmış ad/unvan/şirket/adres Türkçe kurallarına göre düzgün büyük-küçük harfe çevrilir ("AHMET YILMAZ" → "Ahmet Yılmaz", kısaltmalar korunur: "A.Ş.", "LTD"). Kişi adı, e-posta adresiyle eşleştirilerek firma adının isim sanılması önlenir.
 - 👤 **Telefon rehberine ekleme** – kişinin **adı ve soyadı ayrı alanlar** olarak rehbere yazılır; şirket, unvan, numara, e-posta ve adres de eklenir.
+- 📁 **Otomatik arşiv** – ana ekranda yalnızca son 5 tarama görünür; daha eskiler tek dokunuşla açılan "Önceki taramalar" klasörüne taşınır (uzun listede kaydırma derdi yok).
 - 🗂️ **Kategoriler** – kayıtları isteğe bağlı kategorilere ayırın ("Müşteriler", "Tedarikçiler"…); ana ekranda kategoriye göre filtreleyin. Kategori Excel'de ayrı sütun, vCard'da CATEGORIES alanı olarak dışa aktarılır.
 - 📇 **Rehber dosyası (.vcf) paylaşımı** – tüm kayıtları standart vCard dosyası olarak WhatsApp/e-posta/Bluetooth ile paylaşın; alıcı dosyaya dokunarak kişileri kendi telefon rehberine aktarır.
 - 📊 **Excel dosyası** – her kayıtta `kartvizitler.xlsx` otomatik güncellenir (harici kütüphane olmadan üretilen standart Office Open XML; Excel, Google E-Tablolar ve LibreOffice ile açılır).

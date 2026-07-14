@@ -54,6 +54,13 @@ class MainActivity : AppCompatActivity() {
     /** null = tüm kategoriler, "" = kategorisiz, diğer = tam eşleşme. */
     private var categoryFilter: String? = null
 
+    /** Arşiv görünümü: ana listede yalnızca son taramalar tutulur. */
+    private var showingArchive = false
+
+    private val archiveBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = exitArchive()
+    }
+
     // Tembel oluşturma: tanıyıcılar yalnızca ilk tarama sırasında yüklenir.
     private val recognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -107,6 +114,11 @@ class MainActivity : AppCompatActivity() {
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
         }
+        binding.btnArchive.setOnClickListener {
+            showingArchive = true
+            refreshList()
+        }
+        onBackPressedDispatcher.addCallback(this, archiveBackCallback)
 
         if (savedInstanceState != null) {
             cameraImageUri =
@@ -376,18 +388,58 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshList() {
         val all = ContactRepository.getAll(this)
-        val records = when (val filter = categoryFilter) {
+        val filtered = when (val filter = categoryFilter) {
             null -> all
             "" -> all.filter { it.category.isBlank() }
             else -> all.filter { it.category == filter }
         }
+
+        // Ana ekranda yalnızca son taramalar; eskiler "Önceki taramalar"da
+        val records: List<ContactRecord>
+        val archivedCount: Int
+        if (showingArchive) {
+            records = filtered.drop(MAIN_LIST_LIMIT)
+            archivedCount = 0
+            if (records.isEmpty()) {
+                exitArchive()
+                return
+            }
+        } else {
+            records = filtered.take(MAIN_LIST_LIMIT)
+            archivedCount = filtered.size - records.size
+        }
+
         adapter.submit(records)
         binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
+        binding.btnArchive.visibility =
+            if (!showingArchive && archivedCount > 0) View.VISIBLE else View.GONE
+        if (archivedCount > 0) {
+            binding.btnArchive.text = getString(R.string.btn_archive, archivedCount)
+        }
+        binding.scanBar.visibility = if (showingArchive) View.GONE else View.VISIBLE
+
+        supportActionBar?.title =
+            if (showingArchive) getString(R.string.archive_title) else getString(R.string.app_name)
+        supportActionBar?.setDisplayHomeAsUpEnabled(showingArchive)
+        archiveBackCallback.isEnabled = showingArchive
         supportActionBar?.subtitle = when (val filter = categoryFilter) {
             null -> null
             "" -> getString(R.string.filter_uncategorized)
             else -> filter
         }
+    }
+
+    private fun exitArchive() {
+        showingArchive = false
+        refreshList()
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        if (showingArchive) {
+            exitArchive()
+            return true
+        }
+        return super.onSupportNavigateUp()
     }
 
     private fun showCategoryFilterDialog() {
@@ -525,5 +577,8 @@ class MainActivity : AppCompatActivity() {
         private const val STATE_CAMERA_URI = "camera_uri"
         private const val PREFS = "settings"
         private const val PREF_EMAIL = "recipient_email"
+
+        /** Ana listede tutulacak en yeni tarama sayısı; fazlası arşive düşer. */
+        private const val MAIN_LIST_LIMIT = 5
     }
 }

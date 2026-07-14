@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kartvizit Tarayıcı</string>
+    <string name="app_name">KartCep</string>
 
     <!-- Ana ekran -->
     <string name="scan_with_camera">Kamerayla Tara</string>
@@ -26,7 +26,7 @@
 
     <!-- Excel / e-posta -->
     <string name="email_subject">Kartvizit Listesi (Excel)</string>
-    <string name="email_body">Kartvizit Tarayıcı uygulamasından gönderilen güncel kartvizit listesi ektedir.</string>
+    <string name="email_body">KartCep uygulamasından gönderilen güncel kartvizit listesi ektedir.</string>
     <string name="send_excel_chooser">Excel dosyasını gönder</string>
     <string name="share_vcf_chooser">Rehber dosyasını paylaş</string>
     <string name="vcf_subject">Kartvizit Rehberi (.vcf)</string>
@@ -78,6 +78,10 @@
     <string name="record_saved">Kayıt kaydedildi ve Excel dosyası güncellendi.</string>
     <string name="saved_and_added_to_contacts">Kayıt kaydedildi, rehbere eklendi ve Excel güncellendi.</string>
     <string name="nothing_to_save">Kaydedilecek bilgi yok. En az isim, şirket, telefon veya e-posta girin.</string>
+
+    <!-- Arşiv -->
+    <string name="archive_title">Önceki Taramalar</string>
+    <string name="btn_archive">📁 Önceki taramalar (%1$d)</string>
 
     <!-- Silme -->
     <string name="delete_title">Kaydı sil</string>
