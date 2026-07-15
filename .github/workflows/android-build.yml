@@ -23,23 +23,31 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Birim testlerini çalıştır
-        run: ./gradlew --no-daemon :app:testDebugUnitTest
+        run: ./gradlew --no-daemon :app:testDebugUnitTest :toplanti:testDebugUnitTest
 
       - name: Debug APK derle
-        run: ./gradlew --no-daemon :app:assembleDebug
+        run: ./gradlew --no-daemon :app:assembleDebug :toplanti:assembleDebug
 
       - name: APK bilgisi
-        run: ls -lh app/build/outputs/apk/debug/
+        run: ls -lh app/build/outputs/apk/debug/ toplanti/build/outputs/apk/debug/
 
-      - name: APK artefaktını yükle
+      - name: Kartvizit APK artefaktını yükle
         uses: actions/upload-artifact@v4
         with:
           name: kartvizit-tarayici-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Toplantı Asistanı APK artefaktını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: toplanti-asistani-debug-apk
+          path: toplanti/build/outputs/apk/debug/toplanti-debug.apk
 
       - name: Test raporunu yükle (hata durumunda)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-raporu
-          path: app/build/reports/
+          path: |
+            app/build/reports/
+            toplanti/build/reports/

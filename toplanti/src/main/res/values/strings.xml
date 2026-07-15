@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Toplantı Asistanı</string>
+
+    <!-- Genel -->
+    <string name="cancel">Vazgeç</string>
+    <string name="save">Kaydet</string>
+    <string name="delete">Sil</string>
+    <string name="retry">Yeniden dene</string>
+    <string name="next">Devam</string>
+    <string name="untitled_meeting">Adsız toplantı</string>
+
+    <!-- Ana ekran -->
+    <string name="search_hint">Başlık, etiket veya içerikte ara…</string>
+    <string name="empty_list">Henüz toplantı yok.\n\n▸ Yeni toplantı başlatmak için + düğmesine dokunun.\n▸ Mevcut bir ses/video kaydını içe aktarmak için sağ üstteki menüyü kullanın.</string>
+    <string name="new_meeting">Yeni toplantı</string>
+    <string name="action_import">Dosya içe aktar</string>
+    <string name="import_failed">Dosya içe aktarılamadı. Desteklenen bir ses/video dosyası seçin.</string>
+
+    <!-- Durumlar -->
+    <string name="status_recording">Kayıtta</string>
+    <string name="status_processing">İşleniyor</string>
+    <string name="status_review">İnceleme gerekli</string>
+    <string name="status_done">Tamamlandı</string>
+    <string name="status_failed">Hata</string>
+
+    <!-- Kayıt öncesi (rıza) -->
+    <string name="consent_title">Kayıt öncesi hatırlatma</string>
+    <string name="consent_text">Toplantıyı kaydetmeden önce tüm katılımcıları bilgilendirmek ve gerekli rızayı almak sizin sorumluluğunuzdadır. Kayıt, yalnızca bu cihazda saklanır; konuşma tanıma ve özetleme tamamen cihaz üzerinde yapılır, ses hiçbir sunucuya gönderilmez.</string>
+    <string name="consent_check_label">Katılımcıları bilgilendirdim ve gerekli rızayı aldım</string>
+    <string name="temp_title_hint">Geçici başlık (isteğe bağlı)</string>
+    <string name="language_note">Toplantı dili: Türkçe</string>
+    <string name="start_recording">Kaydı başlat</string>
+    <string name="mic_denied_title">Mikrofon izni gerekli</string>
+    <string name="mic_denied_message">Canlı kayıt için mikrofon izni gerekir. İzin vermek istemezseniz ana ekrandan mevcut bir ses/video dosyasını içe aktarabilirsiniz.</string>
+
+    <!-- Kayıt ekranı -->
+    <string name="status_recording_live">Kayıt yapılıyor</string>
+    <string name="status_paused">Duraklatıldı</string>
+    <string name="status_finishing">Kayıt sonlandırılıyor…</string>
+    <string name="pause">Duraklat</string>
+    <string name="resume">Sürdür</string>
+    <string name="finish">Bitir</string>
+    <string name="btn_photo">Fotoğraf</string>
+    <string name="btn_gallery">Galeri</string>
+    <string name="btn_video">Video</string>
+    <string name="finish_recording_title">Kaydı bitir</string>
+    <string name="finish_recording_message">Kayıt sonlandırılacak ve yazıya dökme işlemi başlayacak. Devam edilsin mi?</string>
+    <string name="finish_recording_confirm">Bitir ve işle</string>
+    <plurals name="attachment_count">
+        <item quantity="one">%d ek eklendi</item>
+        <item quantity="other">%d ek eklendi</item>
+    </plurals>
+
+    <!-- Bildirimler -->
+    <string name="notif_channel_recording">Kayıt durumu</string>
+    <string name="notif_channel_processing">İşleme durumu</string>
+    <string name="notif_channel_results">Sonuçlar</string>
+    <string name="notif_recording_title">Toplantı kaydediliyor</string>
+    <string name="notif_recording_text">Kayıt sürüyor; dokunarak uygulamaya dönün.</string>
+    <string name="notif_processing_title">Toplantı işleniyor</string>
+    <string name="notif_processing_text">Yazıya dökülüyor… %%%1$d</string>
+    <string name="notif_done_title">Toplantı notları hazır</string>
+    <string name="notif_failed_title">İşleme başarısız oldu</string>
+    <string name="notif_failed_text">Dokunup ayrıntıyı görüntüleyin ve yeniden deneyin.</string>
+
+    <!-- Model indirme -->
+    <string name="model_download_title">Türkçe tanıma modeli</string>
+    <string name="model_download_message">Konuşmayı yazıya dökmek için tek seferlik ~%1$d MB boyutunda Türkçe tanıma modeli indirilecek. Model cihazda saklanır; sonrasında tüm işlemler çevrimdışı çalışır ve ses verisi hiçbir yere gönderilmez.</string>
+    <string name="model_download_start">İndir</string>
+    <string name="model_downloading">İndiriliyor… %%%1$d</string>
+    <string name="model_download_failed">Model indirilemedi</string>
+    <string name="error_model_missing">Türkçe tanıma modeli kurulu değil. Uygulamayı açıp yeniden deneyin; model indirmeniz istenecek.</string>
+    <string name="error_audio_missing">Ses dosyası bulunamadı.</string>
+
+    <!-- Detay ekranı -->
+    <string name="tab_overview">Genel Bakış</string>
+    <string name="tab_notes">Notlar</string>
+    <string name="tab_tasks">Görevler</string>
+    <string name="tab_transcript">Transkript</string>
+    <string name="tab_attachments">Ekler</string>
+    <string name="processing_banner">İşleniyor… Sonuç hazır olduğunda bildirim alacaksınız; bu ekrandan çıkabilirsiniz.</string>
+    <string name="processing_failed_detail">İşleme başarısız oldu: %1$s</string>
+    <string name="title_suggestion_label">Önerilen başlık — onaylayın veya düzenleyin:</string>
+    <string name="confirm_title">Başlığı onayla</string>
+    <string name="complete_review">İncelemeyi tamamla</string>
+    <string name="short_summary_label">Kısa özet</string>
+    <string name="detailed_summary_label">Ayrıntılı özet</string>
+    <string name="no_summary">Özet üretilemedi. Transkript sekmesinden içeriği inceleyebilirsiniz.</string>
+    <string name="confidence_note">Tahmini güven: %%%1$d. Bu içerik cihaz üzerinde otomatik üretildi; maddelerin kaynağını dokunarak kayıttan doğrulayabilirsiniz.</string>
+    <string name="confidence_short">güven %%%1$d</string>
+    <string name="raw">Ham</string>
+    <string name="clean">Temiz</string>
+    <string name="low_confidence">düşük güven</string>
+    <string name="edited_label">düzenlendi</string>
+    <string name="edit_segment_title">Segmenti düzelt %1$s</string>
+    <string name="change_speaker">Konuşmacıyı değiştir</string>
+    <string name="add_speaker">Yeni konuşmacı ekle</string>
+    <string name="rename_speaker">Konuşmacıyı yeniden adlandır</string>
+    <string name="speaker_name_hint">Konuşmacı adı</string>
+    <string name="speaker_default">Konuşmacı %1$d</string>
+    <string name="playing_from">%1$s konumundan oynatılıyor</string>
+    <string name="stop">Durdur</string>
+
+    <!-- Görevler -->
+    <string name="add_task">Görev ekle</string>
+    <string name="edit_task">Görevi düzenle</string>
+    <string name="task_title_hint">Görev açıklaması</string>
+    <string name="task_owner_hint">Sahip (boş bırakılabilir)</string>
+    <string name="task_due_hint">Termin (ör. cuma gününe kadar)</string>
+    <string name="task_confirmed_label">Onaylandı (paylaşımlara dahil edilir)</string>
+    <string name="owner_unspecified">Sahip belirtilmedi</string>
+    <string name="due_unspecified">termin belirtilmedi</string>
+    <string name="needs_review">Onay gerekli</string>
+
+    <!-- Ekler -->
+    <string name="attachment_at">Kayıt %1$s anında</string>
+    <string name="attachment_later">Sonradan eklendi</string>
+    <string name="edit_caption">Ek açıklaması</string>
+    <string name="caption_hint">Açıklama (isteğe bağlı)</string>
+
+    <!-- Paylaşım / dışa aktarma -->
+    <string name="action_share_email">E-posta ile paylaş</string>
+    <string name="action_export">Dışa aktar</string>
+    <string name="action_tags">Etiketler</string>
+    <string name="action_reprocess">Yeniden işle</string>
+    <string name="action_delete">Toplantıyı sil</string>
+    <string name="share_sections_title">Paylaşılacak bölümleri seçin</string>
+    <string name="share_attachments_title">Gönderilecek ekleri seçin</string>
+    <string name="share_via_email">E-posta uygulamasında aç</string>
+    <string name="export_format_title">Dışa aktarma biçimi</string>
+    <string name="export_share_title">Dosyayı paylaş/kaydet</string>
+    <string name="export_failed">Dışa aktarma başarısız</string>
+    <string name="section_summary">Özet</string>
+    <string name="section_decisions">Kararlar</string>
+    <string name="section_tasks">Görevler (yalnızca onaylılar)</string>
+    <string name="section_notes">Önemli notlar</string>
+    <string name="section_questions">Açık sorular</string>
+    <string name="section_risks">Riskler</string>
+    <string name="section_transcript">Transkript</string>
+    <string name="tags_hint">Etiketler (virgülle ayırın)</string>
+
+    <!-- Silme ve yeniden işleme -->
+    <string name="delete_meeting_title">Toplantı kalıcı olarak silinsin mi?</string>
+    <string name="delete_summary">Bu işlem geri alınamaz. Silinecek veriler:\n• Ses kaydı\n• %1$d transkript segmenti\n• %2$d not/karar maddesi\n• %3$d görev\n• %4$d ek dosyası</string>
+    <string name="delete_confirm">Kalıcı olarak sil</string>
+    <string name="reprocess_title">Yeniden işle</string>
+    <string name="reprocess_message">Ses kaydı yeniden yazıya dökülecek ve özet/görevler yeniden üretilecek. Transkript ve AI çıktılarında yaptığınız düzenlemeler kaybolur; elle eklediğiniz görevler de yeniden oluşturulur. Devam edilsin mi?</string>
+    <string name="reprocess_confirm">Yeniden işle</string>
+</resources>

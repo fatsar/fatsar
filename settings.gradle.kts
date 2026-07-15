@@ -14,5 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "KartvizitTarayici"
+rootProject.name = "FatsarApps"
 include(":app")
+include(":toplanti")
