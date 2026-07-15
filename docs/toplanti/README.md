@@ -4,7 +4,7 @@ Toplantıları **kaydeden veya mevcut ses/video dosyasını içe aktaran**, konu
 
 Ürün gereksinimleri: [prd.md](prd.md) — uygulama bu PRD'nin **MVP kapsamını** hedefler.
 
-Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz üzerinde**. Konuşma tanıma için [Vosk](https://alphacephei.com/vosk/) açık kaynak motoru ve resmî Türkçe modeli kullanılır; model ilk kullanımda **bir kez** indirilir (~45 MB), sonrasında tüm işlemler tamamen çevrimdışıdır. **Ses kaydı, transkript veya notlar hiçbir sunucuya gönderilmez.**
+Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz üzerinde**. Konuşma tanıma için [Vosk](https://alphacephei.com/vosk/) açık kaynak motoru ve resmî Türkçe modeli kullanılır; model ilk kullanımda **bir kez** indirilir (~35 MB), sonrasında tüm işlemler tamamen çevrimdışıdır. **Ses kaydı, transkript veya notlar hiçbir sunucuya gönderilmez.**
 
 ## Özellikler
 
@@ -71,6 +71,15 @@ PRD'nin açık soruları (bölüm 20) ve bazı gereksinimler için bu sürümde 
 | Özet/görev çıkarımı | Deterministik, cihaz üstü kural tabanlı Türkçe NLP; bilgi uydurmama kuralı yapısal olarak garanti (yalnızca kaynak cümleden alıntılanır). |
 | Şifreleme | Kayıtlar Android uygulama korumalı alanında (başka uygulama erişemez) tutulur; Keystore tabanlı dosya şifrelemesi ve saklama süresi ayarları sonraki sürüme bırakıldı. |
 | Takvim entegrasyonu, şablonlar, canlı transkript | PRD'de P1/P2 — kapsam dışı. |
+
+## Sorun giderme
+
+**"Model indirilemedi / arşiv beklenen yapıda değil":** Model sunucusu (alphacephei.com) zaman zaman bot koruması nedeniyle uygulama içi indirmeyi engelleyebilir. Uygulama tarayıcı kimliğiyle istek atar ve inen içeriği doğrular; yine de başarısız olursa hata penceresindeki **"ZIP seç"** yolunu kullanın:
+
+1. Telefonunuzun tarayıcısıyla şu adresi açın ve dosyayı indirin: <https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip>
+2. Uygulamadaki hata penceresinde **ZIP seç**'e dokunup indirdiğiniz dosyayı seçin.
+
+Model bir kez kurulduktan sonra bir daha internet gerekmez. Kayıt sırasında model hatası alınsa bile **ses kaydınız kaybolmaz**; toplantı detayındaki "Yeniden dene" ile işlemeyi sonradan başlatabilirsiniz.
 
 ## APK'yı edinme
 
