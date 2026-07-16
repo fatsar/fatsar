@@ -29,7 +29,10 @@
     <string name="consent_text">Toplantıyı kaydetmeden önce tüm katılımcıları bilgilendirmek ve gerekli rızayı almak sizin sorumluluğunuzdadır. Kayıt, yalnızca bu cihazda saklanır; konuşma tanıma ve özetleme tamamen cihaz üzerinde yapılır, ses hiçbir sunucuya gönderilmez.</string>
     <string name="consent_check_label">Katılımcıları bilgilendirdim ve gerekli rızayı aldım</string>
     <string name="temp_title_hint">Geçici başlık (isteğe bağlı)</string>
-    <string name="language_note">Toplantı dili: Türkçe</string>
+    <string name="language_label">Toplantı dili</string>
+    <string name="lang_auto">Otomatik algıla</string>
+    <string name="lang_tr">Türkçe</string>
+    <string name="lang_en">İngilizce</string>
     <string name="start_recording">Kaydı başlat</string>
     <string name="mic_denied_title">Mikrofon izni gerekli</string>
     <string name="mic_denied_message">Canlı kayıt için mikrofon izni gerekir. İzin vermek istemezseniz ana ekrandan mevcut bir ses/video dosyasını içe aktarabilirsiniz.</string>
@@ -65,15 +68,15 @@
     <string name="notif_failed_text">Dokunup ayrıntıyı görüntüleyin ve yeniden deneyin.</string>
 
     <!-- Model indirme -->
-    <string name="model_download_title">Türkçe tanıma modeli</string>
-    <string name="model_download_message">Konuşmayı yazıya dökmek için tek seferlik ~%1$d MB boyutunda Türkçe tanıma modeli indirilecek. Model cihazda saklanır; sonrasında tüm işlemler çevrimdışı çalışır ve ses verisi hiçbir yere gönderilmez.</string>
+    <string name="model_download_title">Konuşma tanıma modeli</string>
+    <string name="model_download_message">Bu derlemede tanıma modeli pakette yok. Konuşmayı yazıya dökmek için tek seferlik ~%1$d MB model indirilecek. Model cihazda saklanır; sonrasında tüm işlemler çevrimdışı çalışır ve ses verisi hiçbir yere gönderilmez.</string>
     <string name="model_download_start">İndir</string>
-    <string name="model_downloading">İndiriliyor… %%%1$d</string>
-    <string name="model_download_failed">Model indirilemedi</string>
+    <string name="model_downloading">Hazırlanıyor… %%%1$d</string>
+    <string name="model_download_failed">Model kurulamadı</string>
     <string name="model_pick_zip">ZIP seç</string>
-    <string name="model_manual_hint">Alternatif: model dosyasını telefonunuzun tarayıcısıyla şu adresten indirin, ardından "ZIP seç" ile kurun:\n%1$s</string>
+    <string name="model_manual_hint">Alternatif: model dosyasını telefonunuzun tarayıcısıyla şu adres(ler)den indirin, ardından "ZIP seç" ile kurun:\n%1$s</string>
     <string name="model_zip_open_failed">Seçilen dosya açılamadı.</string>
-    <string name="error_model_missing">Türkçe tanıma modeli kurulu değil. Uygulamayı açıp yeniden deneyin; model indirmeniz istenecek.</string>
+    <string name="error_model_missing">Tanıma modeli hazırlanamadı. Toplantıyı açıp "Yeniden dene"ye dokunun.</string>
     <string name="error_audio_missing">Ses dosyası bulunamadı.</string>
 
     <!-- Detay ekranı -->

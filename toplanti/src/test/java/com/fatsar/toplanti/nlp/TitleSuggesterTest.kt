@@ -15,6 +15,13 @@ class TitleSuggesterTest {
     }
 
     @Test
+    fun `ingilizce baslik meeting ekiyle biter`() {
+        val text = "budget planning for next year budget planning details and budget planning owners"
+        val title = TitleSuggester.suggest(text, "en")
+        assertEquals("Budget Planning Meeting", title)
+    }
+
+    @Test
     fun `bos metin bos baslik doner`() {
         assertEquals("", TitleSuggester.suggest(""))
     }

@@ -8,15 +8,16 @@ package com.fatsar.toplanti.nlp
  */
 object TranscriptCleaner {
 
-    // Tek başına anlam taşımayan seslenmeler/dolgular
+    // Tek başına anlam taşımayan seslenmeler/dolgular (Türkçe + İngilizce)
     private val ALWAYS_FILLERS = setOf(
         "ıı", "ııı", "ıh", "ıhh", "ee", "eee", "eem", "aa", "aaa", "hm", "hmm", "hımm",
-        "hı", "hıı", "hıhı", "mm", "mmm", "şey", "yaa", "eh"
+        "hı", "hıı", "hıhı", "mm", "mmm", "şey", "yaa", "eh",
+        "uh", "um", "uhm", "erm", "er", "ehm", "huh"
     )
 
     // Yalnızca cümle başında dolgu sayılanlar ("yani sonuç olarak..." → korunur denemez;
     // baştaki kullanım tipik dolgudur, cümle içindeki bağlaç kullanımına dokunulmaz)
-    private val LEADING_FILLERS = setOf("yani", "işte", "hani", "valla", "ya")
+    private val LEADING_FILLERS = setOf("yani", "işte", "hani", "valla", "ya", "so", "well", "okay", "anyway")
 
     // "şey"in anlamlı olduğu bağlamlar: önündeki belirleyiciler
     private val SEY_KEEPERS = setOf("bir", "her", "hiçbir", "hiç", "o", "bu", "şu", "çok", "aynı", "başka")

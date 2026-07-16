@@ -144,7 +144,8 @@ class RecordingService : Service() {
         meeting.endedAt = System.currentTimeMillis()
         meeting.durationMs = duration
         meeting.audioFileName = AUDIO_FILE_NAME
-        val modelReady = VoskModelManager(applicationContext).isInstalled()
+        val manager = VoskModelManager(applicationContext)
+        val modelReady = VoskModelManager.requiredLanguages(meeting.language).all { manager.isReady(it) }
         if (modelReady) {
             meeting.status = MeetingStatus.PROCESSING
         } else {

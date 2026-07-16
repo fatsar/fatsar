@@ -39,20 +39,41 @@ object InsightExtractor {
         "mısın", "misin", "musun", "müsün", "mıdır", "midir", "mudur", "müdür"
     )
 
-    fun extract(sentences: List<Sentence>): Result {
+    // İngilizce karşılıklar
+    private val EN_DECISION_MARKERS = listOf(
+        "we decided", "decided to", "we agreed", "agreed to", "agreed on", "approved",
+        "let's go with", "we will go with", "final decision", "settled on", "signed off"
+    )
+    private val EN_RISK_MARKERS = listOf(
+        "risk", "risky", "concern", "worried", "might be delayed", "could be delayed",
+        "blocker", "critical", "danger", "problem if", "uncertainty"
+    )
+    private val EN_NOTE_MARKERS = listOf(
+        "important", "don't forget", "dont forget", "keep in mind", "note that",
+        "remember that", "make sure", "highlight", "key point", "definitely"
+    )
+    private val EN_QUESTION_STARTS = setOf("what", "when", "who", "why", "how", "where", "which")
+    private val EN_QUESTION_AUX = setOf("can", "could", "should", "shall", "do", "does", "did", "are", "is", "will", "would")
+    private val EN_QUESTION_SUBJECTS = setOf("we", "you", "i", "it", "they", "anyone", "there")
+
+    fun extract(sentences: List<Sentence>, language: String = "tr"): Result {
         val insights = mutableListOf<Insight>()
+        val en = language == "en"
+        val decisionMarkers = if (en) EN_DECISION_MARKERS else DECISION_MARKERS
+        val riskMarkers = if (en) EN_RISK_MARKERS else RISK_MARKERS
+        val noteMarkers = if (en) EN_NOTE_MARKERS else NOTE_MARKERS
 
         for (s in sentences) {
             val lower = TurkishText.lowercaseTr(s.text)
             val tokens = TurkishText.tokenize(lower)
             when {
-                DECISION_MARKERS.any { lower.contains(it) } ->
+                decisionMarkers.any { lower.contains(it) } ->
                     insights.add(make(InsightType.DECISION, s, 0.75))
-                RISK_MARKERS.any { lower.contains(it) } ->
+                riskMarkers.any { lower.contains(it) } ->
                     insights.add(make(InsightType.RISK, s, 0.6))
-                NOTE_MARKERS.any { lower.contains(it) } ->
+                noteMarkers.any { lower.contains(it) } ->
                     insights.add(make(InsightType.IMPORTANT_NOTE, s, 0.6))
-                s.text.trimEnd().endsWith("?") || tokens.takeLast(3).any { it in QUESTION_PARTICLES } ->
+                isQuestion(s.text, tokens, en) ->
                     insights.add(make(InsightType.QUESTION, s, 0.55))
             }
         }
@@ -60,8 +81,18 @@ object InsightExtractor {
         // Tür başına makul üst sınır: en güvenilir/ilk geçenler kalsın
         val capped = insights.groupBy { it.type }.flatMap { (_, list) -> list.take(10) }
 
-        val (short, detailed, conf) = summarize(sentences)
+        val (short, detailed, conf) = summarize(sentences, language)
         return Result(short, detailed, conf, capped)
+    }
+
+    private fun isQuestion(text: String, tokens: List<String>, en: Boolean): Boolean {
+        if (text.trimEnd().endsWith("?")) return true
+        return if (en) {
+            tokens.firstOrNull() in EN_QUESTION_STARTS ||
+                (tokens.size >= 2 && tokens[0] in EN_QUESTION_AUX && tokens[1] in EN_QUESTION_SUBJECTS)
+        } else {
+            tokens.takeLast(3).any { it in QUESTION_PARTICLES }
+        }
     }
 
     private fun make(type: InsightType, s: Sentence, conf: Double) = Insight(
@@ -72,12 +103,12 @@ object InsightExtractor {
     )
 
     /** Çıkarımsal (extractive) özet: içerik sözcüğü sıklığına göre puanlanan cümleler. */
-    private fun summarize(sentences: List<Sentence>): Triple<String, String, Double> {
+    private fun summarize(sentences: List<Sentence>, language: String): Triple<String, String, Double> {
         if (sentences.isEmpty()) return Triple("", "", 0.0)
 
         val tf = HashMap<String, Int>()
         val tokenized = sentences.map { s ->
-            TurkishText.tokenize(s.text).filter { TurkishText.isContentWord(it) }
+            TurkishText.tokenize(s.text).filter { TurkishText.isContentWord(it, language) }
                 .map { TurkishText.lowercaseTr(it) }
                 .also { toks -> toks.forEach { tf[it] = (tf[it] ?: 0) + 1 } }
         }

@@ -1,16 +1,17 @@
 # Toplantı Asistanı 🎙️
 
-Toplantıları **kaydeden veya mevcut ses/video dosyasını içe aktaran**, konuşmayı **Türkçe yazıya döken**, dolgu sözcüklerini temizleyen, **özet / karar / önemli not / açık soru / risk ve görev** çıkaran Android uygulaması.
+Toplantıları **kaydeden veya mevcut ses/video dosyasını içe aktaran**, konuşmayı **Türkçe veya İngilizce yazıya döken** (dil otomatik algılanır), dolgu sözcüklerini temizleyen, **özet / karar / önemli not / açık soru / risk ve görev** çıkaran Android uygulaması.
 
 Ürün gereksinimleri: [prd.md](prd.md) — uygulama bu PRD'nin **MVP kapsamını** hedefler.
 
-Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz üzerinde**. Konuşma tanıma için [Vosk](https://alphacephei.com/vosk/) açık kaynak motoru ve resmî Türkçe modeli kullanılır; model ilk kullanımda **bir kez** indirilir (~35 MB), sonrasında tüm işlemler tamamen çevrimdışıdır. **Ses kaydı, transkript veya notlar hiçbir sunucuya gönderilmez.**
+Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz üzerinde**. Konuşma tanıma için [Vosk](https://alphacephei.com/vosk/) açık kaynak motoru kullanılır; **Türkçe ve İngilizce modeller APK'nın içinde paketlenmiş gelir** (CI, derleme sırasında modelleri indirip APK'ya gömer). Cihazda hiçbir indirme gerekmez, tüm işlemler tamamen çevrimdışıdır. **Ses kaydı, transkript veya notlar hiçbir sunucuya gönderilmez.** Bunun bedeli APK boyutudur (~95 MB).
 
 ## Özellikler
 
 - 🎙️ **Canlı kayıt** – ön plan servisiyle ekran kilitliyken bile kesintisiz kayıt; duraklat/sürdür/bitir; süre ve ses seviyesi göstergesi (FR-001..005).
 - 📁 **Dosya içe aktarma** – mevcut ses/video dosyalarını (m4a, mp3, wav, mp4…) seçerek veya başka uygulamadan "Paylaş" ile içe alın (FR-006).
-- ✍️ **Türkçe transkripsiyon** – segment bazında zaman damgası, konuşmacı etiketi ve güven skoru (FR-010, FR-015); düşük güvenli bölümler işaretlenir ve **dokunarak kayıttan dinlenir** (FR-016, AC-011).
+- ✍️ **Türkçe + İngilizce transkripsiyon** – segment bazında zaman damgası, konuşmacı etiketi ve güven skoru (FR-010, FR-015); düşük güvenli bölümler işaretlenir ve **dokunarak kayıttan dinlenir** (FR-016, AC-011).
+- 🌐 **Otomatik dil algılama** – kaydın ilk ~45 saniyesi her iki modelle çözülür; güven skoru ve tanınan sözcük sayısına göre dil seçilir. Kayıt öncesi ekrandan elle Türkçe/İngilizce de seçilebilir.
 - 🧹 **Ham + temiz transkript** – "ıı", "eee", "şey" gibi dolgular ve açık tekrarlar temizlenir; ham metin değiştirilemez biçimde korunur, düzeltmeler ayrı tutulur (FR-011..014).
 - 📋 **AI çıktıları** – kısa/ayrıntılı özet, kararlar, önemli notlar, açık sorular, riskler; her madde kaynak segmente bağlanır (FR-020..022).
 - ✅ **Görev çıkarımı** – "Ayşe, cuma gününe kadar teklif taslağını gönderecek" gibi ifadelerden görev + sahip + termin adayı çıkarılır; belirsiz alanlar **"Onay gerekli"** işaretlenir, bilgi uydurulmaz (FR-030..033).
@@ -34,7 +35,7 @@ Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz ü
 |---|---|
 | Mikrofon | Yalnızca canlı kayıt başlatılırken, bağlam içinde istenir |
 | Bildirimler (Android 13+) | Kayıt sürüyor / işleme tamamlandı bildirimleri |
-| İnternet | Yalnızca Türkçe tanıma modelinin tek seferlik indirmesi; ses verisi asla gönderilmez |
+| İnternet | Normalde kullanılmaz (modeller APK içinde gelir); yalnızca model paketi olmayan geliştirici derlemelerinde tek seferlik model indirme için. Ses verisi asla gönderilmez |
 
 Kamera izni gerekmez (sistem kamera uygulaması kullanılır); galeri erişimi Android Photo Picker ile sağlanır, depolama izni gerektirmez (PRD 14.1).
 
@@ -67,6 +68,7 @@ PRD'nin açık soruları (bölüm 20) ve bazı gereksinimler için bu sürümde 
 | Min. Android (soru 2) | minSdk 26 (Android 8.0), targetSdk 34 — depodaki diğer uygulamayla aynı. |
 | E-posta (soru 5) | Kullanıcının kendi e-posta uygulamasında hazır taslak (Android paylaşım); uygulama kendiliğinden göndermez. |
 | Video içe aktarma (soru 6) | Yalnızca ses izi analiz edilir; kare/OCR analizi kapsam dışı. |
+| Dil desteği | Türkçe birincil; İngilizce tanıma + otomatik dil algılama eklendi (PRD 7.2'deki "desteklenen dillerin genişletilmesi" maddesinin ilk adımı). Modeller APK içinde paketli gelir. |
 | Konuşmacı ayrımı | Otomatik diarizasyon MVP'de yok; PRD hata tablosundaki geri düşüş uygulanır: tek "Konuşmacı 1" + kullanıcı elle konuşmacı ekleyip segment atayabilir ve yeniden adlandırabilir (AC-012 sağlanır). |
 | Özet/görev çıkarımı | Deterministik, cihaz üstü kural tabanlı Türkçe NLP; bilgi uydurmama kuralı yapısal olarak garanti (yalnızca kaynak cümleden alıntılanır). |
 | Şifreleme | Kayıtlar Android uygulama korumalı alanında (başka uygulama erişemez) tutulur; Keystore tabanlı dosya şifrelemesi ve saklama süresi ayarları sonraki sürüme bırakıldı. |
@@ -74,12 +76,12 @@ PRD'nin açık soruları (bölüm 20) ve bazı gereksinimler için bu sürümde 
 
 ## Sorun giderme
 
-**"Model indirilemedi / arşiv beklenen yapıda değil":** Model sunucusu (alphacephei.com) zaman zaman bot koruması nedeniyle uygulama içi indirmeyi engelleyebilir. Uygulama tarayıcı kimliğiyle istek atar ve inen içeriği doğrular; yine de başarısız olursa hata penceresindeki **"ZIP seç"** yolunu kullanın:
+**Model hataları:** GitHub Actions'ın ürettiği APK'larda Türkçe ve İngilizce modeller pakete gömülüdür; cihazda indirme yapılmaz ve model hatası beklenmez. Modelsiz bir geliştirici derlemesi kullanıyorsanız uygulama modeli indirmeyi önerir; sunucu (alphacephei.com) engellerse hata penceresindeki **"ZIP seç"** yolunu kullanın:
 
-1. Telefonunuzun tarayıcısıyla şu adresi açın ve dosyayı indirin: <https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip>
-2. Uygulamadaki hata penceresinde **ZIP seç**'e dokunup indirdiğiniz dosyayı seçin.
+1. Telefonunuzun tarayıcısıyla modeli indirin: [Türkçe](https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip) • [İngilizce](https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip)
+2. Hata penceresinde **ZIP seç**'e dokunup indirdiğiniz dosyayı seçin.
 
-Model bir kez kurulduktan sonra bir daha internet gerekmez. Kayıt sırasında model hatası alınsa bile **ses kaydınız kaybolmaz**; toplantı detayındaki "Yeniden dene" ile işlemeyi sonradan başlatabilirsiniz.
+Her durumda **ses kaydınız kaybolmaz**; toplantı detayındaki "Yeniden dene" ile işlemeyi sonradan başlatabilirsiniz.
 
 ## APK'yı edinme
 

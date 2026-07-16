@@ -44,6 +44,19 @@ class InsightExtractorTest {
     }
 
     @Test
+    fun `ingilizce karar ve soru taninir`() {
+        val result = InsightExtractor.extract(
+            listOf(
+                s("we decided to launch the product in september"),
+                s("can we finalize the budget this week")
+            ),
+            "en"
+        )
+        assertEquals(1, result.insights.count { it.type == InsightType.DECISION })
+        assertEquals(1, result.insights.count { it.type == InsightType.QUESTION })
+    }
+
+    @Test
     fun `ozet uretilir ve guven araliktadir`() {
         val sentences = listOf(
             s("mobil uygulama projesinin takvimini konuştuk"),

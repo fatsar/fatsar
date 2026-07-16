@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.fatsar.toplanti.R
+import com.fatsar.toplanti.asr.VoskModelManager
 import com.fatsar.toplanti.data.MeetingRepository
 import com.fatsar.toplanti.databinding.ActivityRecordingBinding
 import com.fatsar.toplanti.model.Attachment
@@ -135,25 +136,35 @@ class RecordingActivity : AppCompatActivity(), RecordingService.Listener {
 
     override fun onFinished(meetingId: String, durationMs: Long) {
         // Meta güncelleme ve işleme başlatma serviste yapılır; burada yalnızca
-        // model eksikse indirme önerilir ve detay ekranına geçilir.
+        // model eksikse (paketsiz derlemeler) kurulum önerilir ve detaya geçilir.
         if (finishing) return
         finishing = true
         runOnUiThread {
-            ModelDownloadHelper.ensureModel(this@RecordingActivity, lifecycleScope) {
-                lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
-                        repo.loadMeeting(meetingId)?.let { m ->
-                            // Model kayıt bittiğinde kurulu değildiyse servis FAILED
-                            // bırakmıştır; şimdi kuruluysa işlemeyi başlat
-                            if (m.status == MeetingStatus.FAILED) {
-                                m.status = MeetingStatus.PROCESSING
-                                m.errorMessage = ""
-                                repo.saveMeeting(m)
-                                ProcessingService.start(this@RecordingActivity, meetingId)
+            lifecycleScope.launch {
+                val meeting = withContext(Dispatchers.IO) { repo.loadMeeting(meetingId) }
+                if (meeting == null) {
+                    finish()
+                    return@launch
+                }
+                ModelDownloadHelper.ensureModels(
+                    this@RecordingActivity, lifecycleScope,
+                    VoskModelManager.requiredLanguages(meeting.language)
+                ) {
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            repo.loadMeeting(meetingId)?.let { m ->
+                                // Model kayıt bittiğinde hazır değildiyse servis FAILED
+                                // bırakmıştır; şimdi hazırsa işlemeyi başlat
+                                if (m.status == MeetingStatus.FAILED) {
+                                    m.status = MeetingStatus.PROCESSING
+                                    m.errorMessage = ""
+                                    repo.saveMeeting(m)
+                                    ProcessingService.start(this@RecordingActivity, meetingId)
+                                }
                             }
                         }
+                        openDetail()
                     }
-                    openDetail()
                 }
             }
         }

@@ -22,10 +22,11 @@ object MeetingAnalyzer {
 
     /**
      * [segments] içindeki cleanText alanlarını doldurur ve analiz sonucunu döndürür.
-     * Toplantı içeriği yalnızca işlenecek veri olarak ele alınır; içerikteki hiçbir
-     * ifade uygulama davranışını değiştirmez (PRD 12/11 güvenlik ilkesi).
+     * [language] "tr" veya "en" olabilir. Toplantı içeriği yalnızca işlenecek veri
+     * olarak ele alınır; içerikteki hiçbir ifade uygulama davranışını değiştirmez
+     * (PRD 12/11 güvenlik ilkesi).
      */
-    fun analyze(segments: List<TranscriptSegment>, baseDateMillis: Long): Result {
+    fun analyze(segments: List<TranscriptSegment>, baseDateMillis: Long, language: String = "tr"): Result {
         segments.forEach { it.cleanText = TranscriptCleaner.clean(it.rawText) }
 
         val insightSentences = segments.map {
@@ -35,9 +36,9 @@ object MeetingAnalyzer {
             TaskExtractor.Sentence(it.rawText, listOf(it.id))
         }
 
-        val insightResult = InsightExtractor.extract(insightSentences)
-        val tasks = TaskExtractor.extract(taskSentences, baseDateMillis)
-        val title = TitleSuggester.suggest(segments.joinToString(" ") { it.rawText })
+        val insightResult = InsightExtractor.extract(insightSentences, language)
+        val tasks = TaskExtractor.extract(taskSentences, baseDateMillis, language)
+        val title = TitleSuggester.suggest(segments.joinToString(" ") { it.rawText }, language)
 
         return Result(
             shortSummary = insightResult.shortSummary,

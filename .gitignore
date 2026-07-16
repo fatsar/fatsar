@@ -9,3 +9,6 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk.idsig
+# Vosk modelleri derleme sırasında indirilir; depoya girmez
+toplanti/src/main/assets/models/
+vosk-models/

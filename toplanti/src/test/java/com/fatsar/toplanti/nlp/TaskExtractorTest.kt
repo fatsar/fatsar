@@ -73,6 +73,37 @@ class TaskExtractorTest {
         assertEquals(Calendar.AUGUST, cal.get(Calendar.MONTH))
     }
 
+    @Test
+    fun `ingilizce gorev - sahip ve termin cikarilir`() {
+        val tasks = TaskExtractor.extract(
+            listOf(sentence("john will send the proposal by friday")), base, "en"
+        )
+        assertEquals(1, tasks.size)
+        assertEquals("John", tasks[0].ownerText)
+        assertEquals("by friday", tasks[0].dueTextOriginal)
+        val cal = Calendar.getInstance().apply { timeInMillis = tasks[0].dueAtMillis }
+        assertEquals(Calendar.FRIDAY, cal.get(Calendar.DAY_OF_WEEK))
+        assertEquals(TaskStatus.NEEDS_REVIEW, tasks[0].status)
+    }
+
+    @Test
+    fun `ingilizce eylemsiz cumleden gorev cikmaz`() {
+        val tasks = TaskExtractor.extract(
+            listOf(sentence("the weather was nice and the meeting went smoothly")), base, "en"
+        )
+        assertEquals(0, tasks.size)
+    }
+
+    @Test
+    fun `ingilizce needs to kalibi taninir`() {
+        val tasks = TaskExtractor.extract(
+            listOf(sentence("sarah needs to update the roadmap tomorrow")), base, "en"
+        )
+        assertEquals(1, tasks.size)
+        assertEquals("Sarah", tasks[0].ownerText)
+        assertEquals("tomorrow", tasks[0].dueTextOriginal)
+    }
+
     /** Gün kıyaslaması: saat farklarını yok sayarak gün bazında karşılaştır. */
     private fun dayOf(actual: Long, baseMillis: Long): Long {
         val a = Calendar.getInstance().apply { timeInMillis = actual }

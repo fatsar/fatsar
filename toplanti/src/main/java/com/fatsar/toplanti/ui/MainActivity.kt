@@ -12,6 +12,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.fatsar.toplanti.R
+import com.fatsar.toplanti.asr.VoskModelManager
 import com.fatsar.toplanti.data.MeetingRepository
 import com.fatsar.toplanti.databinding.ActivityMainBinding
 import com.fatsar.toplanti.model.Meeting
@@ -107,6 +108,7 @@ class MainActivity : AppCompatActivity() {
                 val meeting = Meeting(
                     mode = MeetingMode.IMPORTED,
                     status = MeetingStatus.PROCESSING,
+                    language = VoskModelManager.LANG_AUTO,
                     audioFileName = "imported.$ext"
                 )
                 val dest = File(repo.meetingDir(meeting.id), meeting.audioFileName)
@@ -126,7 +128,10 @@ class MainActivity : AppCompatActivity() {
                     .show()
                 return@launch
             }
-            ModelDownloadHelper.ensureModel(this@MainActivity, lifecycleScope) {
+            ModelDownloadHelper.ensureModels(
+                this@MainActivity, lifecycleScope,
+                VoskModelManager.requiredLanguages(meeting.language)
+            ) {
                 ProcessingService.start(this@MainActivity, meeting.id)
                 refresh()
                 openMeeting(meeting)

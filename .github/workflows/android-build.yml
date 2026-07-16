@@ -22,6 +22,31 @@ jobs:
       - name: Android SDK kur
         uses: android-actions/setup-android@v3
 
+      - name: Vosk model önbelleği
+        id: model-cache
+        uses: actions/cache@v4
+        with:
+          path: vosk-models
+          key: vosk-models-tr-0.3-en-us-0.15
+
+      - name: Vosk modellerini indir (Türkçe + İngilizce)
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p vosk-models
+          for m in vosk-model-small-tr-0.3 vosk-model-small-en-us-0.15; do
+            curl -fSL --retry 4 --retry-delay 3 \
+              -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" \
+              -o "vosk-models/$m.zip" "https://alphacephei.com/vosk/models/$m.zip"
+          done
+
+      - name: Modelleri APK varlıklarına yerleştir
+        run: |
+          mkdir -p toplanti/src/main/assets/models
+          for m in vosk-model-small-tr-0.3 vosk-model-small-en-us-0.15; do
+            unzip -q -o "vosk-models/$m.zip" -d toplanti/src/main/assets/models/
+          done
+          ls toplanti/src/main/assets/models/
+
       - name: Birim testlerini çalıştır
         run: ./gradlew --no-daemon :app:testDebugUnitTest :toplanti:testDebugUnitTest
 

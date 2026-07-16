@@ -18,27 +18,50 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 
 /**
- * Türkçe tanıma modeli kuruluysa doğrudan devam eder; değilse kullanıcı
- * onayıyla indirir (tek seferlik, ~35 MB). İndirme başarısız olursa kullanıcı
- * modeli tarayıcısıyla indirip "ZIP seç" ile elle kurabilir. İndirme dışında
+ * Gerekli tanıma modellerinin kullanılabilir olmasını sağlar. Modeller
+ * normalde APK içinde paketlenmiş gelir; bu durumda hiçbir şey sorulmaz
+ * (kopyalama, işleme servisinde yapılır). Paket yoksa (ör. geliştirici
+ * derlemesi) indirme veya elle ZIP kurulumu önerilir. İndirme dışında
  * hiçbir ağ erişimi yapılmaz.
  */
 object ModelDownloadHelper {
 
-    fun ensureModel(activity: ComponentActivity, scope: LifecycleCoroutineScope, onReady: () -> Unit) {
+    /** [languages]: "tr"/"en" listesi. Hepsi hazırsa doğrudan [onReady]. */
+    fun ensureModels(
+        activity: ComponentActivity,
+        scope: LifecycleCoroutineScope,
+        languages: List<String>,
+        onReady: () -> Unit
+    ) {
         val manager = VoskModelManager(activity)
-        if (manager.isInstalled()) {
+        val missing = languages.filter { !manager.isReady(it) }
+        if (missing.isEmpty()) {
             onReady()
             return
         }
+        askAndInstall(activity, scope, manager, missing, onReady)
+    }
+
+    private fun askAndInstall(
+        activity: ComponentActivity,
+        scope: LifecycleCoroutineScope,
+        manager: VoskModelManager,
+        missing: List<String>,
+        onReady: () -> Unit
+    ) {
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.model_download_title)
-            .setMessage(activity.getString(R.string.model_download_message, VoskModelManager.MODEL_SIZE_MB))
+            .setMessage(
+                activity.getString(
+                    R.string.model_download_message,
+                    missing.size * VoskModelManager.MODEL_SIZE_MB
+                )
+            )
             .setPositiveButton(R.string.model_download_start) { _, _ ->
-                runDownload(activity, scope, manager, onReady)
+                runDownload(activity, scope, manager, missing, onReady)
             }
             .setNeutralButton(R.string.model_pick_zip) { _, _ ->
-                pickLocalZip(activity, scope, manager, onReady)
+                pickLocalZip(activity, scope, manager, missing, onReady)
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
@@ -48,11 +71,19 @@ object ModelDownloadHelper {
         activity: ComponentActivity,
         scope: LifecycleCoroutineScope,
         manager: VoskModelManager,
+        missing: List<String>,
         onReady: () -> Unit
     ) {
-        runWithProgress(activity, scope, onReady,
-            work = { onProgress -> manager.download(onProgress) },
-            onFailure = { e -> showFailure(activity, scope, manager, onReady, e) })
+        runWithProgress(activity, scope,
+            work = { onProgress ->
+                missing.forEachIndexed { idx, lang ->
+                    manager.download(lang) { p ->
+                        onProgress((idx * 100 + p) / missing.size)
+                    }
+                }
+            },
+            onSuccess = onReady,
+            onFailure = { e -> showFailure(activity, scope, manager, missing, onReady, e) })
     }
 
     /** Kullanıcının tarayıcıyla indirdiği model ZIP'ini seçtirip kurar. */
@@ -60,6 +91,7 @@ object ModelDownloadHelper {
         activity: ComponentActivity,
         scope: LifecycleCoroutineScope,
         manager: VoskModelManager,
+        missing: List<String>,
         onReady: () -> Unit
     ) {
         var launcher: ActivityResultLauncher<Array<String>>? = null
@@ -68,13 +100,19 @@ object ModelDownloadHelper {
         ) { uri: Uri? ->
             launcher?.unregister()
             if (uri == null) return@register
-            runWithProgress(activity, scope, onReady,
+            runWithProgress(activity, scope,
                 work = { onProgress ->
                     activity.contentResolver.openInputStream(uri)?.use { ins ->
                         manager.installFromStream(ins, onProgress)
                     } ?: throw IOException(activity.getString(R.string.model_zip_open_failed))
                 },
-                onFailure = { e -> showFailure(activity, scope, manager, onReady, e) })
+                onSuccess = {
+                    // Kurulan ZIP tek dil içindir; hâlâ eksik dil varsa devam et
+                    val stillMissing = missing.filter { !manager.isReady(it) }
+                    if (stillMissing.isEmpty()) onReady()
+                    else askAndInstall(activity, scope, manager, stillMissing, onReady)
+                },
+                onFailure = { e -> showFailure(activity, scope, manager, missing, onReady, e) })
         }
         launcher.launch(arrayOf("application/zip", "application/octet-stream"))
     }
@@ -82,8 +120,8 @@ object ModelDownloadHelper {
     private fun runWithProgress(
         activity: ComponentActivity,
         scope: LifecycleCoroutineScope,
-        onReady: () -> Unit,
         work: (onProgress: (Int) -> Unit) -> Unit,
+        onSuccess: () -> Unit,
         onFailure: (Throwable) -> Unit
     ) {
         val pad = (16 * activity.resources.displayMetrics.density).toInt()
@@ -119,7 +157,7 @@ object ModelDownloadHelper {
                 }
             }
             dialog.dismiss()
-            result.fold(onSuccess = { onReady() }, onFailure = onFailure)
+            result.fold(onSuccess = { onSuccess() }, onFailure = onFailure)
         }
     }
 
@@ -127,21 +165,22 @@ object ModelDownloadHelper {
         activity: ComponentActivity,
         scope: LifecycleCoroutineScope,
         manager: VoskModelManager,
+        missing: List<String>,
         onReady: () -> Unit,
         e: Throwable
     ) {
         val detail = e.message ?: e.javaClass.simpleName
+        val urls = missing.joinToString("\n") {
+            "${VoskModelManager.MODEL_BASE_URL}/${manager.modelName(it)}.zip"
+        }
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.model_download_failed)
-            .setMessage(
-                detail + "\n\n" +
-                    activity.getString(R.string.model_manual_hint, VoskModelManager.MODEL_URL)
-            )
+            .setMessage(detail + "\n\n" + activity.getString(R.string.model_manual_hint, urls))
             .setPositiveButton(R.string.retry) { _, _ ->
-                runDownload(activity, scope, manager, onReady)
+                runDownload(activity, scope, manager, missing, onReady)
             }
             .setNeutralButton(R.string.model_pick_zip) { _, _ ->
-                pickLocalZip(activity, scope, manager, onReady)
+                pickLocalZip(activity, scope, manager, missing, onReady)
             }
             .setNegativeButton(R.string.cancel, null)
             .show()

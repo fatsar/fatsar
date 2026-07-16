@@ -15,6 +15,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.fatsar.toplanti.R
+import com.fatsar.toplanti.asr.VoskModelManager
 import com.fatsar.toplanti.data.MeetingRepository
 import com.fatsar.toplanti.databinding.ActivityMeetingDetailBinding
 import com.fatsar.toplanti.export.ExportBuilder
@@ -178,8 +179,13 @@ class MeetingDetailActivity : AppCompatActivity() {
             MeetingStatus.DONE -> getString(R.string.status_done)
             MeetingStatus.FAILED -> getString(R.string.status_failed)
         }
+        val langLabel = when (m.language) {
+            VoskModelManager.LANG_TR -> " • " + getString(R.string.lang_tr)
+            VoskModelManager.LANG_EN -> " • " + getString(R.string.lang_en)
+            else -> ""
+        }
         binding.metaText.text =
-            "${Fmt.dateTime(m.meetingDate)} • ${Fmt.duration(m.durationMs)} • $statusLabel" +
+            "${Fmt.dateTime(m.meetingDate)} • ${Fmt.duration(m.durationMs)} • $statusLabel$langLabel" +
                 if (m.tags.isNotEmpty()) "\n" + m.tags.joinToString(", ") { "#$it" } else ""
 
         // Başlık onayı kartı (AC-014): öneri, kullanıcı onaylayana dek nihai olmaz
@@ -267,7 +273,9 @@ class MeetingDetailActivity : AppCompatActivity() {
             .setTitle(R.string.reprocess_title)
             .setMessage(R.string.reprocess_message)
             .setPositiveButton(R.string.reprocess_confirm) { _, _ ->
-                ModelDownloadHelper.ensureModel(this, lifecycleScope) {
+                ModelDownloadHelper.ensureModels(
+                    this, lifecycleScope, VoskModelManager.requiredLanguages(m.language)
+                ) {
                     m.status = MeetingStatus.PROCESSING
                     lifecycleScope.launch(Dispatchers.IO) {
                         repo.saveMeeting(m)

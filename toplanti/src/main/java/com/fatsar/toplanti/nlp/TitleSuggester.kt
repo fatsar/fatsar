@@ -6,9 +6,10 @@ package com.fatsar.toplanti.nlp
  */
 object TitleSuggester {
 
-    fun suggest(fullText: String): String {
+    fun suggest(fullText: String, language: String = "tr"): String {
+        val suffix = if (language == "en") " Meeting" else " Toplantısı"
         val tokens = TurkishText.tokenize(fullText)
-            .filter { TurkishText.isContentWord(it) }
+            .filter { TurkishText.isContentWord(it, language) }
             .map { TurkishText.lowercaseTr(it) }
         if (tokens.isEmpty()) return ""
 
@@ -20,7 +21,7 @@ object TitleSuggester {
         }
         val topBigram = bigrams.entries.maxByOrNull { it.value }
         if (topBigram != null && topBigram.value >= 3) {
-            return titleCase(topBigram.key) + " Toplantısı"
+            return titleCase(topBigram.key) + suffix
         }
 
         val tf = HashMap<String, Int>()
@@ -28,8 +29,8 @@ object TitleSuggester {
         val top = tf.entries.sortedByDescending { it.value }.take(2).map { it.key }
         return when (top.size) {
             0 -> ""
-            1 -> titleCase(top[0]) + " Toplantısı"
-            else -> titleCase(top[0] + " " + top[1]) + " Toplantısı"
+            1 -> titleCase(top[0]) + suffix
+            else -> titleCase(top[0] + " " + top[1]) + suffix
         }
     }
 

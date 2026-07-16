@@ -9,50 +9,87 @@ import java.net.URL
 import java.util.zip.ZipInputStream
 
 /**
- * Türkçe konuşma tanıma modelini yönetir. Model (~35 MB) yalnızca bir kez
- * indirilir ve cihazda saklanır; sonrasında tüm tanıma çevrimdışı çalışır.
- * Ses verisi hiçbir zaman cihaz dışına gönderilmez.
+ * Türkçe ve İngilizce konuşma tanıma modellerini yönetir.
  *
- * İndirme sunucusu (alphacephei.com) bot koruması kullandığından istekler
- * tarayıcı benzeri User-Agent ile yapılır, yönlendirmeler elle izlenir ve
- * inen içeriğin gerçekten ZIP olduğu doğrulanır. Kullanıcı modeli tarayıcıyla
- * indirip [installFromStream] ile elle de kurabilir.
+ * Modeller normalde APK içinde paketlenmiş gelir (CI derlemede assets/models/
+ * altına koyar) ve ilk kullanımda uygulama deposuna kopyalanır — cihazda ağ
+ * erişimi gerekmez. Paket içermeyen geliştirici derlemeleri için indirme ve
+ * elle ZIP kurulumu yedek yol olarak korunur. Ses verisi hiçbir zaman cihaz
+ * dışına gönderilmez.
  */
-class VoskModelManager(context: Context) {
+class VoskModelManager(private val context: Context) {
 
     private val modelsRoot = File(context.filesDir, "models").apply { mkdirs() }
-    private val modelDir = File(modelsRoot, MODEL_NAME)
 
-    fun isInstalled(): Boolean = hasModelContent(modelDir)
+    fun modelName(lang: String): String = if (lang == LANG_EN) EN_MODEL else TR_MODEL
 
-    fun installedModelDir(): File? = if (isInstalled()) modelDir else null
+    private fun modelDir(lang: String): File = File(modelsRoot, modelName(lang))
+
+    fun isInstalled(lang: String): Boolean = hasModelContent(modelDir(lang))
+
+    fun installedModelDir(lang: String): File? = modelDir(lang).takeIf { hasModelContent(it) }
+
+    /** APK içinde bu dil için paketlenmiş model var mı? */
+    fun hasBundledModel(lang: String): Boolean = runCatching {
+        context.assets.list("$ASSET_ROOT/${modelName(lang)}")?.isNotEmpty() == true
+    }.getOrDefault(false)
+
+    /** Kurulu ya da paketten kurulabilir durumda mı? */
+    fun isReady(lang: String): Boolean = isInstalled(lang) || hasBundledModel(lang)
+
+    /**
+     * Modeli kullanılabilir hale getirir: kuruluysa döner; APK paketindeyse
+     * kopyalar; hiçbiri yoksa hata fırlatır (indirme/ZIP yedek yolu ayrıdır).
+     */
+    @Throws(IOException::class)
+    fun ensureInstalled(lang: String, onProgress: (Int) -> Unit) {
+        if (isInstalled(lang)) return
+        if (hasBundledModel(lang)) {
+            copyAssetDir("$ASSET_ROOT/${modelName(lang)}", modelDir(lang), onProgress)
+            if (!isInstalled(lang)) throw IOException("Paketlenmiş model kopyalanamadı")
+            return
+        }
+        throw IOException("$lang dili için tanıma modeli bulunamadı")
+    }
+
+    // ---- APK paketinden kurulum ----
+
+    private fun copyAssetDir(assetPath: String, dest: File, onProgress: (Int) -> Unit) {
+        val files = mutableListOf<Pair<String, File>>()
+        collectAssets(assetPath, dest, files)
+        if (files.isEmpty()) throw IOException("Paketlenmiş model boş")
+        files.forEachIndexed { i, (src, dst) ->
+            dst.parentFile?.mkdirs()
+            context.assets.open(src).use { ins ->
+                dst.outputStream().use { ins.copyTo(it) }
+            }
+            onProgress(((i + 1) * 100) / files.size)
+        }
+    }
+
+    private fun collectAssets(assetPath: String, dest: File, out: MutableList<Pair<String, File>>) {
+        val children = context.assets.list(assetPath) ?: return
+        if (children.isEmpty()) {
+            out.add(assetPath to dest) // dosya
+            return
+        }
+        for (c in children) collectAssets("$assetPath/$c", File(dest, c), out)
+    }
+
+    // ---- Yedek yol 1: çalışma anında indirme ----
 
     /** Modeli indirir ve kurar. [onProgress] 0..100 (indirme 0..80, kurulum 80..100). */
     @Throws(IOException::class)
-    fun download(onProgress: (Int) -> Unit) {
-        val zipFile = File(modelsRoot, "$MODEL_NAME.zip")
+    fun download(lang: String, onProgress: (Int) -> Unit) {
+        val name = modelName(lang)
+        val zipFile = File(modelsRoot, "$name.zip")
         try {
-            fetch(MODEL_URL, zipFile, onProgress)
+            fetch("$MODEL_BASE_URL/$name.zip", zipFile, onProgress)
             installZip(zipFile, onProgress)
         } finally {
             zipFile.delete()
         }
     }
-
-    /** Kullanıcının elle seçtiği model ZIP'ini kurar (tarayıcıyla indirme yolu). */
-    @Throws(IOException::class)
-    fun installFromStream(input: InputStream, onProgress: (Int) -> Unit) {
-        val zipFile = File(modelsRoot, "$MODEL_NAME.zip")
-        try {
-            zipFile.outputStream().use { input.copyTo(it) }
-            onProgress(50)
-            installZip(zipFile, onProgress)
-        } finally {
-            zipFile.delete()
-        }
-    }
-
-    // ---- İndirme ----
 
     private fun fetch(startUrl: String, dest: File, onProgress: (Int) -> Unit) {
         var url = URL(startUrl)
@@ -97,9 +134,25 @@ class VoskModelManager(context: Context) {
         }
     }
 
-    // ---- Kurulum ----
+    // ---- Yedek yol 2: kullanıcının elle seçtiği ZIP ----
 
-    private fun installZip(zipFile: File, onProgress: (Int) -> Unit) {
+    /**
+     * Elle seçilen model ZIP'ini kurar; kurulan dili ("tr"/"en") döndürür.
+     * Dil, arşivdeki model klasörünün adından anlaşılır.
+     */
+    @Throws(IOException::class)
+    fun installFromStream(input: InputStream, onProgress: (Int) -> Unit): String {
+        val zipFile = File(modelsRoot, "manual-model.zip")
+        try {
+            zipFile.outputStream().use { input.copyTo(it) }
+            onProgress(50)
+            return installZip(zipFile, onProgress)
+        } finally {
+            zipFile.delete()
+        }
+    }
+
+    private fun installZip(zipFile: File, onProgress: (Int) -> Unit): String {
         if (!looksLikeZip(zipFile)) {
             // Tipik neden: sunucunun bot koruması ZIP yerine HTML sayfası döndürdü
             throw IOException(
@@ -108,9 +161,10 @@ class VoskModelManager(context: Context) {
             )
         }
         unzip(zipFile, onProgress)
-        normalizeModelDir()
-        if (!isInstalled()) throw IOException("Model arşivi beklenen yapıda değil")
+        val lang = normalizeModelDirs()
+            ?: throw IOException("Model arşivi beklenen yapıda değil")
         onProgress(100)
+        return lang
     }
 
     private fun looksLikeZip(file: File): Boolean {
@@ -148,18 +202,20 @@ class VoskModelManager(context: Context) {
     }
 
     /**
-     * Arşivin kök klasör adı beklenenden farklıysa (ör. farklı sürüm adı),
-     * model içeriğini bulup standart konuma taşır.
+     * Açılan arşivdeki model içeriğini bulur, adından dilini anlar ve standart
+     * klasör adına taşır. Kurulan dili döndürür; içerik yoksa null.
      */
-    private fun normalizeModelDir() {
-        if (hasModelContent(modelDir)) return
-        val candidate = findModelContent(modelsRoot, depth = 3) ?: return
-        if (candidate == modelDir) return
-        modelDir.deleteRecursively()
-        if (!candidate.renameTo(modelDir)) {
-            candidate.copyRecursively(modelDir, overwrite = true)
+    private fun normalizeModelDirs(): String? {
+        val candidate = findModelContent(modelsRoot, depth = 3) ?: return null
+        val lang = if (candidate.name.contains("-en")) LANG_EN else LANG_TR
+        val target = modelDir(lang)
+        if (candidate == target) return lang
+        target.deleteRecursively()
+        if (!candidate.renameTo(target)) {
+            candidate.copyRecursively(target, overwrite = true)
             candidate.deleteRecursively()
         }
+        return lang
     }
 
     private fun hasModelContent(dir: File): Boolean =
@@ -168,18 +224,33 @@ class VoskModelManager(context: Context) {
     private fun findModelContent(root: File, depth: Int): File? {
         if (depth < 0) return null
         val dirs = root.listFiles()?.filter { it.isDirectory } ?: return null
+        // Standart konumda zaten kurulu olanlar aday değildir; yeni açılanı ara
         for (d in dirs) {
-            if (hasModelContent(d)) return d
+            if (hasModelContent(d) && d.name != TR_MODEL && d.name != EN_MODEL) return d
             findModelContent(d, depth - 1)?.let { return it }
         }
-        return null
+        // Yalnızca standart adla açıldıysa onu kabul et
+        return dirs.firstOrNull { hasModelContent(it) }
     }
 
     companion object {
-        // Alpha Cephei'nin resmî küçük Türkçe modeli (Apache 2.0 lisanslı)
-        const val MODEL_NAME = "vosk-model-small-tr-0.3"
-        const val MODEL_URL = "https://alphacephei.com/vosk/models/$MODEL_NAME.zip"
-        const val MODEL_SIZE_MB = 35
+        const val LANG_TR = "tr"
+        const val LANG_EN = "en"
+        const val LANG_AUTO = "auto"
+
+        // Alpha Cephei'nin resmî küçük modelleri (Apache 2.0 lisanslı)
+        const val TR_MODEL = "vosk-model-small-tr-0.3"
+        const val EN_MODEL = "vosk-model-small-en-us-0.15"
+        const val MODEL_BASE_URL = "https://alphacephei.com/vosk/models"
+        const val MODEL_SIZE_MB = 40
+        private const val ASSET_ROOT = "models"
+
+        /** Bu toplantı dili için gereken model dilleri. */
+        fun requiredLanguages(meetingLanguage: String): List<String> = when (meetingLanguage) {
+            LANG_EN -> listOf(LANG_EN)
+            LANG_TR -> listOf(LANG_TR)
+            else -> listOf(LANG_TR, LANG_EN) // otomatik algılama iki modeli de kullanır
+        }
 
         // Sunucudaki bot koruması varsayılan "Java/..." kimliğini engelleyebildiği
         // için tarayıcı benzeri bir kimlik kullanılır

@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.fatsar.toplanti.R
+import com.fatsar.toplanti.asr.VoskModelManager
 import com.fatsar.toplanti.data.MeetingRepository
 import com.fatsar.toplanti.databinding.ActivityNewMeetingBinding
 import com.fatsar.toplanti.model.Meeting
@@ -72,9 +73,15 @@ class NewMeetingActivity : AppCompatActivity() {
 
     private fun startRecording() {
         val repo = MeetingRepository(applicationContext)
+        val language = when (binding.langGroup.checkedRadioButtonId) {
+            R.id.langTr -> VoskModelManager.LANG_TR
+            R.id.langEn -> VoskModelManager.LANG_EN
+            else -> VoskModelManager.LANG_AUTO
+        }
         val meeting = Meeting(
             mode = MeetingMode.LIVE,
             status = MeetingStatus.RECORDING,
+            language = language,
             startedAt = System.currentTimeMillis()
         )
         binding.titleInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let {

@@ -1,6 +1,6 @@
 package com.fatsar.toplanti.nlp
 
-/** Türkçe metin yardımcıları. Saf Kotlin; birim testlerinde kullanılır. */
+/** Türkçe/İngilizce metin yardımcıları. Saf Kotlin; birim testlerinde kullanılır. */
 object TurkishText {
 
     val STOPWORDS = setOf(
@@ -45,9 +45,26 @@ object TurkishText {
     fun tokenize(text: String): List<String> =
         text.split(Regex("[^\\p{L}\\p{Nd}]+")).filter { it.isNotBlank() }
 
+    val EN_STOPWORDS = setOf(
+        "about", "after", "again", "also", "always", "anything", "anyway", "because", "been",
+        "before", "being", "cannot", "could", "does", "doing", "dont", "each", "either", "else",
+        "even", "ever", "every", "everything", "from", "getting", "goes", "going", "gonna", "gotta",
+        "have", "having", "here", "just", "kind", "kinda", "know", "like", "likes", "little",
+        "look", "looking", "make", "makes", "many", "maybe", "mean", "more", "most", "much",
+        "need", "never", "okay", "only", "other", "ourselves", "over", "pretty", "quite", "really",
+        "right", "said", "same", "says", "should", "some", "something", "sort", "still", "stuff",
+        "sure", "take", "than", "that", "thats", "their", "them", "then", "there", "these",
+        "they", "thing", "things", "think", "this", "those", "though", "thought", "through",
+        "very", "want", "wanted", "well", "were", "what", "when", "where", "which", "while",
+        "will", "with", "would", "yeah", "your", "youre"
+    )
+
+    fun stopwords(language: String): Set<String> =
+        if (language == "en") EN_STOPWORDS else STOPWORDS
+
     /** İçerik sözcüğü: 4+ harfli ve durak sözcüğü olmayan. */
-    fun isContentWord(token: String): Boolean {
+    fun isContentWord(token: String, language: String = "tr"): Boolean {
         val t = lowercaseTr(token)
-        return t.length >= 4 && t !in STOPWORDS && !t.all { it.isDigit() }
+        return t.length >= 4 && t !in stopwords(language) && !t.all { it.isDigit() }
     }
 }

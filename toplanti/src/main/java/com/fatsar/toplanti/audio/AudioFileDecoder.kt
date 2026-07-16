@@ -13,11 +13,12 @@ import java.io.IOException
 class AudioFileDecoder(private val file: File) {
 
     /**
-     * @param onPcm her PCM parçası için çağrılır
+     * @param onPcm her PCM parçası için çağrılır; false dönerse çözme erken durur
+     *              (ör. dil algılama için yalnızca baş kısım gerekir)
      * @param onProgress 0..100 arası ilerleme
      */
     @Throws(IOException::class)
-    fun decode(onPcm: (ByteArray) -> Unit, onProgress: (Int) -> Unit) {
+    fun decode(onPcm: (ByteArray) -> Boolean, onProgress: (Int) -> Unit) {
         if (isPcmWav()) decodeWav(onPcm, onProgress) else decodeWithCodec(onPcm, onProgress)
     }
 
@@ -32,7 +33,7 @@ class AudioFileDecoder(private val file: File) {
         }
     }
 
-    private fun decodeWav(onPcm: (ByteArray) -> Unit, onProgress: (Int) -> Unit) {
+    private fun decodeWav(onPcm: (ByteArray) -> Boolean, onProgress: (Int) -> Unit) {
         file.inputStream().use { ins ->
             val riff = ByteArray(12)
             require(ins.read(riff) == 12) { "Geçersiz WAV" }
@@ -65,7 +66,7 @@ class AudioFileDecoder(private val file: File) {
             while (true) {
                 val n = ins.read(buf)
                 if (n <= 0) break
-                onPcm(resampler.process(buf, n))
+                if (!onPcm(resampler.process(buf, n))) return
                 read += n
                 if (total > 0) onProgress(((read * 100) / total).toInt().coerceIn(0, 100))
             }
@@ -73,7 +74,7 @@ class AudioFileDecoder(private val file: File) {
         }
     }
 
-    private fun decodeWithCodec(onPcm: (ByteArray) -> Unit, onProgress: (Int) -> Unit) {
+    private fun decodeWithCodec(onPcm: (ByteArray) -> Boolean, onProgress: (Int) -> Unit) {
         val extractor = MediaExtractor()
         extractor.setDataSource(file.absolutePath)
         var trackIndex = -1
@@ -136,7 +137,10 @@ class AudioFileDecoder(private val file: File) {
                                 of.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
                             )
                         }
-                        onPcm(resampler!!.process(chunk, chunk.size))
+                        if (!onPcm(resampler!!.process(chunk, chunk.size))) {
+                            codec.releaseOutputBuffer(outIndex, false)
+                            return
+                        }
                     }
                     codec.releaseOutputBuffer(outIndex, false)
                     if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outputDone = true
