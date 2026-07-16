@@ -39,13 +39,11 @@ jobs:
               -o "vosk-models/$m.zip" "https://alphacephei.com/vosk/models/$m.zip"
           done
 
-      - name: Modelleri APK varlıklarına yerleştir
+      - name: Modelleri APK varlıklarına yerleştir (tek ZIP dosyası olarak)
         run: |
           mkdir -p toplanti/src/main/assets/models
-          for m in vosk-model-small-tr-0.3 vosk-model-small-en-us-0.15; do
-            unzip -q -o "vosk-models/$m.zip" -d toplanti/src/main/assets/models/
-          done
-          ls toplanti/src/main/assets/models/
+          cp vosk-models/*.zip toplanti/src/main/assets/models/
+          ls -lh toplanti/src/main/assets/models/
 
       - name: Birim testlerini çalıştır
         run: ./gradlew --no-daemon :app:testDebugUnitTest :toplanti:testDebugUnitTest

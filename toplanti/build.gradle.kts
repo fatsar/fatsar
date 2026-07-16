@@ -37,6 +37,11 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    androidResources {
+        // Paketlenmiş model ZIP'leri zaten sıkıştırılmış; APK'da olduğu gibi saklansın
+        noCompress += "zip"
+    }
 }
 
 dependencies {

@@ -2,6 +2,7 @@ package com.fatsar.toplanti.asr
 
 import android.content.Context
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -29,9 +30,13 @@ class VoskModelManager(private val context: Context) {
 
     fun installedModelDir(lang: String): File? = modelDir(lang).takeIf { hasModelContent(it) }
 
-    /** APK içinde bu dil için paketlenmiş model var mı? */
+    /**
+     * APK içinde bu dil için paketlenmiş model ZIP'i var mı?
+     * (AssetManager.list yerine doğrudan open denenir; list bazı cihazlarda
+     * güvenilir çalışmadığından modeller tek ZIP dosyası olarak paketlenir.)
+     */
     fun hasBundledModel(lang: String): Boolean = runCatching {
-        context.assets.list("$ASSET_ROOT/${modelName(lang)}")?.isNotEmpty() == true
+        context.assets.open(bundledZipPath(lang)).use { true }
     }.getOrDefault(false)
 
     /** Kurulu ya da paketten kurulabilir durumda mı? */
@@ -39,42 +44,30 @@ class VoskModelManager(private val context: Context) {
 
     /**
      * Modeli kullanılabilir hale getirir: kuruluysa döner; APK paketindeyse
-     * kopyalar; hiçbiri yoksa hata fırlatır (indirme/ZIP yedek yolu ayrıdır).
+     * ZIP'i açıp kurar; hiçbiri yoksa hata fırlatır (indirme/ZIP yedek yolu ayrıdır).
      */
     @Throws(IOException::class)
     fun ensureInstalled(lang: String, onProgress: (Int) -> Unit) {
         if (isInstalled(lang)) return
-        if (hasBundledModel(lang)) {
-            copyAssetDir("$ASSET_ROOT/${modelName(lang)}", modelDir(lang), onProgress)
-            if (!isInstalled(lang)) throw IOException("Paketlenmiş model kopyalanamadı")
-            return
-        }
-        throw IOException("$lang dili için tanıma modeli bulunamadı")
-    }
-
-    // ---- APK paketinden kurulum ----
-
-    private fun copyAssetDir(assetPath: String, dest: File, onProgress: (Int) -> Unit) {
-        val files = mutableListOf<Pair<String, File>>()
-        collectAssets(assetPath, dest, files)
-        if (files.isEmpty()) throw IOException("Paketlenmiş model boş")
-        files.forEachIndexed { i, (src, dst) ->
-            dst.parentFile?.mkdirs()
-            context.assets.open(src).use { ins ->
-                dst.outputStream().use { ins.copyTo(it) }
+        val assetPath = bundledZipPath(lang)
+        val tmp = File(modelsRoot, "bundled-${modelName(lang)}.zip")
+        try {
+            context.assets.open(assetPath).use { ins ->
+                tmp.outputStream().use { ins.copyTo(it) }
             }
-            onProgress(((i + 1) * 100) / files.size)
+            onProgress(40)
+            installZip(tmp, onProgress)
+        } catch (e: FileNotFoundException) {
+            throw IOException("Model paketi APK içinde bulunamadı: $assetPath", e)
+        } finally {
+            tmp.delete()
+        }
+        if (!isInstalled(lang)) {
+            throw IOException("Paketlenmiş model kurulamadı (${modelName(lang)})")
         }
     }
 
-    private fun collectAssets(assetPath: String, dest: File, out: MutableList<Pair<String, File>>) {
-        val children = context.assets.list(assetPath) ?: return
-        if (children.isEmpty()) {
-            out.add(assetPath to dest) // dosya
-            return
-        }
-        for (c in children) collectAssets("$assetPath/$c", File(dest, c), out)
-    }
+    private fun bundledZipPath(lang: String): String = "$ASSET_ROOT/${modelName(lang)}.zip"
 
     // ---- Yedek yol 1: çalışma anında indirme ----
 

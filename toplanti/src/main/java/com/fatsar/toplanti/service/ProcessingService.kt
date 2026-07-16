@@ -92,7 +92,12 @@ class ProcessingService : Service() {
                             updateProgress((idx * 100 + p) * 10 / (requiredLangs.size * 100))
                         }
                     } catch (e: Exception) {
-                        throw IllegalStateException(getString(R.string.error_model_missing), e)
+                        // Asıl nedeni kullanıcıya göster; kör hata ayıklamayı önler
+                        throw IllegalStateException(
+                            getString(R.string.error_model_missing) +
+                                "\n[" + (e.message ?: e.javaClass.simpleName) + "]",
+                            e
+                        )
                     }
                 }
                 updateProgress(10)
