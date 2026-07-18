@@ -31,7 +31,7 @@
     </style>
 
     <!-- Avatar (baş harf dairesi) -->
-    <style name="Widget.KartCep.Avatar">
+    <style name="Widget.KartCep.Avatar" parent="Widget.AppCompat.TextView">
         <item name="android:gravity">center</item>
         <item name="android:textColor">#FFFFFF</item>
         <item name="android:textSize">18sp</item>
