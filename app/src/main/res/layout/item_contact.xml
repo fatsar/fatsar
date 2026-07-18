@@ -96,7 +96,7 @@
             <ImageView
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:contentDescription="@string/col_phone"
+                android:contentDescription="@string/col_mobile"
                 android:src="@drawable/ic_phone" />
 
             <TextView
