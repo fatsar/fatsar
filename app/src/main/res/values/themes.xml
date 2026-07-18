@@ -1,4 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Kartvizit" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.Kartvizit" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@color/brand_on_primary</item>
+        <item name="colorPrimaryContainer">@color/brand_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/brand_on_primary_container</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorSecondaryContainer">@color/brand_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/brand_on_secondary_container</item>
+        <item name="colorTertiary">@color/brand_tertiary</item>
+        <item name="colorTertiaryContainer">@color/brand_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/brand_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/brand_background</item>
+        <item name="colorSurface">@color/brand_surface</item>
+        <item name="colorSurfaceContainer">@color/brand_surface_container</item>
+        <item name="colorOnSurface">@color/brand_on_surface</item>
+        <item name="colorSurfaceVariant">@color/brand_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/brand_on_surface_variant</item>
+        <item name="colorOutline">@color/brand_outline</item>
+        <item name="android:statusBarColor">@color/brand_surface</item>
+    </style>
+
+    <!-- Tarama çubuğunun üst köşeleri yuvarlatılır -->
+    <style name="ShapeAppearance.KartCep.ScanBar" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <!-- Avatar (baş harf dairesi) -->
+    <style name="Widget.KartCep.Avatar">
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:background">@drawable/bg_avatar</item>
+    </style>
 </resources>

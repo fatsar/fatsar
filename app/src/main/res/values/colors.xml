@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1565C0</color>
+    <!-- KartCep marka paleti (açık tema) — zümrüt/teal + sıcak mercan vurgu -->
+    <color name="brand_primary">#0F6E60</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_primary_container">#A7F2E3</color>
+    <color name="brand_on_primary_container">#00201B</color>
+    <color name="brand_secondary">#4B635D</color>
+    <color name="brand_secondary_container">#CDE8E0</color>
+    <color name="brand_on_secondary_container">#082019</color>
+    <color name="brand_tertiary">#B5482C</color>
+    <color name="brand_tertiary_container">#FFDBCF</color>
+    <color name="brand_on_tertiary_container">#3B0A00</color>
+    <color name="brand_background">#F6FBF8</color>
+    <color name="brand_surface">#F6FBF8</color>
+    <color name="brand_surface_container">#EAF1EC</color>
+    <color name="brand_on_surface">#171D1B</color>
+    <color name="brand_surface_variant">#DBE5E0</color>
+    <color name="brand_on_surface_variant">#3F4945</color>
+    <color name="brand_outline">#6F7975</color>
+
+    <!-- Uygulama simgesi arka planı -->
+    <color name="ic_launcher_background">#0F6E60</color>
 </resources>

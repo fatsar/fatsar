@@ -2,17 +2,22 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="@string/app_name" />
+            app:title="@string/app_name"
+            app:titleCentered="false"
+            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout
@@ -31,28 +36,46 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="12dp"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-            <TextView
+            <!-- Boş durum -->
+            <LinearLayout
                 android:id="@+id/emptyView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
+                android:orientation="vertical"
                 android:gravity="center"
-                android:padding="32dp"
-                android:text="@string/empty_list"
-                android:textAppearance="?attr/textAppearanceBodyLarge" />
+                android:padding="32dp">
+
+                <ImageView
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/ic_scan" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:text="@string/empty_list"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+            </LinearLayout>
 
             <ProgressBar
                 android:id="@+id/progress"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:layout_gravity="center"
+                android:indeterminateTint="?attr/colorPrimary"
                 android:visibility="gone" />
         </FrameLayout>
 
+        <!-- Arşiv (önceki taramalar) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnArchive"
             style="@style/Widget.Material3.Button.TextButton.Icon"
@@ -62,33 +85,47 @@
             android:visibility="gone"
             app:icon="@drawable/ic_folder" />
 
-        <LinearLayout
+        <!-- Tarama çubuğu: yükseltilmiş, üst köşeleri yuvarlatılmış yüzey -->
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/scanBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="16dp">
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardElevation="6dp"
+            app:cardCornerRadius="0dp"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.KartCep.ScanBar">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCamera"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="@string/scan_with_camera"
-                app:icon="@drawable/ic_camera" />
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="16dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGallery"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/pick_from_gallery"
-                app:icon="@drawable/ic_image" />
-        </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCamera"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:text="@string/scan_with_camera"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_camera"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGallery"
+                    style="@style/Widget.Material3.Button.TonalButton.Icon"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:text="@string/pick_from_gallery"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_image"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
