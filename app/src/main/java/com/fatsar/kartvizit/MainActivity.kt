@@ -200,9 +200,17 @@ class MainActivity : AppCompatActivity() {
         setButtonsEnabled(false)
         scannersUsed = true
         lifecycleScope.launch {
+            // Görüntüyü TEK kez dik bitmap olarak çöz; aynı bitmap hem OCR'a
+            // hem bölge tespitine verilir (ikinci çözme/URI yeniden açma yok).
+            var bitmap: android.graphics.Bitmap? = null
             try {
+                bitmap = withContext(Dispatchers.IO) {
+                    runCatching { CardRegionDetector.decodeUpright(this@MainActivity, uri) }.getOrNull()
+                }
                 val image = withContext(Dispatchers.IO) {
-                    InputImage.fromFilePath(this@MainActivity, uri)
+                    val bmp = bitmap
+                    if (bmp != null) InputImage.fromBitmap(bmp, 0)
+                    else InputImage.fromFilePath(this@MainActivity, uri)
                 }
                 val text = recognizer.process(image).await()
                 val barcodes = runCatching { barcodeScanner.process(image).await() }
@@ -234,7 +242,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val clusters = withContext(Dispatchers.Default) {
-                    detectClusters(uri, lines, image.width, image.height)
+                    detectClusters(bitmap, lines, image.width, image.height)
                 }
                 val records = buildRecords(clusters, scannedBarcodes)
                 when (records.size) {
@@ -248,6 +256,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 toast(getString(R.string.scan_failed, e.localizedMessage ?: ""))
             } finally {
+                bitmap?.recycle()
                 binding.progress.visibility = View.GONE
                 setButtonsEnabled(true)
             }
@@ -255,23 +264,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Kart kümelerini belirler. Önce görüntüden kart dikdörtgenlerini bulmayı
-     * dener (açık kart / koyu zemin kontrastı); bu, kartın içindeki beyaz
-     * boşlukların kartı bölmesini önler ve her kartı tüm satırlarıyla korur.
-     * Kontrast yetersizse metin-kutusu tabanlı ayırmaya geri düşer.
+     * Kart kümelerini belirler. Önce paylaşılan bitmap'ten kart dikdörtgenlerini
+     * bulmayı dener (açık kart / koyu zemin kontrastı); bu, kartın içindeki beyaz
+     * boşlukların ya da döndürülmüş kartın metin sütunlarının kartı bölmesini
+     * önler ve her kartı tüm satırlarıyla korur. Kontrast yetersizse ya da
+     * görüntü çözülemediyse metin-kutusu tabanlı ayırmaya geri düşer.
      */
     private fun detectClusters(
-        uri: Uri,
+        bitmap: android.graphics.Bitmap?,
         lines: List<OcrLine>,
         imageWidth: Int,
         imageHeight: Int
     ): List<List<OcrLine>> {
         if (lines.isEmpty()) return listOf(emptyList())
-        val groups = runCatching {
-            CardRegionDetector.detectAndGroup(this, uri, imageWidth, imageHeight, lines)
-        }.getOrNull()
-        if (groups != null && groups.size >= 2) return groups
-        if (groups != null && groups.size == 1) return groups
+        if (bitmap != null) {
+            val groups = runCatching {
+                CardRegionDetector.groupFromBitmap(bitmap, lines)
+            }.getOrNull()
+            if (!groups.isNullOrEmpty()) return groups
+        }
         return CardSegmenter.segment(lines, imageWidth, imageHeight)
     }
 
