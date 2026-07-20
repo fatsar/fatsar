@@ -167,6 +167,30 @@ class CardSegmenterTest {
     }
 
     @Test
+    fun `cok satirli logo blogu tek kartta ayri kayit olmaz`() {
+        // Öztürk Plastik kartındaki gerçek durum: üstte 4 satırlık firma/logo
+        // bloğu, altında büyük boşluğun ardından iletişim bloğu. Logo bloğu 3'ten
+        // fazla satır olduğu için eski kural onu "ayrı kart" sanıyordu. İletişim
+        // bilgisi yalnızca alt blokta olduğundan üst blok ayrı kayıt olmamalı.
+        val logo = listOf(
+            line("ÖZTÜRK", 0, 0, 100, 10),
+            line("PLASTİK", 0, 12, 100, 22),
+            line("AMBALAJ", 0, 24, 100, 34),
+            line("SAN TİC", 0, 36, 100, 46)
+        )
+        val body = listOf(
+            line("Yıldıray Öztürk", 0, 70, 100, 80),
+            line("info@ozturkplastik.com", 0, 82, 100, 92),
+            line("0212 555 44 33", 0, 94, 100, 104)
+        )
+
+        val clusters = CardSegmenter.segment(logo + body, imageWidth = 120, imageHeight = 120)
+
+        assertEquals(1, clusters.size)
+        assertEquals(7, clusters[0].size)
+    }
+
+    @Test
     fun `olukta gurultu kutusu bolunmeyi engellemez`() {
         val left = (0 until 4).map { i -> line("Sol satır $i", 0, i * 14, 80, i * 14 + 10) }
         val right = (0 until 4).map { i -> line("Sag satır $i", 200, i * 14, 280, i * 14 + 10) }

@@ -34,6 +34,12 @@ object CardSegmenter {
 
     private val ALNUM = Regex("""[\p{L}\p{Nd}]""")
 
+    // "Bu küme gerçekten ayrı bir kart mı?" testinde kullanılan iletişim
+    // desenleri (CardTextParser'daki ölçütlerle aynı: e-posta ya da en az 9
+    // rakamlı telefon). Logo/başlık/adres parçalarında bunlar bulunmaz.
+    private val EMAIL = Regex("""[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}""")
+    private val PHONE = Regex("""[+(]?\d[\d\s().\-/]{7,}\d""")
+
     private data class Gap(val start: Int, val end: Int) {
         val size: Int get() = end - start
         val mid: Int get() = (start + end) / 2
@@ -60,8 +66,8 @@ object CardSegmenter {
             // Sinyal dışı satırları (kısa etiketler, gürültü) en yakın kümeye ekle
             val residual = usable.filter { line -> clusters.none { it.contains(line) } }
             residual.forEach { nearestCluster(clusters, it.centerX, it.centerY).add(it) }
-            // Kartın iç boşluğundan kopan zayıf parçaları geri birleştir
-            mergeWeakClusters(clusters)
+            // Kartın iç boşluğundan kopan iletişimsiz parçaları geri birleştir
+            mergeFragmentClusters(clusters)
         }
         return if (clusters.size > 1) {
             clusters.sortedWith(compareBy({ it.minOf { l -> l.top } }, { it.minOf { l -> l.left } }))
@@ -71,28 +77,37 @@ object CardSegmenter {
     }
 
     /**
-     * Gerçek bir kartvizitte hemen her zaman telefon ya da e-posta bulunur.
-     * Bunlardan yoksun küçük kümeler (ör. kartın içindeki büyük beyaz boşluk
-     * yüzünden ayrı düşen logo/isim bloğu) en yakın kümeye geri birleştirilir.
+     * Kart sayısı ≈ bağımsız iletişim bloğu sayısıdır: gerçek her kartta kendi
+     * telefonu/e-postası bulunur; logo, başlık ya da adres parçalarında bulunmaz.
+     * Bu yüzden **başka bir kümede iletişim bilgisi varken** iletişimsiz kalan
+     * kümeler (kartın büyük iç boşluğuyla kopan logo/isim bloğu gibi) ayrı bir
+     * kart değildir; en yakın kümeye geri birleştirilir. Böylece tek kart, üstteki
+     * logosu ile alttaki iletişim bloğu ayrı ayrı iki kayda bölünmez.
+     *
+     * Hiçbir kümede iletişim bilgisi yoksa bu ayrım yapılamaz; o durumda salt
+     * geometriye (oluğa) güvenip bölünme korunur — yalnızca tek satırlık kopuk
+     * kırıntılar yine de en yakına katılır.
      */
-    private fun mergeWeakClusters(clusters: MutableList<MutableList<OcrLine>>) {
+    private fun mergeFragmentClusters(clusters: MutableList<MutableList<OcrLine>>) {
         while (clusters.size > 1) {
-            val weakIndex = clusters.indexOfFirst { isWeak(it) }
-            if (weakIndex < 0) return
-            val weak = clusters.removeAt(weakIndex)
-            val cx = weak.sumOf { it.centerX } / weak.size
-            val cy = weak.sumOf { it.centerY } / weak.size
-            nearestCluster(clusters, cx, cy).addAll(weak)
+            val anyHasContact = clusters.any { hasContact(it) }
+            val fragIndex = clusters.indexOfFirst { c ->
+                !hasContact(c) && (c.size < 2 || anyHasContact)
+            }
+            if (fragIndex < 0) return
+            val frag = clusters.removeAt(fragIndex)
+            val cx = frag.sumOf { it.centerX } / frag.size
+            val cy = frag.sumOf { it.centerY } / frag.size
+            nearestCluster(clusters, cx, cy).addAll(frag)
         }
     }
 
-    private fun isWeak(cluster: List<OcrLine>): Boolean {
-        if (cluster.size < 2) return true
-        if (cluster.size > 3) return false
-        return cluster.none { line ->
-            line.text.contains('@') || line.text.count { it.isDigit() } >= 7
+    /** Kümede en az bir e-posta ya da (≥9 rakamlı) telefon var mı? */
+    private fun hasContact(cluster: List<OcrLine>): Boolean =
+        cluster.any { line ->
+            EMAIL.containsMatchIn(line.text) ||
+                PHONE.findAll(line.text).any { m -> m.value.count { it.isDigit() } >= 9 }
         }
-    }
 
     private fun nearestCluster(
         clusters: List<MutableList<OcrLine>>,

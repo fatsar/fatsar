@@ -11,8 +11,8 @@ android {
         applicationId = "com.fatsar.kartvizit"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
 
         // CI, -PbuildSha=<kısa-sha> geçirir; menüdeki "Sürüm" satırında
         // hangi derlemenin kurulu olduğu görülür (eski APK karışıklığına son)
