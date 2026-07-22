@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
+import com.fatsar.kartvizit.data.ProfileStore
 import com.fatsar.kartvizit.databinding.ActivityEditContactBinding
 import com.fatsar.kartvizit.export.CloudBackup
 import com.fatsar.kartvizit.export.ExportManager
@@ -97,15 +98,17 @@ class EditContactActivity : AppCompatActivity() {
         return true
     }
 
-    /** Mevcut kategorileri öneri olarak sunar; kullanıcı yenisini de yazabilir. */
+    /** Profilleri (İş/Özel + eklenenler) öneri olarak sunar; yenisi de yazılabilir. */
     private fun setupCategoryField() {
-        val categories = ContactRepository.getAll(this)
+        val profiles = ProfileStore.profiles(this)
+        val extras = ContactRepository.getAll(this)
             .map { it.category }
             .filter { it.isNotBlank() }
             .distinct()
+            .filter { c -> profiles.none { it.equals(c, ignoreCase = true) } }
             .sorted()
         binding.inputCategory.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_list_item_1, categories)
+            ArrayAdapter(this, android.R.layout.simple_list_item_1, profiles + extras)
         )
     }
 
@@ -139,6 +142,10 @@ class EditContactActivity : AppCompatActivity() {
         binding.btnSave.isEnabled = false
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
+                // Yeni bir profil (kategori) yazıldıysa kalıcı profil listesine ekle
+                if (record.category.isNotBlank()) {
+                    ProfileStore.addProfile(this@EditContactActivity, record.category)
+                }
                 ContactRepository.upsert(this@EditContactActivity, record)
                 ExportManager.regenerateExcel(this@EditContactActivity)
                 CloudBackup.maybeAutoBackup(this@EditContactActivity)

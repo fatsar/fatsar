@@ -19,17 +19,29 @@
             app:titleCentered="false"
             app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
 
-        <!-- Profil sekmeleri: kartvizitler kategoriye (profile) göre gruplanır -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabs"
+        <!-- Profil sekmeleri: kartvizitler profile (İş / Özel / …) göre
+             gruplanır. Buton görünümlü, seçilebilir chip'ler + "+" ile yeni
+             profil (Excel sayfası gibi çoğaltılabilir). -->
+        <HorizontalScrollView
+            android:id="@+id/profileScroll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            app:tabGravity="start"
-            app:tabIndicatorColor="?attr/colorPrimary"
-            app:tabMode="scrollable"
-            app:tabSelectedTextColor="?attr/colorPrimary"
-            app:tabTextColor="?attr/colorOnSurfaceVariant" />
+            android:clipToPadding="false"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="8dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/profileChips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:chipSpacingHorizontal="8dp"
+                app:selectionRequired="true"
+                app:singleLine="true"
+                app:singleSelection="true" />
+        </HorizontalScrollView>
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout

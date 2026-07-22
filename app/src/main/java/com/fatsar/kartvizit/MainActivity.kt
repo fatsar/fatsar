@@ -17,6 +17,7 @@ import androidx.core.os.BundleCompat
 import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
+import com.fatsar.kartvizit.data.ProfileStore
 import com.fatsar.kartvizit.databinding.ActivityMainBinding
 import com.fatsar.kartvizit.export.CloudBackup
 import com.fatsar.kartvizit.export.ExportManager
@@ -31,8 +32,8 @@ import com.fatsar.kartvizit.ocr.ScanEnricher
 import com.fatsar.kartvizit.ocr.ScannedBarcode
 import com.fatsar.kartvizit.ocr.ScannedContact
 import com.fatsar.kartvizit.ui.ContactsAdapter
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -56,8 +57,11 @@ class MainActivity : AppCompatActivity() {
     private var cameraImageUri: Uri? = null
     private var pendingContactAdd: ContactRecord? = null
 
-    /** null = tüm kategoriler, "" = kategorisiz, diğer = tam eşleşme. */
+    /** Seçili profil (üstteki sekme). null = henüz seçilmedi → ilk profil. */
     private var categoryFilter: String? = null
+
+    /** Profil çipi görünüm kimliği → profil adı eşlemesi. */
+    private val chipIdToProfile = mutableMapOf<Int, String>()
 
     /** Sekmeler yeniden kurulurken seçim geri çağırmalarını yok say. */
     private var updatingTabs = false
@@ -159,22 +163,15 @@ class MainActivity : AppCompatActivity() {
             refreshList()
         }
 
-        // Profil sekmesi seçimi: listeyi o profile (kategoriye) göre grupla
-        binding.tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) {
-                if (updatingTabs) return
-                categoryFilter = when (val tag = tab.tag as? String) {
-                    TAB_ALL -> null
-                    TAB_UNCATEGORIZED -> ""
-                    else -> tag
-                }
-                // Sekmeler değişmedi; yeniden kurmadan yalnızca listeyi tazele
-                if (showingArchive) exitArchive() else refreshList(syncTabs = false)
-            }
-
-            override fun onTabUnselected(tab: TabLayout.Tab) {}
-            override fun onTabReselected(tab: TabLayout.Tab) {}
-        })
+        // Profil butonu seçimi: listeyi o profile göre grupla
+        binding.profileChips.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (updatingTabs) return@setOnCheckedStateChangeListener
+            val profile = checkedIds.firstOrNull()?.let { chipIdToProfile[it] }
+                ?: return@setOnCheckedStateChangeListener
+            categoryFilter = profile
+            // Butonlar değişmedi; yeniden kurmadan yalnızca listeyi tazele
+            if (showingArchive) exitArchive() else refreshList(syncTabs = false)
+        }
 
         onBackPressedDispatcher.addCallback(this, archiveBackCallback)
 
@@ -314,6 +311,9 @@ class MainActivity : AppCompatActivity() {
                     detectClusters(bitmap, lines, image.width, image.height)
                 }
                 val records = buildRecords(clusters, scannedBarcodes)
+                // Taranan kartlar seçili profile (sekmeye) atanır
+                val profile = activeProfile()
+                records.forEach { if (it.category.isBlank()) it.category = profile }
                 when (records.size) {
                     0 -> toast(getString(R.string.no_text_found))
                     1 -> startActivity(
@@ -475,13 +475,19 @@ class MainActivity : AppCompatActivity() {
      */
     private fun refreshList(syncTabs: Boolean = true) {
         val all = ContactRepository.getAll(this)
-        // Sekmeler önce kurulur: mevcut olmayan bir profile filtreliyse
-        // categoryFilter "Tümü"ye sıfırlanır, filtre buna göre uygulanır.
-        if (syncTabs) rebuildTabs(all)
-        val filtered = when (val filter = categoryFilter) {
-            null -> all
-            "" -> all.filter { it.category.isBlank() }
-            else -> all.filter { it.category == filter }
+        // Profil butonları önce kurulur (seçili profili de doğrular)
+        if (syncTabs) rebuildProfileChips(all)
+
+        val profiles = profileList(all)
+        val active = categoryFilter?.takeIf { sel -> profiles.any { it.equals(sel, ignoreCase = true) } }
+            ?: profiles.first()
+        categoryFilter = active
+        // İlk profil, hiçbir profile atanmamış (boş kategorili) kartları da toplar;
+        // böylece hiçbir kart görünmez kalmaz.
+        val isFirst = active.equals(profiles.first(), ignoreCase = true)
+        val filtered = all.filter { rec ->
+            if (isFirst) rec.category.isBlank() || rec.category.equals(active, ignoreCase = true)
+            else rec.category.equals(active, ignoreCase = true)
         }
 
         // Ana ekranda yalnızca son taramalar; eskiler "Önceki taramalar"da
@@ -533,49 +539,156 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Profil sekmelerini mevcut kategorilerden yeniden kurar: "Tümü" + her
-     * kategori (+ kategorisiz kayıt varsa "Kategorisiz"). Seçili filtre için
-     * ilgili sekme işaretlenir; filtrenin kategorisi artık yoksa "Tümü"ye
-     * döner. Hiç kategori yoksa ya da arşivdeyken sekme çubuğu gizlenir.
+     * Gösterilecek profiller: kalıcı profil listesi (varsayılan İş/Özel +
+     * kullanıcının eklediği) ile kartlarda geçen ama listede olmayan
+     * kategorilerin birleşimi. Böylece hiçbir kart gruplanamadan kalmaz.
      */
-    private fun rebuildTabs(all: List<ContactRecord>) {
-        val categories = all.map { it.category }
+    private fun profileList(all: List<ContactRecord>): List<String> {
+        val stored = ProfileStore.profiles(this)
+        val extras = all.map { it.category }
             .filter { it.isNotBlank() }
             .distinct()
+            .filter { c -> stored.none { it.equals(c, ignoreCase = true) } }
             .sorted()
-        if (showingArchive || categories.isEmpty()) {
-            binding.tabs.visibility = View.GONE
+        return stored + extras
+    }
+
+    /**
+     * Üstteki profil butonlarını (chip'leri) yeniden kurar: her profil için bir
+     * buton + sonda "+" (yeni profil). Seçili profil işaretlenir; profile uzun
+     * basınca yeniden adlandır/sil seçenekleri açılır. Arşivdeyken gizlenir.
+     */
+    private fun rebuildProfileChips(all: List<ContactRecord>) {
+        if (showingArchive) {
+            binding.profileScroll.visibility = View.GONE
             return
         }
-        val hasUncategorized = all.any { it.category.isBlank() }
+        binding.profileScroll.visibility = View.VISIBLE
+
+        val profiles = profileList(all)
+        val active = categoryFilter?.takeIf { sel -> profiles.any { it.equals(sel, ignoreCase = true) } }
+            ?: profiles.first()
+        categoryFilter = active
 
         updatingTabs = true
-        binding.tabs.removeAllTabs()
-        binding.tabs.addTab(makeTab(getString(R.string.filter_all), TAB_ALL))
-        categories.forEach { binding.tabs.addTab(makeTab(it, it)) }
-        if (hasUncategorized) {
-            binding.tabs.addTab(makeTab(getString(R.string.filter_uncategorized), TAB_UNCATEGORIZED))
+        binding.profileChips.removeAllViews()
+        chipIdToProfile.clear()
+
+        var activeChipId = View.NO_ID
+        profiles.forEach { profile ->
+            val chip = layoutInflater
+                .inflate(R.layout.view_profile_chip, binding.profileChips, false) as Chip
+            chip.text = profile
+            chip.id = View.generateViewId()
+            chip.setOnLongClickListener { showProfileOptions(profile); true }
+            chipIdToProfile[chip.id] = profile
+            binding.profileChips.addView(chip)
+            if (profile.equals(active, ignoreCase = true)) activeChipId = chip.id
         }
 
-        val targetTag = when (val filter = categoryFilter) {
-            null -> TAB_ALL
-            "" -> TAB_UNCATEGORIZED
-            else -> filter
-        }
-        var index = (0 until binding.tabs.tabCount)
-            .firstOrNull { binding.tabs.getTabAt(it)?.tag == targetTag } ?: 0
-        if (binding.tabs.getTabAt(index)?.tag != targetTag) {
-            // Seçili profil artık mevcut değil: "Tümü"ye dön
-            categoryFilter = null
-            index = 0
-        }
-        binding.tabs.selectTab(binding.tabs.getTabAt(index))
-        binding.tabs.visibility = View.VISIBLE
+        val addChip = layoutInflater
+            .inflate(R.layout.view_add_chip, binding.profileChips, false) as Chip
+        addChip.setOnClickListener { showAddProfileDialog() }
+        binding.profileChips.addView(addChip)
+
+        if (activeChipId != View.NO_ID) binding.profileChips.check(activeChipId)
         updatingTabs = false
     }
 
-    private fun makeTab(text: String, tag: String): TabLayout.Tab =
-        binding.tabs.newTab().setText(text).also { it.tag = tag }
+    /** "+" butonu: yeni profil (sekme) oluşturur. */
+    private fun showAddProfileDialog() {
+        val input = TextInputEditText(this).apply {
+            hint = getString(R.string.add_profile_hint)
+            setPadding(48, 32, 48, 32)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.add_profile_title)
+            .setMessage(R.string.add_profile_message)
+            .setView(input)
+            .setPositiveButton(R.string.add) { _, _ ->
+                val name = input.text?.toString()?.trim().orEmpty()
+                if (name.isBlank()) return@setPositiveButton
+                if (ProfileStore.addProfile(this, name)) {
+                    categoryFilter = name
+                    refreshList()
+                    toast(getString(R.string.profile_added, name))
+                } else {
+                    toast(getString(R.string.profile_exists))
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /** Profile uzun basınca: yeniden adlandır / sil. */
+    private fun showProfileOptions(profile: String) {
+        val options = arrayOf(getString(R.string.profile_rename), getString(R.string.profile_delete))
+        MaterialAlertDialogBuilder(this)
+            .setTitle(profile)
+            .setItems(options) { _, which ->
+                if (which == 0) showRenameProfileDialog(profile) else confirmDeleteProfile(profile)
+            }
+            .show()
+    }
+
+    private fun showRenameProfileDialog(old: String) {
+        val input = TextInputEditText(this).apply {
+            setText(old)
+            setPadding(48, 32, 48, 32)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.profile_rename_title)
+            .setView(input)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val newName = input.text?.toString()?.trim().orEmpty()
+                if (newName.isBlank() || newName.equals(old, ignoreCase = true)) return@setPositiveButton
+                if (!ProfileStore.rename(this, old, newName)) {
+                    toast(getString(R.string.profile_exists))
+                    return@setPositiveButton
+                }
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        ContactRepository.reassignCategory(this@MainActivity, old, newName)
+                        ExportManager.regenerateExcel(this@MainActivity)
+                        CloudBackup.maybeAutoBackup(this@MainActivity)
+                    }
+                    if (categoryFilter?.equals(old, ignoreCase = true) == true) categoryFilter = newName
+                    refreshList()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun confirmDeleteProfile(profile: String) {
+        val profiles = ProfileStore.profiles(this)
+        if (profiles.size <= 1) {
+            toast(getString(R.string.profile_delete_last))
+            return
+        }
+        val fallback = profiles.first { !it.equals(profile, ignoreCase = true) }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.profile_delete)
+            .setMessage(getString(R.string.profile_delete_confirm, profile, fallback))
+            .setPositiveButton(R.string.profile_delete) { _, _ ->
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        ContactRepository.reassignCategory(this@MainActivity, profile, fallback)
+                        ProfileStore.remove(this@MainActivity, profile)
+                        ExportManager.regenerateExcel(this@MainActivity)
+                        CloudBackup.maybeAutoBackup(this@MainActivity)
+                    }
+                    if (categoryFilter?.equals(profile, ignoreCase = true) == true) categoryFilter = fallback
+                    refreshList()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /** Yeni taranan kartların gireceği profil (seçili profil, yoksa ilki). */
+    private fun activeProfile(): String =
+        categoryFilter ?: ProfileStore.profiles(this).first()
 
     private fun shareVcf() {
         if (ContactRepository.getAll(this).isEmpty()) {
@@ -783,10 +896,6 @@ class MainActivity : AppCompatActivity() {
         private const val STATE_CAMERA_URI = "camera_uri"
         private const val PREFS = "settings"
         private const val PREF_EMAIL = "recipient_email"
-
-        // Sekme etiketleri: kategori adlarıyla çakışmaması için kontrol karakterli
-        private const val TAB_ALL = "#all#"
-        private const val TAB_UNCATEGORIZED = "#uncat#"
 
         /** Ana listede tutulacak en yeni tarama sayısı; fazlası arşive düşer. */
         private const val MAIN_LIST_LIMIT = 5

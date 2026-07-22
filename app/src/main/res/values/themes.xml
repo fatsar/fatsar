@@ -30,6 +30,34 @@
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
+    <!-- Profil sekmesi: seçilebilir, buton (hap) görünümlü chip -->
+    <style name="Widget.KartCep.ProfileChip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipCornerRadius">20dp</item>
+        <item name="chipMinHeight">42dp</item>
+        <item name="chipStartPadding">16dp</item>
+        <item name="chipEndPadding">16dp</item>
+        <item name="chipBackgroundColor">@color/profile_chip_bg</item>
+        <item name="android:textColor">@color/profile_chip_text</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelLarge</item>
+        <item name="android:textStyle">bold</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipIconVisible">false</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+    </style>
+
+    <!-- Yeni profil ekleme ("+") chip'i: kesiksiz, ana renk vurgulu -->
+    <style name="Widget.KartCep.AddChip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipCornerRadius">20dp</item>
+        <item name="chipMinHeight">42dp</item>
+        <item name="chipBackgroundColor">?attr/colorPrimaryContainer</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipIconTint">?attr/colorOnPrimaryContainer</item>
+        <item name="chipStartPadding">10dp</item>
+        <item name="chipEndPadding">10dp</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+    </style>
+
     <!-- Avatar (baş harf dairesi) -->
     <style name="Widget.KartCep.Avatar" parent="Widget.AppCompat.TextView">
         <item name="android:gravity">center</item>

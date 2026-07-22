@@ -38,6 +38,25 @@ object ContactRepository {
         persist(context, list)
     }
 
+    /**
+     * Bir kategoriyi (profili) taşır: profil yeniden adlandırılınca ya da
+     * silinince o profildeki kartların kategorisi [to] olur. Etkilenen kayıt
+     * sayısını döndürür.
+     */
+    @Synchronized
+    fun reassignCategory(context: Context, from: String, to: String): Int {
+        val list = load(context)
+        var count = 0
+        list.forEach {
+            if (it.category.equals(from, ignoreCase = true)) {
+                it.category = to
+                count++
+            }
+        }
+        if (count > 0) persist(context, list)
+        return count
+    }
+
     @Synchronized
     fun clearCacheForTest() {
         cache = null
