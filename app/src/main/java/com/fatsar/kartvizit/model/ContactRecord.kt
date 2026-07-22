@@ -17,7 +17,8 @@ data class ContactRecord(
     var notes: String = "",
     var category: String = "",
     val createdAt: Long = System.currentTimeMillis(),
-    var addedToContacts: Boolean = false
+    var addedToContacts: Boolean = false,
+    var lastSentAt: Long = 0L
 ) {
 
     /** Belirtilen türdeki numaraları döndürür. */
@@ -37,6 +38,7 @@ data class ContactRecord(
         put("category", category)
         put("createdAt", createdAt)
         put("addedToContacts", addedToContacts)
+        put("lastSentAt", lastSentAt)
     }
 
     companion object {
@@ -52,7 +54,8 @@ data class ContactRecord(
             notes = o.optString("notes"),
             category = o.optString("category"),
             createdAt = o.optLong("createdAt", System.currentTimeMillis()),
-            addedToContacts = o.optBoolean("addedToContacts", false)
+            addedToContacts = o.optBoolean("addedToContacts", false),
+            lastSentAt = o.optLong("lastSentAt", 0L)
         )
 
         /**

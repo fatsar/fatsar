@@ -19,8 +19,19 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_filter_category"
-        android:title="@string/menu_filter_category"
+        android:id="@+id/action_backup"
+        android:title="@string/menu_backup"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_auto_backup"
+        android:checkable="true"
+        android:title="@string/menu_auto_backup"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_restore"
+        android:title="@string/menu_restore"
         app:showAsAction="never" />
 
     <item

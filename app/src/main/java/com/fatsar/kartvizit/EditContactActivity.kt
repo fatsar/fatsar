@@ -10,14 +10,19 @@ import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.databinding.ActivityEditContactBinding
+import com.fatsar.kartvizit.export.CloudBackup
 import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
 import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.model.TypedPhone
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * OCR sonucunu gözden geçirme / düzenleme ekranı. Kaydetme sırasında Excel
@@ -77,10 +82,12 @@ class EditContactActivity : AppCompatActivity() {
             binding.inputNotes.setText(source.notes)
         }
 
-        val isSaved = existing != null && existing!!.addedToContacts
+        // Yeni kayıt: varsayılan işaretli. Daha önce gönderilmiş kayıt: işaret
+        // kaldırılır ama kutu etkin kalır; kullanıcı isterse yeniden gönderir
+        // (kaydederken kopya uyarısı gösterilir).
+        val alreadySent = existing?.addedToContacts == true
         binding.checkAddToContacts.isChecked = existing == null
-        binding.checkAddToContacts.isEnabled = !isSaved
-        if (isSaved) binding.checkAddToContacts.setText(R.string.already_in_contacts)
+        if (alreadySent) binding.checkAddToContacts.setText(R.string.resend_checkbox)
 
         binding.btnSave.setOnClickListener { save() }
     }
@@ -134,17 +141,46 @@ class EditContactActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 ContactRepository.upsert(this@EditContactActivity, record)
                 ExportManager.regenerateExcel(this@EditContactActivity)
+                CloudBackup.maybeAutoBackup(this@EditContactActivity)
             }
-            if (binding.checkAddToContacts.isChecked && !record.addedToContacts) {
-                pendingRecord = record
-                contactsPermission.launch(
-                    arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
-                )
-            } else {
-                finishWithSaved()
+            when {
+                !binding.checkAddToContacts.isChecked -> finishWithSaved()
+                // İlk kez gönderim: doğrudan izin iste
+                !record.addedToContacts -> launchContactPermission(record)
+                // Daha önce gönderilmiş: kopya oluşabileceği için önce onay iste
+                else -> confirmResendThenInsert(record)
             }
         }
     }
+
+    private fun launchContactPermission(record: ContactRecord) {
+        pendingRecord = record
+        contactsPermission.launch(
+            arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
+        )
+    }
+
+    /** İkinci kez rehbere gönderim öncesi kopya uyarısı. */
+    private fun confirmResendThenInsert(record: ContactRecord) {
+        val who = record.name.ifBlank {
+            record.company.ifBlank { getString(R.string.unnamed_contact) }
+        }
+        val message = if (record.lastSentAt > 0) {
+            getString(R.string.resend_message_dated, who, dateStr(record.lastSentAt))
+        } else {
+            getString(R.string.resend_message, who)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.resend_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.resend) { _, _ -> launchContactPermission(record) }
+            .setNegativeButton(R.string.cancel) { _, _ -> finishWithSaved() }
+            .setOnCancelListener { finishWithSaved() }
+            .show()
+    }
+
+    private fun dateStr(timestamp: Long): String =
+        SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR")).format(Date(timestamp))
 
     private fun insertToContactsAndFinish(record: ContactRecord) {
         lifecycleScope.launch {
@@ -153,8 +189,10 @@ class EditContactActivity : AppCompatActivity() {
             }
             if (ok) {
                 record.addedToContacts = true
+                record.lastSentAt = System.currentTimeMillis()
                 withContext(Dispatchers.IO) {
                     ContactRepository.upsert(this@EditContactActivity, record)
+                    CloudBackup.maybeAutoBackup(this@EditContactActivity)
                 }
                 toast(getString(R.string.saved_and_added_to_contacts))
                 finish()

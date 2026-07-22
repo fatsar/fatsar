@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.databinding.ActivityMainBinding
+import com.fatsar.kartvizit.export.CloudBackup
 import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
 import com.fatsar.kartvizit.model.PhoneType
@@ -31,6 +32,7 @@ import com.fatsar.kartvizit.ocr.ScannedBarcode
 import com.fatsar.kartvizit.ocr.ScannedContact
 import com.fatsar.kartvizit.ui.ContactsAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -42,6 +44,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,6 +58,12 @@ class MainActivity : AppCompatActivity() {
 
     /** null = tüm kategoriler, "" = kategorisiz, diğer = tam eşleşme. */
     private var categoryFilter: String? = null
+
+    /** Sekmeler yeniden kurulurken seçim geri çağırmalarını yok say. */
+    private var updatingTabs = false
+
+    /** Klasör seçildikten sonra otomatik yedeklemeyi açmayı bekliyor mu? */
+    private var pendingEnableAuto = false
 
     /** Arşiv görünümü: ana listede yalnızca son taramalar tutulur. */
     private var showingArchive = false
@@ -90,6 +101,35 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    /** Yedekleme klasörü (Google Drive vb.) seçimi; SAF ağaç izni kalıcılaştırılır. */
+    private val pickBackupFolder =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri == null) {
+                pendingEnableAuto = false
+                return@registerForActivityResult
+            }
+            runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
+            CloudBackup.setBackupFolder(this, uri)
+            if (pendingEnableAuto) {
+                pendingEnableAuto = false
+                CloudBackup.setAutoBackup(this, true)
+                invalidateOptionsMenu()
+                toast(getString(R.string.auto_backup_on))
+            }
+            runBackup()
+        }
+
+    /** Geri yüklenecek yedek dosyası (.zip / .json) seçimi. */
+    private val pickBackupToRestore =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) confirmRestore(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -118,6 +158,24 @@ class MainActivity : AppCompatActivity() {
             showingArchive = true
             refreshList()
         }
+
+        // Profil sekmesi seçimi: listeyi o profile (kategoriye) göre grupla
+        binding.tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                if (updatingTabs) return
+                categoryFilter = when (val tag = tab.tag as? String) {
+                    TAB_ALL -> null
+                    TAB_UNCATEGORIZED -> ""
+                    else -> tag
+                }
+                // Sekmeler değişmedi; yeniden kurmadan yalnızca listeyi tazele
+                if (showingArchive) exitArchive() else refreshList(syncTabs = false)
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+
         onBackPressedDispatcher.addCallback(this, archiveBackCallback)
 
         if (savedInstanceState != null) {
@@ -152,6 +210,11 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        menu.findItem(R.id.action_auto_backup)?.isChecked = CloudBackup.isAutoBackup(this)
+        return super.onPrepareOptionsMenu(menu)
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.action_share_excel -> {
             shareExcelByEmail(); true
@@ -162,8 +225,14 @@ class MainActivity : AppCompatActivity() {
         R.id.action_save_excel -> {
             saveExcelToDownloads(); true
         }
-        R.id.action_filter_category -> {
-            showCategoryFilterDialog(); true
+        R.id.action_backup -> {
+            onBackupClicked(); true
+        }
+        R.id.action_auto_backup -> {
+            toggleAutoBackup(item); true
+        }
+        R.id.action_restore -> {
+            pickBackupToRestore.launch(arrayOf("*/*")); true
         }
         R.id.action_set_email -> {
             showEmailDialog(); true
@@ -324,6 +393,7 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 records.forEach { ContactRepository.upsert(this@MainActivity, it) }
                 ExportManager.regenerateExcel(this@MainActivity)
+                CloudBackup.maybeAutoBackup(this@MainActivity)
             }
             refreshList()
             toast(getString(R.string.multiple_cards_saved, records.size))
@@ -397,8 +467,17 @@ class MainActivity : AppCompatActivity() {
         binding.btnGallery.isEnabled = enabled
     }
 
-    private fun refreshList() {
+    /**
+     * @param syncTabs sekme çubuğunu yeniden kurar. Sekmeye dokunma sırasında
+     * (zaten sekme geri çağırması içindeyken) false verilir: sekmeler
+     * değişmediğinden yeniden kurmak gereksizdir ve yeniden giriş sorunlarını
+     * önler; yalnızca liste tazelenir.
+     */
+    private fun refreshList(syncTabs: Boolean = true) {
         val all = ContactRepository.getAll(this)
+        // Sekmeler önce kurulur: mevcut olmayan bir profile filtreliyse
+        // categoryFilter "Tümü"ye sıfırlanır, filtre buna göre uygulanır.
+        if (syncTabs) rebuildTabs(all)
         val filtered = when (val filter = categoryFilter) {
             null -> all
             "" -> all.filter { it.category.isBlank() }
@@ -453,33 +532,50 @@ class MainActivity : AppCompatActivity() {
         return super.onSupportNavigateUp()
     }
 
-    private fun showCategoryFilterDialog() {
-        val categories = ContactRepository.getAll(this)
-            .map { it.category }
+    /**
+     * Profil sekmelerini mevcut kategorilerden yeniden kurar: "Tümü" + her
+     * kategori (+ kategorisiz kayıt varsa "Kategorisiz"). Seçili filtre için
+     * ilgili sekme işaretlenir; filtrenin kategorisi artık yoksa "Tümü"ye
+     * döner. Hiç kategori yoksa ya da arşivdeyken sekme çubuğu gizlenir.
+     */
+    private fun rebuildTabs(all: List<ContactRecord>) {
+        val categories = all.map { it.category }
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
-        val labels = mutableListOf(getString(R.string.filter_all), getString(R.string.filter_uncategorized))
-        labels.addAll(categories)
-        val checked = when (val filter = categoryFilter) {
-            null -> 0
-            "" -> 1
-            else -> (categories.indexOf(filter) + 2).coerceAtLeast(0)
+        if (showingArchive || categories.isEmpty()) {
+            binding.tabs.visibility = View.GONE
+            return
         }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.menu_filter_category)
-            .setSingleChoiceItems(labels.toTypedArray(), checked) { dialog, which ->
-                categoryFilter = when (which) {
-                    0 -> null
-                    1 -> ""
-                    else -> categories[which - 2]
-                }
-                refreshList()
-                dialog.dismiss()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        val hasUncategorized = all.any { it.category.isBlank() }
+
+        updatingTabs = true
+        binding.tabs.removeAllTabs()
+        binding.tabs.addTab(makeTab(getString(R.string.filter_all), TAB_ALL))
+        categories.forEach { binding.tabs.addTab(makeTab(it, it)) }
+        if (hasUncategorized) {
+            binding.tabs.addTab(makeTab(getString(R.string.filter_uncategorized), TAB_UNCATEGORIZED))
+        }
+
+        val targetTag = when (val filter = categoryFilter) {
+            null -> TAB_ALL
+            "" -> TAB_UNCATEGORIZED
+            else -> filter
+        }
+        var index = (0 until binding.tabs.tabCount)
+            .firstOrNull { binding.tabs.getTabAt(it)?.tag == targetTag } ?: 0
+        if (binding.tabs.getTabAt(index)?.tag != targetTag) {
+            // Seçili profil artık mevcut değil: "Tümü"ye dön
+            categoryFilter = null
+            index = 0
+        }
+        binding.tabs.selectTab(binding.tabs.getTabAt(index))
+        binding.tabs.visibility = View.VISIBLE
+        updatingTabs = false
     }
+
+    private fun makeTab(text: String, tag: String): TabLayout.Tab =
+        binding.tabs.newTab().setText(text).also { it.tag = tag }
 
     private fun shareVcf() {
         if (ContactRepository.getAll(this).isEmpty()) {
@@ -494,7 +590,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Rehbere ekleme. Kişi daha önce gönderildiyse, ikinci gönderimde rehberde
+     * kopya kişi oluşabileceği için önce onay istenir ("daha önce hatırlat").
+     */
     private fun requestAddToContacts(record: ContactRecord) {
+        if (record.addedToContacts) {
+            val who = record.name.ifBlank {
+                record.company.ifBlank { getString(R.string.unnamed_contact) }
+            }
+            val message = if (record.lastSentAt > 0) {
+                getString(R.string.resend_message_dated, who, dateStr(record.lastSentAt))
+            } else {
+                getString(R.string.resend_message, who)
+            }
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.resend_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.resend) { _, _ -> launchContactPermission(record) }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        } else {
+            launchContactPermission(record)
+        }
+    }
+
+    private fun launchContactPermission(record: ContactRecord) {
         pendingContactAdd = record
         contactsPermission.launch(
             arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
@@ -506,8 +627,10 @@ class MainActivity : AppCompatActivity() {
             val ok = withContext(Dispatchers.IO) { DeviceContacts.insert(this@MainActivity, record) }
             if (ok) {
                 record.addedToContacts = true
+                record.lastSentAt = System.currentTimeMillis()
                 withContext(Dispatchers.IO) {
                     ContactRepository.upsert(this@MainActivity, record)
+                    CloudBackup.maybeAutoBackup(this@MainActivity)
                 }
                 refreshList()
                 toast(getString(R.string.added_to_contacts))
@@ -526,6 +649,7 @@ class MainActivity : AppCompatActivity() {
                     withContext(Dispatchers.IO) {
                         ContactRepository.delete(this@MainActivity, record.id)
                         ExportManager.regenerateExcel(this@MainActivity)
+                        CloudBackup.maybeAutoBackup(this@MainActivity)
                     }
                     refreshList()
                 }
@@ -559,6 +683,77 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---- Buluta yedekleme ----
+
+    /** Yedekle: klasör seçilmemişse önce seçtirir, sonra yedek yazar. */
+    private fun onBackupClicked() {
+        if (ContactRepository.getAll(this).isEmpty()) {
+            toast(getString(R.string.backup_no_records))
+            return
+        }
+        if (CloudBackup.backupFolder(this) == null) {
+            toast(getString(R.string.backup_choose_folder))
+            pickBackupFolder.launch(null)
+        } else {
+            runBackup()
+        }
+    }
+
+    private fun runBackup() {
+        toast(getString(R.string.backup_running))
+        lifecycleScope.launch {
+            val name = withContext(Dispatchers.IO) {
+                runCatching { CloudBackup.writeBackup(this@MainActivity) }.getOrNull()
+            }
+            toast(
+                if (name != null) getString(R.string.backup_success, name)
+                else getString(R.string.backup_failed)
+            )
+        }
+    }
+
+    private fun toggleAutoBackup(item: MenuItem) {
+        val enable = !CloudBackup.isAutoBackup(this)
+        if (enable && CloudBackup.backupFolder(this) == null) {
+            // Klasör yoksa önce seçtir; seçilince otomatik yedekleme açılır
+            pendingEnableAuto = true
+            toast(getString(R.string.backup_choose_folder))
+            pickBackupFolder.launch(null)
+            return
+        }
+        CloudBackup.setAutoBackup(this, enable)
+        item.isChecked = enable
+        toast(getString(if (enable) R.string.auto_backup_on else R.string.auto_backup_off))
+    }
+
+    private fun confirmRestore(uri: Uri) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.restore_confirm_title)
+            .setMessage(R.string.restore_confirm_message)
+            .setPositiveButton(R.string.restore) { _, _ -> runRestore(uri) }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun runRestore(uri: Uri) {
+        lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                val restored = CloudBackup.restore(this@MainActivity, uri)
+                if (restored >= 0) ExportManager.regenerateExcel(this@MainActivity)
+                restored
+            }
+            if (count >= 0) {
+                refreshList()
+                toast(getString(R.string.restore_success, count))
+            } else {
+                toast(getString(R.string.restore_failed))
+            }
+        }
+    }
+
+    private fun dateStr(timestamp: Long): String =
+        SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR")).format(Date(timestamp))
+
     private fun recipientEmail(): String? =
         getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_EMAIL, null)
 
@@ -588,6 +783,10 @@ class MainActivity : AppCompatActivity() {
         private const val STATE_CAMERA_URI = "camera_uri"
         private const val PREFS = "settings"
         private const val PREF_EMAIL = "recipient_email"
+
+        // Sekme etiketleri: kategori adlarıyla çakışmaması için kontrol karakterli
+        private const val TAB_ALL = "#all#"
+        private const val TAB_UNCATEGORIZED = "#uncat#"
 
         /** Ana listede tutulacak en yeni tarama sayısı; fazlası arşive düşer. */
         private const val MAIN_LIST_LIMIT = 5

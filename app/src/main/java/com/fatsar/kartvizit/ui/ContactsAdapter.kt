@@ -85,13 +85,12 @@ class ContactsAdapter(
                 binding.chipCategory.text = record.category
             }
 
-            if (record.addedToContacts) {
-                binding.btnAddContact.isEnabled = false
-                binding.btnAddContact.text = context.getString(R.string.in_contacts)
-            } else {
-                binding.btnAddContact.isEnabled = true
-                binding.btnAddContact.text = context.getString(R.string.add_to_contacts)
-            }
+            // Gönderilmiş olsa bile buton tıklanabilir kalır: kullanıcı kişiyi
+            // rehbere yeniden gönderebilir (öncesinde kopya uyarısı gösterilir).
+            binding.btnAddContact.isEnabled = true
+            binding.btnAddContact.text = context.getString(
+                if (record.addedToContacts) R.string.sent_to_contacts else R.string.add_to_contacts
+            )
 
             binding.root.setOnClickListener { onClick(record) }
             binding.btnAddContact.setOnClickListener { onAddToContacts(record) }

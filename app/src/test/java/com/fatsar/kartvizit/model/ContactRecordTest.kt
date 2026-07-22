@@ -41,6 +41,30 @@ class ContactRecordTest {
     }
 
     @Test
+    fun `rehber gonderim durumu json ile korunur`() {
+        val record = ContactRecord(
+            name = "Ahmet Yılmaz",
+            addedToContacts = true,
+            lastSentAt = 1_700_000_000_000L
+        )
+
+        val restored = ContactRecord.fromJson(JSONObject(record.toJson().toString()))
+
+        assertEquals(true, restored.addedToContacts)
+        assertEquals(1_700_000_000_000L, restored.lastSentAt)
+    }
+
+    @Test
+    fun `gonderim alani olmayan eski kayit varsayilanla okunur`() {
+        val legacy = JSONObject("""{"name":"Ali Veli","addedToContacts":true}""")
+
+        val record = ContactRecord.fromJson(legacy)
+
+        assertEquals(true, record.addedToContacts)
+        assertEquals(0L, record.lastSentAt)
+    }
+
+    @Test
     fun `phonesOf ture gore filtreler`() {
         val record = ContactRecord(
             phones = listOf(

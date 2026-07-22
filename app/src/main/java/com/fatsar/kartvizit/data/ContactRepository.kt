@@ -43,6 +43,33 @@ object ContactRepository {
         cache = null
     }
 
+    /** Tüm kayıtları yedek için JSON dizisi olarak verir. */
+    @Synchronized
+    fun exportJson(context: Context): String {
+        val array = JSONArray()
+        load(context).forEach { array.put(it.toJson()) }
+        return array.toString()
+    }
+
+    /**
+     * Yedekteki kayıtları mevcut listeye katar: aynı kimlikli kayıt güncellenir,
+     * yeni kimlik eklenir. Geri yüklenen kayıt sayısını döndürür.
+     */
+    @Synchronized
+    fun importJson(context: Context, json: String): Int {
+        val array = JSONArray(json)
+        val list = load(context)
+        var count = 0
+        for (i in 0 until array.length()) {
+            val record = ContactRecord.fromJson(array.getJSONObject(i))
+            val index = list.indexOfFirst { it.id == record.id }
+            if (index >= 0) list[index] = record else list.add(record)
+            count++
+        }
+        persist(context, list)
+        return count
+    }
+
     private fun load(context: Context): MutableList<ContactRecord> {
         cache?.let { return it }
         val file = File(context.filesDir, FILE_NAME)
