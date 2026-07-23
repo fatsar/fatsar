@@ -3,6 +3,7 @@ package com.fatsar.kartvizit.ocr
 import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.model.TypedPhone
 import java.util.Locale
+import kotlin.math.pow
 
 /** Kartvizitten okunan alanlar. */
 data class ParsedCard(
@@ -33,6 +34,16 @@ object CardTextParser {
             """|[a-z0-9\-]+(?:\.[a-z0-9\-]+)*\.(?:com\.tr|net\.tr|org\.tr|gen\.tr|web\.tr|edu\.tr|gov\.tr|com|net|org|info|biz|io|co)(?:/[^\s,;|]*)?"""
     )
     private val POSTAL_LINE = Regex("""^\d{5}\b.*""")
+
+    // İsim adayı OLAMAYACAK alan adı / e-posta / web kalıpları. Boşluklar
+    // atıldıktan sonra bakılır; böylece OCR'ın "univarsolutions. com" gibi
+    // araya boşluk koyduğu web adresleri de isim sanılmaz.
+    private val DOMAINISH = Regex(
+        """@|\bwww\.|\.(?:com|net|org|info|biz|io|co|gov|edu)(?:\.tr)?\b"""
+    )
+
+    /** İsim, kartın en büyük yazısıdır: bu orandan büyük bitişik satırlar birleşir. */
+    private const val NAME_BIG_RATIO = 0.72f
     private val CONTACT_LABELS = Regex(
         """(?i)\b(tel|telefon|phone|gsm|cep|mobile|mob|fax|faks|office|ofis|e-?posta|e-?mail|mail|web|www|adres|address)\b\s*[:.]?"""
     )
@@ -191,14 +202,24 @@ object CardTextParser {
                 var s = 0.0
                 if (tokens.size in 2..3) s += 2.0
                 s += tokens.count { TextNormalizer.foldTr(it.trim('.', ',')) in emailTokens } * 3.0
-                s += (line.height / maxHeight) * 1.5
+                // İsim kartın en büyük yazısıdır: yazı boyutuna güçlü, karesel ağırlık
+                s += (line.height / maxHeight).toDouble().pow(2.0) * 4.0
                 s -= index * 0.01 // eşitlikte üstteki satır kazanır
                 return s
             }
 
             val best = candidates.maxByOrNull { (i, l) -> score(l, i) }!!
-            name = best.value.text
-            remaining.removeAt(best.index)
+            // En iyi aday kartın en büyük yazısıysa, ona bitişik ve benzer
+            // büyüklükteki isim satırlarını da kata: "ANIL" + "NİZAM" gibi iki
+            // satıra bölünmüş adlar tek isimde toplanır.
+            val bestIsBig = best.value.height >= NAME_BIG_RATIO * maxHeight
+            val indices = if (bestIsBig) nameRunIndices(remaining, best.index, maxHeight)
+            else listOf(best.index)
+
+            name = indices.joinToString(" ") { remaining[it].text.trim() }
+                .replace(Regex("""\s+"""), " ")
+                .trim()
+            indices.sortedDescending().forEach { remaining.removeAt(it) }
         }
 
         // 6) Yedek çıkarımlar
@@ -228,11 +249,31 @@ object CardTextParser {
 
     private fun looksLikeName(text: String): Boolean {
         if (text.length < 3 || text.any { it.isDigit() }) return false
+        // Web adresi / e-posta gibi satırlar (boşluklu OCR dahil) isim değildir
+        if (DOMAINISH.containsMatchIn(text.replace(" ", "").lowercase(TR))) return false
         val tokens = text.split(Regex("""\s+""")).filter { it.isNotBlank() }
         if (tokens.isEmpty() || tokens.size > 5) return false
         if (tokens.any { t -> t.none { it.isLetter() } }) return false
         val letters = text.count { it.isLetter() }
         return letters.toFloat() / text.replace(" ", "").length >= 0.7f
+    }
+
+    /**
+     * [center] satırının çevresindeki, bitişik ve benzer (büyük) puntolu isim
+     * satırlarının indeksleri. Kartta isim iki satıra bölündüğünde ("ANIL" /
+     * "NİZAM") bunları tek isimde toplamak için kullanılır.
+     */
+    private fun nameRunIndices(lines: List<OcrLine>, center: Int, maxHeight: Float): List<Int> {
+        fun bigName(i: Int): Boolean =
+            i in lines.indices &&
+                lines[i].height >= NAME_BIG_RATIO * maxHeight &&
+                looksLikeName(lines[i].text)
+        val indices = sortedSetOf(center)
+        var i = center - 1
+        while (bigName(i)) { indices.add(i); i-- }
+        var j = center + 1
+        while (bigName(j)) { indices.add(j); j++ }
+        return indices.toList()
     }
 
     private fun normalizePhone(raw: String): String =
