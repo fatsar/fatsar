@@ -5,7 +5,8 @@
     <!-- Ana ekran -->
     <string name="scan_with_camera">Kamerayla Tara</string>
     <string name="pick_from_gallery">Fotoğraf Seç</string>
-    <string name="empty_list">Henüz kayıtlı kartvizit yok.\n\nKamerayla bir kartvizit tarayın, galeriden fotoğraf seçin ya da başka bir uygulamadan bu uygulamaya görsel paylaşın.</string>
+    <string name="empty_title">Hadi başlayalım</string>
+    <string name="empty_list">Kamerayla bir kartvizit tarayın, galeriden fotoğraf seçin ya da başka bir uygulamadan görsel paylaşın. Bilgiler otomatik okunur.</string>
     <string name="no_text_found">Görselde okunabilir metin bulunamadı. Daha net bir fotoğraf deneyin.</string>
     <string name="multiple_cards_saved">%1$d kartvizit bulundu ve kaydedildi. Düzenlemek için listeden dokunun.</string>
     <string name="scan_failed">Tarama başarısız oldu: %1$s</string>

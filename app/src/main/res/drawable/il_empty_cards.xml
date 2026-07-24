@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Boş durum çizimi: sıcak tonlarda üst üste duran iki kartvizit.
+     Düz/gri bir simge yerine, uygulamanın kendi renkleriyle çizilmiş
+     davetkâr bir illüstrasyon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="140dp"
+    android:height="140dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Yumuşak şeftali zemin dairesi -->
+    <path
+        android:fillColor="@color/brand_primary_container"
+        android:fillAlpha="0.55"
+        android:pathData="M60,10 A50,50 0 1 1 59.9,10 Z" />
+
+    <!-- Arkadaki kart (hafif eğik, kehribar) -->
+    <group
+        android:pivotX="60"
+        android:pivotY="55"
+        android:rotation="-11">
+        <path
+            android:fillColor="@color/brand_gradient_start"
+            android:pathData="M37,34 H83 A7,7 0 0 1 90,41 V67 A7,7 0 0 1 83,74 H37 A7,7 0 0 1 30,67 V41 A7,7 0 0 1 37,34 Z" />
+    </group>
+
+    <!-- Öndeki kart (beyaz yüzey) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,48 H85 A7,7 0 0 1 92,55 V83 A7,7 0 0 1 85,90 H35 A7,7 0 0 1 28,83 V55 A7,7 0 0 1 35,48 Z" />
+
+    <!-- Kartın üzerindeki avatar dairesi -->
+    <path
+        android:fillColor="@color/brand_gradient_mid"
+        android:pathData="M43,55 A8,8 0 1 1 42.9,55 Z" />
+
+    <!-- Kart üzerindeki metin satırları -->
+    <path
+        android:pathData="M58,59 H82"
+        android:strokeColor="@color/brand_gradient_end"
+        android:strokeLineCap="round"
+        android:strokeWidth="5" />
+    <path
+        android:pathData="M58,69 H76"
+        android:strokeColor="#D9C4B8"
+        android:strokeLineCap="round"
+        android:strokeWidth="4" />
+    <path
+        android:pathData="M38,80 H72"
+        android:strokeColor="#E4D3C9"
+        android:strokeLineCap="round"
+        android:strokeWidth="4" />
+
+    <!-- Işıltılar -->
+    <path
+        android:fillColor="@color/brand_gradient_start"
+        android:pathData="M98,19 C98,25 101,28 107,28 C101,28 98,31 98,37 C98,31 95,28 89,28 C95,28 98,25 98,19 Z" />
+    <path
+        android:fillColor="@color/brand_gradient_mid"
+        android:fillAlpha="0.8"
+        android:pathData="M24,80 C24,84 26,86 30,86 C26,86 24,88 24,92 C24,88 22,86 18,86 C22,86 24,84 24,80 Z" />
+</vector>

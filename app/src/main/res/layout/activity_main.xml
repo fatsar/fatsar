@@ -11,13 +11,26 @@
         android:background="@android:color/transparent"
         app:elevation="0dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <!-- Gün doğumu degradeli, altı kavisli başlık alanı -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="@string/app_name"
-            app:titleCentered="false"
-            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_header_gradient"
+            android:orientation="vertical"
+            android:paddingBottom="10dp">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/transparent"
+                android:theme="@style/ThemeOverlay.KartCep.Header"
+                app:title="@string/app_name"
+                app:titleCentered="false"
+                app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                app:titleTextColor="#FFFFFF"
+                app:subtitleTextColor="#F2DCD1" />
+        </LinearLayout>
 
         <!-- Profil sekmeleri: kartvizitler profile (İş / Özel / …) göre
              gruplanır. Buton görünümlü, seçilebilir chip'ler + "+" ile yeni
@@ -29,7 +42,7 @@
             android:clipToPadding="false"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
-            android:paddingTop="2dp"
+            android:paddingTop="12dp"
             android:paddingBottom="8dp"
             android:scrollbars="none">
 
@@ -75,18 +88,28 @@
                 android:padding="32dp">
 
                 <ImageView
-                    android:layout_width="96dp"
-                    android:layout_height="96dp"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
                     android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_scan" />
+                    android:src="@drawable/il_empty_cards" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:text="@string/empty_title"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:text="@string/empty_list"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant" />
             </LinearLayout>
 

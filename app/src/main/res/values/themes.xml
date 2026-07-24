@@ -18,7 +18,16 @@
         <item name="colorSurfaceVariant">@color/brand_surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/brand_on_surface_variant</item>
         <item name="colorOutline">@color/brand_outline</item>
-        <item name="android:statusBarColor">@color/brand_surface</item>
+        <!-- Durum çubuğu degradenin üst tonuyla kaynaşır; simgeler beyaz -->
+        <item name="android:statusBarColor">@color/brand_gradient_start</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Degradeli başlık üzerindeki araç çubuğu: başlık ve simgeler beyaz -->
+    <style name="ThemeOverlay.KartCep.Header" parent="">
+        <item name="colorControlNormal">#FFFFFF</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#F2DCD1</item>
     </style>
 
     <!-- Tarama çubuğunun üst köşeleri yuvarlatılır -->

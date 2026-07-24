@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- KartCep marka paleti (koyu tema) -->
-    <color name="brand_primary">#8AD6C6</color>
-    <color name="brand_on_primary">#00382F</color>
-    <color name="brand_primary_container">#005146</color>
-    <color name="brand_on_primary_container">#A7F2E3</color>
-    <color name="brand_secondary">#B1CCC4</color>
-    <color name="brand_secondary_container">#334B45</color>
-    <color name="brand_on_secondary_container">#CDE8E0</color>
-    <color name="brand_tertiary">#FFB59E</color>
-    <color name="brand_tertiary_container">#912F16</color>
-    <color name="brand_on_tertiary_container">#FFDBCF</color>
-    <color name="brand_background">#0E1513</color>
-    <color name="brand_surface">#0E1513</color>
-    <color name="brand_surface_container">#1A211F</color>
-    <color name="brand_on_surface">#DEE4E0</color>
-    <color name="brand_surface_variant">#3F4945</color>
-    <color name="brand_on_surface_variant">#BEC9C3</color>
-    <color name="brand_outline">#899390</color>
+    <!-- KartCep sıcak marka paleti (koyu tema): kavrulmuş kahve zemin
+         üzerinde şeftali/bal tonları — gece de sıcak kalır. -->
+    <color name="brand_primary">#FFB59D</color>
+    <color name="brand_on_primary">#5C1900</color>
+    <color name="brand_primary_container">#8C3416</color>
+    <color name="brand_on_primary_container">#FFDBCF</color>
+    <color name="brand_secondary">#E8BE9C</color>
+    <color name="brand_secondary_container">#6B4223</color>
+    <color name="brand_on_secondary_container">#FFE0C7</color>
+    <color name="brand_tertiary">#EACD8E</color>
+    <color name="brand_tertiary_container">#6A5100</color>
+    <color name="brand_on_tertiary_container">#FFE9AE</color>
+    <color name="brand_background">#1B120E</color>
+    <color name="brand_surface">#1B120E</color>
+    <color name="brand_surface_container">#2A1E19</color>
+    <color name="brand_on_surface">#F1DFD7</color>
+    <color name="brand_surface_variant">#53433C</color>
+    <color name="brand_on_surface_variant">#D8C2B8</color>
+    <color name="brand_outline">#A08C83</color>
+
+    <!-- Başlık degradesi (koyu tema): daha derin, sıcak alacakaranlık -->
+    <color name="brand_gradient_start">#A85B33</color>
+    <color name="brand_gradient_mid">#8C3D22</color>
+    <color name="brand_gradient_end">#5F2413</color>
 </resources>
