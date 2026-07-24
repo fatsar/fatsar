@@ -161,6 +161,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnArchive.setOnClickListener {
             showingArchive = true
             refreshList()
+            binding.recycler.scheduleLayoutAnimation()
         }
 
         // Profil butonu seçimi: listeyi o profile göre grupla
@@ -171,6 +172,8 @@ class MainActivity : AppCompatActivity() {
             categoryFilter = profile
             // Butonlar değişmedi; yeniden kurmadan yalnızca listeyi tazele
             if (showingArchive) exitArchive() else refreshList(syncTabs = false)
+            // Profil değişiminde kartlar yeniden kademeli olarak belirsin
+            binding.recycler.scheduleLayoutAnimation()
         }
 
         onBackPressedDispatcher.addCallback(this, archiveBackCallback)

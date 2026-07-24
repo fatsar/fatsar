@@ -21,6 +21,16 @@
         <!-- Durum çubuğu degradenin üst tonuyla kaynaşır; simgeler beyaz -->
         <item name="android:statusBarColor">@color/brand_gradient_start</item>
         <item name="android:windowLightStatusBar">false</item>
+        <!-- Ekranlar arası yumuşak geçiş -->
+        <item name="android:windowAnimationStyle">@style/Animation.KartCep.Activity</item>
+    </style>
+
+    <!-- Ekran geçişleri: açılışta belirme, kapanışta solma -->
+    <style name="Animation.KartCep.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/activity_fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/activity_hold</item>
+        <item name="android:activityCloseEnterAnimation">@anim/activity_hold</item>
+        <item name="android:activityCloseExitAnimation">@anim/activity_fade_out</item>
     </style>
 
     <!-- Degradeli başlık üzerindeki araç çubuğu: başlık ve simgeler beyaz -->

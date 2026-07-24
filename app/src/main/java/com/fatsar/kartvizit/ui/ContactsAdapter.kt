@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.fatsar.kartvizit.R
 import com.fatsar.kartvizit.databinding.ItemContactBinding
@@ -19,10 +20,25 @@ class ContactsAdapter(
 
     private val items = mutableListOf<ContactRecord>()
 
+    /**
+     * Listeyi farkı hesaplayarak günceller. Tümünü yenilemek yerine yalnızca
+     * değişen satırlar bildirildiği için RecyclerView ekleme/silme/taşıma
+     * animasyonlarını oynatabilir (kayıt silindiğinde kart süzülerek çıkar,
+     * yeni kayıt yumuşakça belirir).
+     */
     fun submit(list: List<ContactRecord>) {
+        val old = items.toList()
+        val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = old.size
+            override fun getNewListSize(): Int = list.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                old[oldItemPosition].id == list[newItemPosition].id
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                old[oldItemPosition] == list[newItemPosition]
+        })
         items.clear()
         items.addAll(list)
-        notifyDataSetChanged()
+        diff.dispatchUpdatesTo(this)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
