@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.data.ProfileStore
+import com.fatsar.kartvizit.data.ThemeStore
 import com.fatsar.kartvizit.databinding.ActivityMainBinding
 import com.fatsar.kartvizit.export.CloudBackup
 import com.fatsar.kartvizit.export.ExportManager
@@ -135,6 +136,8 @@ class MainActivity : AppCompatActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Seçili renk teması, görünüm şişirilmeden önce uygulanmalı
+        setTheme(ThemeStore.themeRes(this))
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -233,6 +236,9 @@ class MainActivity : AppCompatActivity() {
         }
         R.id.action_restore -> {
             pickBackupToRestore.launch(arrayOf("*/*")); true
+        }
+        R.id.action_theme -> {
+            showThemeDialog(); true
         }
         R.id.action_set_email -> {
             showEmailDialog(); true
@@ -872,6 +878,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun recipientEmail(): String? =
         getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_EMAIL, null)
+
+    /**
+     * Renk teması seçimi. Seçim kaydedilip ekran yeniden oluşturulur; böylece
+     * yeni palet (degrade başlık, butonlar, çizim) anında uygulanır.
+     */
+    private fun showThemeDialog() {
+        val current = ThemeStore.current(this)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_theme)
+            .setMessage(R.string.theme_dialog_message)
+            .setSingleChoiceItems(ThemeStore.labels(this), current) { dialog, which ->
+                dialog.dismiss()
+                if (which != current) {
+                    ThemeStore.set(this, which)
+                    recreate()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
 
     private fun showEmailDialog() {
         val input = TextInputEditText(this).apply {

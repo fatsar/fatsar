@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import com.fatsar.kartvizit.contacts.DeviceContacts
 import com.fatsar.kartvizit.data.ContactRepository
 import com.fatsar.kartvizit.data.ProfileStore
+import com.fatsar.kartvizit.data.ThemeStore
 import com.fatsar.kartvizit.databinding.ActivityEditContactBinding
 import com.fatsar.kartvizit.export.CloudBackup
 import com.fatsar.kartvizit.export.ExportManager
@@ -50,6 +51,8 @@ class EditContactActivity : AppCompatActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Ana ekranla aynı renk teması kullanılsın
+        setTheme(ThemeStore.themeRes(this))
         super.onCreate(savedInstanceState)
         binding = ActivityEditContactBinding.inflate(layoutInflater)
         setContentView(binding.root)

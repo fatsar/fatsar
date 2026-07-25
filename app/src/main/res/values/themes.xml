@@ -1,28 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Kartvizit" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/brand_primary</item>
-        <item name="colorOnPrimary">@color/brand_on_primary</item>
-        <item name="colorPrimaryContainer">@color/brand_primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/brand_on_primary_container</item>
-        <item name="colorSecondary">@color/brand_secondary</item>
-        <item name="colorSecondaryContainer">@color/brand_secondary_container</item>
-        <item name="colorOnSecondaryContainer">@color/brand_on_secondary_container</item>
-        <item name="colorTertiary">@color/brand_tertiary</item>
-        <item name="colorTertiaryContainer">@color/brand_tertiary_container</item>
-        <item name="colorOnTertiaryContainer">@color/brand_on_tertiary_container</item>
-        <item name="android:colorBackground">@color/brand_background</item>
-        <item name="colorSurface">@color/brand_surface</item>
-        <item name="colorSurfaceContainer">@color/brand_surface_container</item>
-        <item name="colorOnSurface">@color/brand_on_surface</item>
-        <item name="colorSurfaceVariant">@color/brand_surface_variant</item>
-        <item name="colorOnSurfaceVariant">@color/brand_on_surface_variant</item>
-        <item name="colorOutline">@color/brand_outline</item>
-        <!-- Durum çubuğu degradenin üst tonuyla kaynaşır; simgeler beyaz -->
-        <item name="android:statusBarColor">@color/brand_gradient_start</item>
+    <!-- Temaya bağlı olmayan ortak ayarlar. Üç renk teması da bunu genişletir;
+         kullanıcı menüden hangisini seçerse Activity o temayla açılır. -->
+    <style name="Theme.KartCep.Base" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowLightStatusBar">false</item>
-        <!-- Ekranlar arası yumuşak geçiş -->
         <item name="android:windowAnimationStyle">@style/Animation.KartCep.Activity</item>
+    </style>
+
+    <!-- TEMA 1: Canlı (varsayılan) — fuşya · mor · turuncu -->
+    <style name="Theme.Kartvizit" parent="Theme.KartCep.Base">
+        <item name="colorPrimary">@color/vivid_primary</item>
+        <item name="colorOnPrimary">@color/vivid_on_primary</item>
+        <item name="colorPrimaryContainer">@color/vivid_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/vivid_on_primary_container</item>
+        <item name="colorSecondary">@color/vivid_secondary</item>
+        <item name="colorSecondaryContainer">@color/vivid_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/vivid_on_secondary_container</item>
+        <item name="colorTertiary">@color/vivid_tertiary</item>
+        <item name="colorTertiaryContainer">@color/vivid_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/vivid_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/vivid_background</item>
+        <item name="colorSurface">@color/vivid_surface</item>
+        <item name="colorSurfaceContainer">@color/vivid_surface_container</item>
+        <item name="colorOnSurface">@color/vivid_on_surface</item>
+        <item name="colorSurfaceVariant">@color/vivid_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/vivid_on_surface_variant</item>
+        <item name="colorOutline">@color/vivid_outline</item>
+        <item name="android:statusBarColor">@color/vivid_gradient_start</item>
+        <item name="headerGradient">@drawable/bg_header_gradient_vivid</item>
+    </style>
+
+    <!-- TEMA 2: Turkuaz — turkuaz · deniz · zümrüt -->
+    <style name="Theme.Kartvizit.Aqua" parent="Theme.KartCep.Base">
+        <item name="colorPrimary">@color/aqua_primary</item>
+        <item name="colorOnPrimary">@color/aqua_on_primary</item>
+        <item name="colorPrimaryContainer">@color/aqua_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/aqua_on_primary_container</item>
+        <item name="colorSecondary">@color/aqua_secondary</item>
+        <item name="colorSecondaryContainer">@color/aqua_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/aqua_on_secondary_container</item>
+        <item name="colorTertiary">@color/aqua_tertiary</item>
+        <item name="colorTertiaryContainer">@color/aqua_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/aqua_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/aqua_background</item>
+        <item name="colorSurface">@color/aqua_surface</item>
+        <item name="colorSurfaceContainer">@color/aqua_surface_container</item>
+        <item name="colorOnSurface">@color/aqua_on_surface</item>
+        <item name="colorSurfaceVariant">@color/aqua_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/aqua_on_surface_variant</item>
+        <item name="colorOutline">@color/aqua_outline</item>
+        <item name="android:statusBarColor">@color/aqua_gradient_start</item>
+        <item name="headerGradient">@drawable/bg_header_gradient_aqua</item>
+    </style>
+
+    <!-- TEMA 3: Profesyonel — lacivert · arduvaz · çelik -->
+    <style name="Theme.Kartvizit.Pro" parent="Theme.KartCep.Base">
+        <item name="colorPrimary">@color/pro_primary</item>
+        <item name="colorOnPrimary">@color/pro_on_primary</item>
+        <item name="colorPrimaryContainer">@color/pro_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/pro_on_primary_container</item>
+        <item name="colorSecondary">@color/pro_secondary</item>
+        <item name="colorSecondaryContainer">@color/pro_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/pro_on_secondary_container</item>
+        <item name="colorTertiary">@color/pro_tertiary</item>
+        <item name="colorTertiaryContainer">@color/pro_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/pro_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/pro_background</item>
+        <item name="colorSurface">@color/pro_surface</item>
+        <item name="colorSurfaceContainer">@color/pro_surface_container</item>
+        <item name="colorOnSurface">@color/pro_on_surface</item>
+        <item name="colorSurfaceVariant">@color/pro_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/pro_on_surface_variant</item>
+        <item name="colorOutline">@color/pro_outline</item>
+        <item name="android:statusBarColor">@color/pro_gradient_start</item>
+        <item name="headerGradient">@drawable/bg_header_gradient_pro</item>
     </style>
 
     <!-- Ekran geçişleri: açılışta belirme, kapanışta solma -->
@@ -37,7 +88,7 @@
     <style name="ThemeOverlay.KartCep.Header" parent="">
         <item name="colorControlNormal">#FFFFFF</item>
         <item name="android:textColorPrimary">#FFFFFF</item>
-        <item name="android:textColorSecondary">#F2DCD1</item>
+        <item name="android:textColorSecondary">#E8E8E8</item>
     </style>
 
     <!-- Tarama çubuğunun üst köşeleri yuvarlatılır -->

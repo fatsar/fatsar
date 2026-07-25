@@ -15,7 +15,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_header_gradient"
+            android:background="?attr/headerGradient"
             android:orientation="vertical"
             android:paddingBottom="10dp">
 
@@ -29,7 +29,7 @@
                 app:titleCentered="false"
                 app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall"
                 app:titleTextColor="#FFFFFF"
-                app:subtitleTextColor="#F2DCD1" />
+                app:subtitleTextColor="#E8E8E8" />
         </LinearLayout>
 
         <!-- Profil sekmeleri: kartvizitler profile (İş / Özel / …) göre

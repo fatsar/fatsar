@@ -18,7 +18,14 @@
     <string name="menu_save_excel">Excel\'i İndirilenler\'e kaydet</string>
     <string name="menu_filter_category">Kategori filtresi</string>
     <string name="menu_set_email">Alıcı e-posta adresi</string>
+    <string name="menu_theme">Renk teması</string>
     <string name="menu_version">Sürüm bilgisi</string>
+
+    <!-- Tema seçenekleri -->
+    <string name="theme_vivid">Canlı — fuşya · mor · turuncu</string>
+    <string name="theme_aqua">Turkuaz — turkuaz · deniz · zümrüt</string>
+    <string name="theme_pro">Profesyonel — lacivert · arduvaz · çelik</string>
+    <string name="theme_dialog_message">Uygulamanın renk temasını seçin. Her tema, telefonunuz karanlık moddayken kendi koyu sürümüne geçer.</string>
     <string name="version_info">Sürüm %1$s • derleme %2$s</string>
     <string name="filter_all">Tümü</string>
     <string name="filter_uncategorized">Kategorisiz</string>
