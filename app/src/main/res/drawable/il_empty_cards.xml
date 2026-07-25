@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Boş durum çizimi: sıcak tonlarda üst üste duran iki kartvizit.
-     Düz/gri bir simge yerine, uygulamanın kendi renkleriyle çizilmiş
-     davetkâr bir illüstrasyon. -->
+<!-- Boş durum çizimi: canlı renklerde üst üste duran iki kartvizit.
+     Mor/fuşya/turuncu üçlüsü ve neşeli ışıltılarla enerjik bir karşılama. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="140dp"
     android:height="140dp"
     android:viewportWidth="120"
     android:viewportHeight="120">
 
-    <!-- Yumuşak şeftali zemin dairesi -->
+    <!-- Canlı zemin dairesi -->
     <path
-        android:fillColor="@color/brand_primary_container"
-        android:fillAlpha="0.55"
+        android:fillColor="@color/brand_gradient_start"
+        android:fillAlpha="0.22"
         android:pathData="M60,10 A50,50 0 1 1 59.9,10 Z" />
 
-    <!-- Arkadaki kart (hafif eğik, kehribar) -->
+    <!-- İç halka (fuşya) -->
+    <path
+        android:fillColor="@color/brand_gradient_mid"
+        android:fillAlpha="0.16"
+        android:pathData="M60,22 A38,38 0 1 1 59.9,22 Z" />
+
+    <!-- Arkadaki kart (elektrik moru, hafif eğik) -->
     <group
         android:pivotX="60"
         android:pivotY="55"
@@ -29,7 +34,7 @@
         android:fillColor="#FFFFFF"
         android:pathData="M35,48 H85 A7,7 0 0 1 92,55 V83 A7,7 0 0 1 85,90 H35 A7,7 0 0 1 28,83 V55 A7,7 0 0 1 35,48 Z" />
 
-    <!-- Kartın üzerindeki avatar dairesi -->
+    <!-- Kartın üzerindeki avatar dairesi (fuşya) -->
     <path
         android:fillColor="@color/brand_gradient_mid"
         android:pathData="M43,55 A8,8 0 1 1 42.9,55 Z" />
@@ -42,21 +47,27 @@
         android:strokeWidth="5" />
     <path
         android:pathData="M58,69 H76"
-        android:strokeColor="#D9C4B8"
+        android:strokeColor="#F3C6DD"
         android:strokeLineCap="round"
         android:strokeWidth="4" />
     <path
         android:pathData="M38,80 H72"
-        android:strokeColor="#E4D3C9"
+        android:strokeColor="#EBD5F5"
         android:strokeLineCap="round"
         android:strokeWidth="4" />
 
-    <!-- Işıltılar -->
+    <!-- Neşeli ışıltılar -->
+    <path
+        android:fillColor="@color/brand_gradient_end"
+        android:pathData="M99,18 C99,25 102,28 109,28 C102,28 99,31 99,38 C99,31 96,28 89,28 C96,28 99,25 99,18 Z" />
     <path
         android:fillColor="@color/brand_gradient_start"
-        android:pathData="M98,19 C98,25 101,28 107,28 C101,28 98,31 98,37 C98,31 95,28 89,28 C95,28 98,25 98,19 Z" />
+        android:pathData="M23,79 C23,84 25,86 30,86 C25,86 23,88 23,93 C23,88 21,86 16,86 C21,86 23,84 23,79 Z" />
+    <!-- Turkuaz vurgu noktası: paleti canlandıran zıt renk -->
     <path
-        android:fillColor="@color/brand_gradient_mid"
-        android:fillAlpha="0.8"
-        android:pathData="M24,80 C24,84 26,86 30,86 C26,86 24,88 24,92 C24,88 22,86 18,86 C22,86 24,84 24,80 Z" />
+        android:fillColor="#22D3EE"
+        android:pathData="M92,96 A5,5 0 1 1 91.9,96 Z" />
+    <path
+        android:fillColor="#FACC15"
+        android:pathData="M20,38 A4,4 0 1 1 19.9,38 Z" />
 </vector>

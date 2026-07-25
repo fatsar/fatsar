@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- KartCep sıcak marka paleti (açık tema)
-         Toprak/terrakota + kehribar vurgu, kremsi kum zemin. Sıcak tonlar
-         (kil, gün batımı turuncusu, bal) gün ışığını çağrıştırdığı için
-         arayüz daha davetkâr ve "insani" hissettirir. -->
-    <color name="brand_primary">#B4522F</color>
+    <!-- KartCep canlı marka paleti (açık tema)
+         Yüksek doygunluklu fuşya + elektrik moru + turuncu vurgu.
+         Toprak tonlarının yerini enerjik, parlak bir gün batımı kimliği aldı;
+         zemin hafif pembe-beyaz kalarak renklerin patlamasına izin verir. -->
+    <color name="brand_primary">#DB2777</color>
     <color name="brand_on_primary">#FFFFFF</color>
-    <color name="brand_primary_container">#FFDBCF</color>
-    <color name="brand_on_primary_container">#3D0B00</color>
-    <color name="brand_secondary">#8A5A3B</color>
-    <color name="brand_secondary_container">#FFE0C7</color>
-    <color name="brand_on_secondary_container">#2E1500</color>
-    <color name="brand_tertiary">#8A6A1F</color>
-    <color name="brand_tertiary_container">#FFE9AE</color>
-    <color name="brand_on_tertiary_container">#2B1F00</color>
-    <color name="brand_background">#FFF8F4</color>
-    <color name="brand_surface">#FFF8F4</color>
-    <color name="brand_surface_container">#FFEDE4</color>
-    <color name="brand_on_surface">#241914</color>
-    <color name="brand_surface_variant">#F6DFD3</color>
-    <color name="brand_on_surface_variant">#53433C</color>
-    <color name="brand_outline">#86736A</color>
+    <color name="brand_primary_container">#FFD7E7</color>
+    <color name="brand_on_primary_container">#43001F</color>
+    <color name="brand_secondary">#7C3AED</color>
+    <color name="brand_secondary_container">#EADDFF</color>
+    <color name="brand_on_secondary_container">#25005C</color>
+    <color name="brand_tertiary">#EA580C</color>
+    <color name="brand_tertiary_container">#FFE0C4</color>
+    <color name="brand_on_tertiary_container">#3D1600</color>
+    <color name="brand_background">#FFF7FB</color>
+    <color name="brand_surface">#FFF7FB</color>
+    <color name="brand_surface_container">#FFEAF3</color>
+    <color name="brand_on_surface">#1F1024</color>
+    <color name="brand_surface_variant">#F7DCEA</color>
+    <color name="brand_on_surface_variant">#57404E</color>
+    <color name="brand_outline">#8B6B7C</color>
 
-    <!-- Başlık degradesi (gün doğumu): kehribardan terrakotaya -->
-    <color name="brand_gradient_start">#F5A15C</color>
-    <color name="brand_gradient_mid">#E2724A</color>
-    <color name="brand_gradient_end">#B4522F</color>
+    <!-- Canlı gün batımı degradesi: elektrik moru → fuşya → turuncu -->
+    <color name="brand_gradient_start">#A855F7</color>
+    <color name="brand_gradient_mid">#EC4899</color>
+    <color name="brand_gradient_end">#F97316</color>
 
     <!-- Uygulama simgesi arka planı -->
-    <color name="ic_launcher_background">#B4522F</color>
+    <color name="ic_launcher_background">#DB2777</color>
 </resources>

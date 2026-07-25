@@ -130,14 +130,15 @@ class ContactsAdapter(
     }
 
     private companion object {
-        // Baş harf avatarı paleti: tamamı sıcak aile (terrakota → bakır →
-        // bal → ceviz). Beyaz metinle kontrastı yeterli, liste bütünlüklü durur.
+        // Baş harf avatarı paleti: canlı ve çok renkli (fuşya, mor, turkuaz,
+        // zümrüt, turuncu, indigo…). Renk çeşitliliği listeye neşe katarken
+        // tonlar beyaz metinle yeterli kontrastı korur.
         val AVATAR_COLORS = intArrayOf(
-            Color.parseColor("#B4522F"), Color.parseColor("#A85C2E"),
-            Color.parseColor("#BC5A4E"), Color.parseColor("#8E5B3C"),
-            Color.parseColor("#A3522A"), Color.parseColor("#8A6A1F"),
-            Color.parseColor("#C1663A"), Color.parseColor("#9C6644"),
-            Color.parseColor("#B07A28"), Color.parseColor("#7E4B2A")
+            Color.parseColor("#DB2777"), Color.parseColor("#7C3AED"),
+            Color.parseColor("#EA580C"), Color.parseColor("#0891B2"),
+            Color.parseColor("#059669"), Color.parseColor("#4F46E5"),
+            Color.parseColor("#C026D3"), Color.parseColor("#E11D48"),
+            Color.parseColor("#0284C7"), Color.parseColor("#CA8A04")
         )
     }
 }
