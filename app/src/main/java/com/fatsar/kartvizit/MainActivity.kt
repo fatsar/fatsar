@@ -34,6 +34,7 @@ import com.fatsar.kartvizit.ocr.ScannedBarcode
 import com.fatsar.kartvizit.ocr.ScannedContact
 import com.fatsar.kartvizit.ocr.TextNormalizer
 import com.fatsar.kartvizit.ui.ContactsAdapter
+import com.fatsar.kartvizit.ui.SystemBars
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -139,6 +140,15 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+
+        // Android 15 kenardan kenara çizer: başlık durum çubuğunun, liste ve
+        // tarama düğmesi de gezinme çubuğunun altında kalmasın.
+        SystemBars.apply(
+            root = binding.root,
+            header = binding.headerBar,
+            bottomPadded = binding.recycler,
+            bottomMargin = binding.fabScan
+        )
 
         adapter = ContactsAdapter(
             onClick = { record ->

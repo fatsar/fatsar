@@ -11,8 +11,12 @@
         android:background="@android:color/transparent"
         app:elevation="0dp">
 
-        <!-- Degradeli, altı kavisli başlık: yalnızca araç çubuğu -->
+        <!-- Degradeli, altı kavisli başlık: yalnızca araç çubuğu.
+             Üst iç boşluk çalışma anında durum çubuğu yüksekliği kadar artar
+             (Android 15 kenardan kenara çizim); degrade durum çubuğunun
+             arkasını da boyar, yazılar altında kalmaz. -->
         <LinearLayout
+            android:id="@+id/headerBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/headerGradient"

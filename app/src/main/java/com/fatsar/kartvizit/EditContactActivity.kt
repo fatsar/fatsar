@@ -17,6 +17,7 @@ import com.fatsar.kartvizit.export.ExportManager
 import com.fatsar.kartvizit.model.ContactRecord
 import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.model.TypedPhone
+import com.fatsar.kartvizit.ui.SystemBars
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,6 +59,14 @@ class EditContactActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        // Kenardan kenara çizimde araç çubuğu ve form sistem çubuklarının
+        // altında kalmasın
+        SystemBars.apply(
+            root = binding.root,
+            header = binding.appBar,
+            bottomPadded = binding.scroll
+        )
 
         val id = intent.getStringExtra(EXTRA_ID)
         if (id != null) existing = ContactRepository.get(this, id)
