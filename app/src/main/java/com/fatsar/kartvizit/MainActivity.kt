@@ -918,9 +918,11 @@ class MainActivity : AppCompatActivity() {
      */
     private fun showThemeDialog() {
         val current = ThemeStore.current(this)
+        // DİKKAT: setMessage ile setSingleChoiceItems aynı içerik alanını
+        // kullanır; mesaj eklenirse liste hiç çizilmez. Bu yüzden açıklama
+        // başlığa taşındı, gövdede yalnızca seçenek listesi durur.
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.menu_theme)
-            .setMessage(R.string.theme_dialog_message)
+            .setTitle(R.string.theme_dialog_title)
             .setSingleChoiceItems(ThemeStore.labels(this), current) { dialog, which ->
                 dialog.dismiss()
                 if (which != current) {

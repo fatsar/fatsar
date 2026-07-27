@@ -36,6 +36,7 @@
     <string name="theme_vivid">Canlı — fuşya · mor · turuncu</string>
     <string name="theme_aqua">Turkuaz — turkuaz · deniz · zümrüt</string>
     <string name="theme_pro">Profesyonel — lacivert · arduvaz · çelik</string>
+    <string name="theme_dialog_title">Renk teması seçin</string>
     <string name="theme_dialog_message">Uygulamanın renk temasını seçin. Her tema, telefonunuz karanlık moddayken kendi koyu sürümüne geçer.</string>
     <string name="version_info">Sürüm %1$s • derleme %2$s</string>
     <string name="filter_all">Tümü</string>
