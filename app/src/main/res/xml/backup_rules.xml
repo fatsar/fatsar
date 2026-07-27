@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 ve öncesi için yedekleme kapsamı: kartvizit kayıtları ve
+     ayarlar yedeklenir; geçici tarama görüntüleri ve üretilen dışa aktarım
+     dosyaları yedeklenmez (yeniden oluşturulabilirler). -->
+<full-backup-content>
+    <include
+        domain="file"
+        path="contacts.json" />
+    <include
+        domain="sharedpref"
+        path="settings.xml" />
+    <exclude
+        domain="file"
+        path="exports" />
+    <exclude
+        domain="external"
+        path="." />
+</full-backup-content>

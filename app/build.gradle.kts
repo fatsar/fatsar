@@ -3,16 +3,19 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.fatsar.kartvizit"
-    compileSdk = 34
+    // Google Play, yeni yüklemelerin güncel API düzeyini hedeflemesini ister
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.fatsar.kartvizit"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 13
-        versionName = "2.2"
+        targetSdk = 35
+        versionCode = 14
+        versionName = "3.0"
 
         // CI, -PbuildSha=<kısa-sha> geçirir; menüdeki "Sürüm" satırında
         // hangi derlemenin kurulu olduğu görülür (eski APK karışıklığına son)
@@ -20,15 +23,37 @@ android {
         buildConfigField("String", "BUILD_SHA", "\"$buildSha\"")
     }
 
-    // Sabit imza anahtarı: her derleme aynı anahtarla imzalanır; böylece yeni
-    // sürümler eskisinin üzerine (kaldırmadan) kurulabilir. Kendi kendine
-    // dağıtılan bir uygulama olduğundan anahtar depoya dahildir.
+    // Doğrudan (mağaza dışı) dağıtılan derlemeler için sabit anahtar: yeni
+    // sürümler eskisinin üzerine kurulabilsin diye depoda tutulur. YALNIZCA
+    // debug derlemesinde kullanılır; mağaza sürümü bu anahtarla imzalanmaz.
+    //
+    // Play Store yüklemesi için yükleme anahtarı depoya konmaz; ya
+    // `keystore.properties` dosyasından ya da ortam değişkenlerinden okunur
+    // (KARTCEP_STORE_FILE, KARTCEP_STORE_PASSWORD, KARTCEP_KEY_ALIAS,
+    // KARTCEP_KEY_PASSWORD). Hiçbiri yoksa release imzasız üretilir.
+    val keystoreProps = Properties().apply {
+        val file = rootProject.file("keystore.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
+    fun secret(key: String, env: String): String? =
+        (keystoreProps.getProperty(key) ?: System.getenv(env))?.takeIf { it.isNotBlank() }
+
+    val releaseStore = secret("storeFile", "KARTCEP_STORE_FILE")
+
     signingConfigs {
         create("shared") {
             storeFile = file("kartvizit.jks")
             storePassword = "kartvizit"
             keyAlias = "kartvizit"
             keyPassword = "kartvizit"
+        }
+        if (releaseStore != null) {
+            create("release") {
+                storeFile = file(releaseStore)
+                storePassword = secret("storePassword", "KARTCEP_STORE_PASSWORD")
+                keyAlias = secret("keyAlias", "KARTCEP_KEY_ALIAS")
+                keyPassword = secret("keyPassword", "KARTCEP_KEY_PASSWORD")
+            }
         }
     }
 
@@ -37,8 +62,10 @@ android {
             signingConfig = signingConfigs.getByName("shared")
         }
         release {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("shared")
+            // Mağaza sürümü küçültülür: kullanılmayan kod ve kaynaklar atılır
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

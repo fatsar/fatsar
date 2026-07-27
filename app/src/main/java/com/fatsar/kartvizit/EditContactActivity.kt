@@ -166,7 +166,7 @@ class EditContactActivity : AppCompatActivity() {
     private fun launchContactPermission(record: ContactRecord) {
         pendingRecord = record
         contactsPermission.launch(
-            arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
+            arrayOf(Manifest.permission.WRITE_CONTACTS)
         )
     }
 

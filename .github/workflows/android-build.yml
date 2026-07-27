@@ -33,6 +33,20 @@ jobs:
       - name: APK bilgisi
         run: ls -lh app/build/outputs/apk/debug/
 
+      # Play Store yalnızca AAB kabul eder. Bu adım aynı zamanda R8 küçültmesinin
+      # (minify + shrinkResources) bozulmadığını her gönderimde doğrular.
+      - name: Mağaza paketi (AAB) derle
+        run: ./gradlew --no-daemon :app:bundleRelease -PbuildSha="${GITHUB_SHA:0:7}"
+
+      - name: AAB bilgisi
+        run: ls -lh app/build/outputs/bundle/release/
+
+      - name: AAB artefaktını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kartcep-play-store-aab
+          path: app/build/outputs/bundle/release/*.aab
+
       - name: APK artefaktını yükle
         uses: actions/upload-artifact@v4
         with:

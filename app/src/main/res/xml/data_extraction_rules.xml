@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ yedekleme/cihaz aktarımı kapsamı. Kartvizit kayıtları ve
+     ayarlar taşınır; geçici görüntüler ve dışa aktarım dosyaları taşınmaz. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include
+            domain="file"
+            path="contacts.json" />
+        <include
+            domain="sharedpref"
+            path="settings.xml" />
+        <exclude
+            domain="file"
+            path="exports" />
+    </cloud-backup>
+    <device-transfer>
+        <include
+            domain="file"
+            path="contacts.json" />
+        <include
+            domain="sharedpref"
+            path="settings.xml" />
+        <exclude
+            domain="file"
+            path="exports" />
+    </device-transfer>
+</data-extraction-rules>

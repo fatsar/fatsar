@@ -32,6 +32,7 @@ import com.fatsar.kartvizit.ocr.OcrLine
 import com.fatsar.kartvizit.ocr.ScanEnricher
 import com.fatsar.kartvizit.ocr.ScannedBarcode
 import com.fatsar.kartvizit.ocr.ScannedContact
+import com.fatsar.kartvizit.ocr.TextNormalizer
 import com.fatsar.kartvizit.ui.ContactsAdapter
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -70,12 +71,8 @@ class MainActivity : AppCompatActivity() {
     /** Klasör seçildikten sonra otomatik yedeklemeyi açmayı bekliyor mu? */
     private var pendingEnableAuto = false
 
-    /** Arşiv görünümü: ana listede yalnızca son taramalar tutulur. */
-    private var showingArchive = false
-
-    private val archiveBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
-        override fun handleOnBackPressed() = exitArchive()
-    }
+    /** Arama kutusundaki güncel sorgu; boşsa süzme yapılmaz. */
+    private var searchQuery = ""
 
     // Tembel oluşturma: tanıyıcılar yalnızca ilk tarama sırasında yüklenir.
     private val recognizer by lazy {
@@ -155,17 +152,18 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.adapter = adapter
 
-        binding.btnCamera.setOnClickListener { launchCamera() }
-        binding.btnGallery.setOnClickListener {
-            pickImage.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-            )
-        }
-        binding.btnArchive.setOnClickListener {
-            showingArchive = true
-            refreshList()
-            binding.recycler.scheduleLayoutAnimation()
-        }
+        binding.fabScan.setOnClickListener { launchCamera() }
+
+        // Arama: yazdıkça listeyi süz (isim, firma, unvan, telefon, e-posta)
+        binding.inputSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                searchQuery = s?.toString()?.trim().orEmpty()
+                refreshList(syncTabs = false)
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
 
         // Profil butonu seçimi: listeyi o profile göre grupla
         binding.profileChips.setOnCheckedStateChangeListener { _, checkedIds ->
@@ -174,12 +172,10 @@ class MainActivity : AppCompatActivity() {
                 ?: return@setOnCheckedStateChangeListener
             categoryFilter = profile
             // Butonlar değişmedi; yeniden kurmadan yalnızca listeyi tazele
-            if (showingArchive) exitArchive() else refreshList(syncTabs = false)
+            refreshList(syncTabs = false)
             // Profil değişiminde kartlar yeniden kademeli olarak belirsin
             binding.recycler.scheduleLayoutAnimation()
         }
-
-        onBackPressedDispatcher.addCallback(this, archiveBackCallback)
 
         if (savedInstanceState != null) {
             cameraImageUri =
@@ -219,6 +215,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.action_gallery -> {
+            pickImage.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+            true
+        }
+        R.id.action_sort -> {
+            showSortDialog(); true
+        }
         R.id.action_share_excel -> {
             shareExcelByEmail(); true
         }
@@ -472,8 +477,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setButtonsEnabled(enabled: Boolean) {
-        binding.btnCamera.isEnabled = enabled
-        binding.btnGallery.isEnabled = enabled
+        binding.fabScan.isEnabled = enabled
     }
 
     /**
@@ -499,52 +503,77 @@ class MainActivity : AppCompatActivity() {
             else rec.category.equals(active, ignoreCase = true)
         }
 
-        // Ana ekranda yalnızca son taramalar; eskiler "Önceki taramalar"da
-        val records: List<ContactRecord>
-        val archivedCount: Int
-        if (showingArchive) {
-            records = filtered.drop(MAIN_LIST_LIMIT)
-            archivedCount = 0
-            if (records.isEmpty()) {
-                exitArchive()
-                return
-            }
-        } else {
-            records = filtered.take(MAIN_LIST_LIMIT)
-            archivedCount = filtered.size - records.size
-        }
+        // Aramayı uygula: isim, firma, unvan, telefon, e-posta ve adres
+        val matched = if (searchQuery.isBlank()) filtered else filtered.filter { matches(it, searchQuery) }
+        val records = sortRecords(matched)
 
         adapter.submit(records)
-        binding.emptyView.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
-        binding.btnArchive.visibility =
-            if (!showingArchive && archivedCount > 0) View.VISIBLE else View.GONE
-        if (archivedCount > 0) {
-            binding.btnArchive.text = getString(R.string.btn_archive, archivedCount)
-        }
-        binding.scanBar.visibility = if (showingArchive) View.GONE else View.VISIBLE
+        updateEmptyState(records.isEmpty(), active)
 
-        supportActionBar?.title =
-            if (showingArchive) getString(R.string.archive_title) else getString(R.string.app_name)
-        supportActionBar?.setDisplayHomeAsUpEnabled(showingArchive)
-        archiveBackCallback.isEnabled = showingArchive
-        supportActionBar?.subtitle = when (val filter = categoryFilter) {
-            null -> null
-            "" -> getString(R.string.filter_uncategorized)
-            else -> filter
+        // Alt başlıkta profil ve kayıt sayısı: kaç kayıt olduğu hep görünür
+        supportActionBar?.subtitle = if (searchQuery.isBlank()) {
+            "$active · " + getString(R.string.contact_count, records.size)
+        } else {
+            "$active · " + getString(R.string.contact_count_filtered, records.size, filtered.size)
         }
     }
 
-    private fun exitArchive() {
-        showingArchive = false
-        refreshList()
+    /** Arama sorgusu kaydın herhangi bir alanında geçiyor mu? */
+    private fun matches(record: ContactRecord, query: String): Boolean {
+        val q = TextNormalizer.foldTr(query)
+        fun hit(value: String) = TextNormalizer.foldTr(value).contains(q)
+        // Telefonda yalnızca rakamlar karşılaştırılır (boşluk/parantez fark etmesin)
+        val digits = query.filter { it.isDigit() }
+        return hit(record.name) || hit(record.company) || hit(record.title) ||
+            record.emails.any { hit(it) } || hit(record.address) || hit(record.notes) ||
+            (digits.length >= 3 && record.phones.any { p -> p.number.filter { it.isDigit() }.contains(digits) })
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        if (showingArchive) {
-            exitArchive()
-            return true
+    private fun sortRecords(records: List<ContactRecord>): List<ContactRecord> = when (sortMode()) {
+        SORT_NAME -> records.sortedBy { TextNormalizer.foldTr(it.name.ifBlank { it.company }) }
+        SORT_COMPANY -> records.sortedBy { TextNormalizer.foldTr(it.company.ifBlank { it.name }) }
+        else -> records.sortedByDescending { it.createdAt }
+    }
+
+    /** Boş durumu bağlama göre anlatır: arama sonucu yok / profil boş / hiç kayıt yok. */
+    private fun updateEmptyState(isEmpty: Boolean, profile: String) {
+        binding.emptyView.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        if (!isEmpty) return
+        when {
+            searchQuery.isNotBlank() -> {
+                binding.emptyTitle.text = getString(R.string.empty_search_title)
+                binding.emptyMessage.text = getString(R.string.empty_search_message, searchQuery)
+            }
+            ContactRepository.getAll(this).isNotEmpty() -> {
+                binding.emptyTitle.text = getString(R.string.empty_profile_title)
+                binding.emptyMessage.text = getString(R.string.empty_profile_message, profile)
+            }
+            else -> {
+                binding.emptyTitle.text = getString(R.string.empty_title)
+                binding.emptyMessage.text = getString(R.string.empty_list)
+            }
         }
-        return super.onSupportNavigateUp()
+    }
+
+    private fun sortMode(): Int =
+        getSharedPreferences(PREFS, MODE_PRIVATE).getInt(PREF_SORT, SORT_NEWEST)
+
+    private fun showSortDialog() {
+        val labels = arrayOf(
+            getString(R.string.sort_newest),
+            getString(R.string.sort_name),
+            getString(R.string.sort_company)
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_sort)
+            .setSingleChoiceItems(labels, sortMode()) { dialog, which ->
+                dialog.dismiss()
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(PREF_SORT, which).apply()
+                refreshList(syncTabs = false)
+                binding.recycler.scheduleLayoutAnimation()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     /**
@@ -565,15 +594,9 @@ class MainActivity : AppCompatActivity() {
     /**
      * Üstteki profil butonlarını (chip'leri) yeniden kurar: her profil için bir
      * buton + sonda "+" (yeni profil). Seçili profil işaretlenir; profile uzun
-     * basınca yeniden adlandır/sil seçenekleri açılır. Arşivdeyken gizlenir.
+     * basınca yeniden adlandır/sil seçenekleri açılır.
      */
     private fun rebuildProfileChips(all: List<ContactRecord>) {
-        if (showingArchive) {
-            binding.profileScroll.visibility = View.GONE
-            return
-        }
-        binding.profileScroll.visibility = View.VISIBLE
-
         val profiles = profileList(all)
         val active = categoryFilter?.takeIf { sel -> profiles.any { it.equals(sel, ignoreCase = true) } }
             ?: profiles.first()
@@ -740,7 +763,7 @@ class MainActivity : AppCompatActivity() {
     private fun launchContactPermission(record: ContactRecord) {
         pendingContactAdd = record
         contactsPermission.launch(
-            arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
+            arrayOf(Manifest.permission.WRITE_CONTACTS)
         )
     }
 
@@ -925,8 +948,11 @@ class MainActivity : AppCompatActivity() {
         private const val STATE_CAMERA_URI = "camera_uri"
         private const val PREFS = "settings"
         private const val PREF_EMAIL = "recipient_email"
+        private const val PREF_SORT = "sort_mode"
 
-        /** Ana listede tutulacak en yeni tarama sayısı; fazlası arşive düşer. */
-        private const val MAIN_LIST_LIMIT = 5
+        // Sıralama seçenekleri (diyalogdaki sırayla aynı)
+        private const val SORT_NEWEST = 0
+        private const val SORT_NAME = 1
+        private const val SORT_COMPANY = 2
     }
 }

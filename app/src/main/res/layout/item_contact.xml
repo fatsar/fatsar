@@ -4,21 +4,24 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="14dp"
-    android:layout_marginVertical="7dp"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="2dp"
+    android:layout_marginVertical="5dp"
     app:cardBackgroundColor="?attr/colorSurfaceContainer"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:rippleColor="?attr/colorPrimary"
     app:strokeColor="?attr/colorSurfaceVariant"
-    app:strokeWidth="1dp"
-    app:rippleColor="?attr/colorPrimary">
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="14dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="6dp">
 
-        <!-- Üst satır: avatar + isim/unvan -->
+        <!-- Üst satır: avatar + isim/unvan + kategori -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -27,36 +30,50 @@
             <TextView
                 android:id="@+id/avatar"
                 style="@style/Widget.KartCep.Avatar"
-                android:layout_width="48dp"
-                android:layout_height="48dp" />
+                android:layout_width="46dp"
+                android:layout_height="46dp" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="14dp"
                 android:layout_gravity="center_vertical"
+                android:layout_marginStart="13dp"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/textName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxLines="1"
                     android:ellipsize="end"
+                    android:maxLines="1"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface" />
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/textCompany"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
-                    android:maxLines="1"
                     android:ellipsize="end"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:maxLines="1"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipCategory"
+                    style="@style/Widget.Material3.Chip.Suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:checkable="false"
+                    android:clickable="false"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    app:chipMinHeight="24dp"
+                    app:chipStrokeColor="?attr/colorOutline"
+                    app:chipStrokeWidth="1dp"
+                    app:ensureMinTouchTargetSize="false" />
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -65,38 +82,27 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_gravity="top"
-                android:insetTop="0dp"
+                android:contentDescription="@string/delete"
                 android:insetBottom="0dp"
+                android:insetTop="0dp"
                 app:icon="@drawable/ic_delete"
-                app:iconSize="20dp"
+                app:iconSize="19dp"
                 app:iconTint="?attr/colorOutline" />
         </LinearLayout>
 
-        <!-- Kategori rozeti -->
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipCategory"
-            style="@style/Widget.Material3.Chip.Assist"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:checkable="false"
-            android:clickable="false"
-            app:chipMinHeight="28dp"
-            app:chipBackgroundColor="?attr/colorSecondaryContainer"
-            android:textColor="?attr/colorOnSecondaryContainer" />
-
-        <!-- Telefon satırı -->
+        <!-- İletişim bilgileri -->
         <LinearLayout
             android:id="@+id/rowPhone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingEnd="8dp">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
                 android:contentDescription="@string/col_mobile"
                 android:src="@drawable/ic_phone" />
 
@@ -104,24 +110,26 @@
                 android:id="@+id/textPhone"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurface" />
         </LinearLayout>
 
-        <!-- E-posta satırı -->
         <LinearLayout
             android:id="@+id/rowEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingEnd="8dp">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
                 android:contentDescription="@string/col_email"
                 android:src="@drawable/ic_mail" />
 
@@ -129,30 +137,24 @@
                 android:id="@+id/textEmail"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="12dp"
-                android:maxLines="1"
+                android:layout_weight="1"
                 android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodyMedium"
                 android:textColor="?attr/colorOnSurface" />
         </LinearLayout>
 
-        <!-- Ayraç -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="14dp"
-            android:background="?attr/colorSurfaceVariant" />
-
-        <!-- Rehbere ekle -->
+        <!-- Eylem satırı -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddContact"
-            style="@style/Widget.Material3.Button.TonalButton.Icon"
-            android:layout_width="match_parent"
+            style="@style/Widget.Material3.Button.TextButton.Icon"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:text="@string/add_to_contacts"
             app:icon="@drawable/ic_person_add"
-            app:iconGravity="textStart" />
+            app:iconGravity="textStart"
+            app:iconSize="18dp" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
