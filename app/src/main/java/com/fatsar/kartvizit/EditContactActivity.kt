@@ -95,11 +95,13 @@ class EditContactActivity : AppCompatActivity() {
             binding.inputNotes.setText(source.notes)
         }
 
-        // Yeni kayıt: varsayılan işaretli. Daha önce gönderilmiş kayıt: işaret
-        // kaldırılır ama kutu etkin kalır; kullanıcı isterse yeniden gönderir
+        // Rehbere ekleme ARTIK OTOMATİK DEĞİL: kutu her zaman boş gelir, yani
+        // taranan kart yalnızca uygulamaya kaydedilir. Kullanıcı isterse burada
+        // işaretler ya da sonradan listedeki "Rehbere Ekle" butonunu kullanır.
+        // Daha önce gönderilmiş kayıtta kutu "yeniden gönder" anlamına gelir
         // (kaydederken kopya uyarısı gösterilir).
         val alreadySent = existing?.addedToContacts == true
-        binding.checkAddToContacts.isChecked = existing == null
+        binding.checkAddToContacts.isChecked = false
         if (alreadySent) binding.checkAddToContacts.setText(R.string.resend_checkbox)
 
         binding.btnSave.setOnClickListener { save() }
