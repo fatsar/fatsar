@@ -21,6 +21,37 @@ object TextNormalizer {
     /** Küçük yazılan bağlaçlar. */
     private val KEEP_LOWER = setOf("ve", "ile", "and", "of", "for", "the")
 
+    /** Türkçeye özgü harfler: metnin dilini anlamak için güçlü ipucu. */
+    private const val TR_LETTERS = "ğĞşŞıİçÇöÖüÜ"
+
+    /**
+     * Kartvizitlerde sık geçen İngilizce sözcükler. Metinde bunlardan biri
+     * varsa ve Türkçeye özgü harf yoksa, büyük/küçük dönüşümü İngilizce
+     * kurallarıyla yapılır: "CHEMICAL" -> "Chemical" (Türkçe kuralla
+     * "Chemıcal" olurdu, çünkü Türkçede I harfi ı'ya iner).
+     */
+    private val EN_MARKERS = setOf(
+        "CHEMICAL", "CHEMICALS", "INDUSTRIAL", "INDUSTRY", "INTERNATIONAL",
+        "TECHNOLOGY", "TECHNOLOGIES", "SOLUTIONS", "TRADING", "EUROPE",
+        "OFFICE", "MANAGER", "DIRECTOR", "ENGINEERING", "MARKETING",
+        "IMPORT", "EXPORT", "LIMITED", "GROUP", "HOLDING", "SCIENCE",
+        "DEVELOPMENT", "DISTRIBUTION", "COMPANY", "CORPORATION", "GENERAL",
+        "COMMERCIAL", "EXECUTIVE", "SPECIALIST", "SALES", "BUSINESS",
+        "MACHINERY", "EQUIPMENT", "SERVICES", "SYSTEMS", "PRODUCTS"
+    )
+
+    /**
+     * Metnin bütününe bakarak hangi dilin büyük/küçük kurallarının
+     * uygulanacağını seçer. Türkçeye özgü harf varsa Türkçe; yoksa ve
+     * tanıdık bir İngilizce sözcük geçiyorsa İngilizce; aksi halde Türkçe.
+     */
+    fun localeFor(text: String): Locale {
+        if (text.any { it in TR_LETTERS }) return TR
+        val words = text.split(Regex("""[^\p{L}]+""")).filter { it.isNotBlank() }
+        val hasEnglish = words.any { it.uppercase(Locale.ROOT) in EN_MARKERS }
+        return if (hasEnglish) Locale.ROOT else TR
+    }
+
     /** Fazla boşlukları tek boşluğa indirir, baş/son boşlukları atar. */
     fun tidy(s: String): String = s.replace(WS, " ").trim()
 
@@ -29,13 +60,20 @@ object TextNormalizer {
      * Karışık yazılmış (ör. "McDonald") kelimelere dokunmaz; rakam veya @
      * içeren parçaları olduğu gibi bırakır.
      */
-    fun smartTitleCase(s: String): String {
+    fun smartTitleCase(s: String): String = smartTitleCase(s, localeFor(s))
+
+    /**
+     * Dil kararı çağıran tarafça verilir. Kartvizitte tek bir satıra bakmak
+     * yanıltıcıdır ("OCI UNID" tek başına dilsizdir); bu yüzden çözümleyici
+     * dili KARTIN TAMAMINDAN belirleyip buraya geçirir.
+     */
+    fun smartTitleCase(s: String, locale: Locale): String {
         val text = tidy(s)
         if (text.isEmpty()) return text
-        return text.split(' ').joinToString(" ") { fixToken(it) }
+        return text.split(' ').joinToString(" ") { fixToken(it, locale) }
     }
 
-    private fun fixToken(token: String): String {
+    private fun fixToken(token: String, locale: Locale = TR): String {
         if (token.any { it.isDigit() } || token.contains('@')) return token
         val letters = token.filter { it.isLetter() }
         if (letters.isEmpty()) return token
@@ -46,7 +84,7 @@ object TextNormalizer {
 
         val bare = letters.uppercase(TR)
         if (bare in KEEP_UPPER) return token.uppercase(TR)
-        if (bare.lowercase(TR) in KEEP_LOWER) return token.lowercase(TR)
+        if (bare.lowercase(TR) in KEEP_LOWER) return token.lowercase(locale)
 
         // Baş harf büyük; nokta, tire ve kesme sonrası da yeni kelime sayılır
         // ("SAN." -> "San.", "ALİ-VELİ" -> "Ali-Veli").
@@ -55,8 +93,8 @@ object TextNormalizer {
         for (c in token) {
             if (c.isLetter()) {
                 sb.append(
-                    if (newWord) c.toString().uppercase(TR)
-                    else c.toString().lowercase(TR)
+                    if (newWord) c.toString().uppercase(locale)
+                    else c.toString().lowercase(locale)
                 )
                 newWord = false
             } else {

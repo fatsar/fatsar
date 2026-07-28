@@ -128,6 +128,33 @@
         <item name="ensureMinTouchTargetSize">false</item>
     </style>
 
+    <!-- Düzenleme formundaki bölüm başlığı -->
+    <style name="TextAppearance.KartCep.SectionHeader" parent="Widget.AppCompat.TextView">
+        <item name="android:textAppearance">?attr/textAppearanceLabelLarge</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:layout_marginStart">4dp</item>
+    </style>
+
+    <!-- Düzenleme formundaki bölüm kartı -->
+    <style name="Widget.KartCep.FormCard" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">18dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+        <item name="strokeColor">?attr/colorSurfaceVariant</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Formdaki metin alanları: yuvarlatılmış çerçeveli kutu -->
+    <style name="Widget.KartCep.Field" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+    </style>
+
     <!-- Avatar (baş harf dairesi) -->
     <style name="Widget.KartCep.Avatar" parent="Widget.AppCompat.TextView">
         <item name="android:gravity">center</item>

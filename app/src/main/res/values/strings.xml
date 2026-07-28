@@ -43,6 +43,8 @@
     <string name="filter_uncategorized">Kategorisiz</string>
 
     <!-- Profiller (üstteki sekme butonları) -->
+    <string name="profile_all">Genel</string>
+    <string name="profile_all_reserved">\"Genel\" ayrılmış bir sekmedir; tüm kayıtları gösterir.</string>
     <string name="profile_work">İş</string>
     <string name="profile_personal">Özel</string>
     <string name="add_profile_cd">Yeni profil ekle</string>
@@ -119,6 +121,10 @@
 
     <!-- Düzenleme ekranı -->
     <string name="edit_title">Kartvizit Bilgileri</string>
+    <string name="section_person">KİŞİ</string>
+    <string name="section_phones">TELEFONLAR</string>
+    <string name="section_contact">İLETİŞİM</string>
+    <string name="section_filing">SINIFLANDIRMA</string>
     <string name="hint_name">Ad Soyad</string>
     <string name="hint_title">Unvan</string>
     <string name="hint_company">Şirket</string>

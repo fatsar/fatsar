@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity() {
     /** Arama kutusundaki güncel sorgu; boşsa süzme yapılmaz. */
     private var searchQuery = ""
 
+    /** Liste kademeli giriş animasyonu bir kez oynatıldı mı? */
+    private var listAnimated = false
+
     // Tembel oluşturma: tanıyıcılar yalnızca ilk tarama sırasında yüklenir.
     private val recognizer by lazy {
         TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -505,19 +508,23 @@ class MainActivity : AppCompatActivity() {
         val active = categoryFilter?.takeIf { sel -> profiles.any { it.equals(sel, ignoreCase = true) } }
             ?: profiles.first()
         categoryFilter = active
-        // İlk profil, hiçbir profile atanmamış (boş kategorili) kartları da toplar;
-        // böylece hiçbir kart görünmez kalmaz.
-        val isFirst = active.equals(profiles.first(), ignoreCase = true)
-        val filtered = all.filter { rec ->
-            if (isFirst) rec.category.isBlank() || rec.category.equals(active, ignoreCase = true)
-            else rec.category.equals(active, ignoreCase = true)
-        }
+        // "Genel" sekmesi profil ayrımı yapmadan TÜM kayıtları gösterir;
+        // diğer sekmeler yalnızca kendi profilini.
+        val filtered = if (isGeneral(active)) all
+        else all.filter { it.category.equals(active, ignoreCase = true) }
 
         // Aramayı uygula: isim, firma, unvan, telefon, e-posta ve adres
         val matched = if (searchQuery.isBlank()) filtered else filtered.filter { matches(it, searchQuery) }
         val records = sortRecords(matched)
 
         adapter.submit(records)
+        // Liste ilk kez dolduğunda kademeli giriş animasyonunu tetikle:
+        // RecyclerView ilk yerleşimini BOŞ adapterle yaptığı için
+        // layoutAnimation kendiliğinden oynamaz.
+        if (records.isNotEmpty() && !listAnimated) {
+            listAnimated = true
+            binding.recycler.scheduleLayoutAnimation()
+        }
         updateEmptyState(records.isEmpty(), active)
 
         // Alt başlıkta profil ve kayıt sayısı: kaç kayıt olduğu hep görünür
@@ -598,7 +605,19 @@ class MainActivity : AppCompatActivity() {
             .distinct()
             .filter { c -> stored.none { it.equals(c, ignoreCase = true) } }
             .sorted()
-        return stored + extras
+        // İlk sekme her zaman "Genel": tüm kayıtlar burada görünür
+        return listOf(getString(R.string.profile_all)) + stored + extras
+    }
+
+    /** Verilen sekme, tümünü gösteren "Genel" sekmesi mi? */
+    private fun isGeneral(profile: String): Boolean =
+        profile.equals(getString(R.string.profile_all), ignoreCase = true)
+
+    /** Yeni taranan kartların gireceği profil ("Genel" seçiliyse ilk gerçek profil). */
+    private fun activeProfile(): String {
+        val selected = categoryFilter
+        if (selected != null && !isGeneral(selected)) return selected
+        return ProfileStore.profiles(this).first()
     }
 
     /**
@@ -622,7 +641,10 @@ class MainActivity : AppCompatActivity() {
                 .inflate(R.layout.view_profile_chip, binding.profileChips, false) as Chip
             chip.text = profile
             chip.id = View.generateViewId()
-            chip.setOnLongClickListener { showProfileOptions(profile); true }
+            // "Genel" ayrılmış sekmedir; yeniden adlandırılamaz/silinemez
+            if (!isGeneral(profile)) {
+                chip.setOnLongClickListener { showProfileOptions(profile); true }
+            }
             chipIdToProfile[chip.id] = profile
             binding.profileChips.addView(chip)
             if (profile.equals(active, ignoreCase = true)) activeChipId = chip.id
@@ -650,6 +672,10 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.add) { _, _ ->
                 val name = input.text?.toString()?.trim().orEmpty()
                 if (name.isBlank()) return@setPositiveButton
+                if (isGeneral(name)) {
+                    toast(getString(R.string.profile_all_reserved))
+                    return@setPositiveButton
+                }
                 if (ProfileStore.addProfile(this, name)) {
                     categoryFilter = name
                     refreshList()
@@ -728,9 +754,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Yeni taranan kartların gireceği profil (seçili profil, yoksa ilki). */
-    private fun activeProfile(): String =
-        categoryFilter ?: ProfileStore.profiles(this).first()
 
     private fun shareVcf() {
         if (ContactRepository.getAll(this).isEmpty()) {

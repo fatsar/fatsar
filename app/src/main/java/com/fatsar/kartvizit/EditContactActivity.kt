@@ -157,7 +157,10 @@ class EditContactActivity : AppCompatActivity() {
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 // Yeni bir profil (kategori) yazıldıysa kalıcı profil listesine ekle
-                if (record.category.isNotBlank()) {
+                // "Genel" ayrılmış sekme adıdır; profil olarak eklenmez
+                if (record.category.isNotBlank() &&
+                    !record.category.equals(getString(R.string.profile_all), ignoreCase = true)
+                ) {
                     ProfileStore.addProfile(this@EditContactActivity, record.category)
                 }
                 ContactRepository.upsert(this@EditContactActivity, record)

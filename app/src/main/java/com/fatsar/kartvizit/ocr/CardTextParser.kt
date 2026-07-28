@@ -3,7 +3,6 @@ package com.fatsar.kartvizit.ocr
 import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.model.TypedPhone
 import java.util.Locale
-import kotlin.math.pow
 
 /** Kartvizitten okunan alanlar. */
 data class ParsedCard(
@@ -88,6 +87,22 @@ object CardTextParser {
         "live", "msn", "protonmail", "mail", "windowslive"
     )
 
+
+    /**
+     * Anahtar kelimeyi KELİME SINIRIYLA arar. Düz `contains` kullanmak
+     * "geliŞTİrme" içindeki "şti"yi firma eki sanmak gibi hatalara yol açar.
+     * Java'nın \b sınırı Türkçe harfleri kelime dışı saydığı için sınır
+     * kontrolü Unicode harf lookaround'larıyla yapılır.
+     */
+    private val keywordCache = HashMap<String, Regex>()
+
+    private fun containsKeyword(lower: String, keyword: String): Boolean {
+        val re = keywordCache.getOrPut(keyword) {
+            Regex("""(?<!\p{L})""" + Regex.escape(keyword) + """(?!\p{L})""")
+        }
+        return re.containsMatchIn(lower)
+    }
+
     /** Test ve basit kullanım için: düz metni satırlara bölerek çözümler. */
     fun parse(text: String): ParsedCard =
         parse(text.lines().map { OcrLine(it) })
@@ -99,6 +114,10 @@ object CardTextParser {
         if (cleaned.isEmpty()) return ParsedCard()
 
         val rawText = cleaned.joinToString("\n") { it.text }
+        // Büyük/küçük harf kuralı KARTIN TAMAMINDAN belirlenir: tek satıra
+        // bakmak yanıltıcıdır ("OCI UNID" tek başına dilsizdir, Türkçe kuralla
+        // "Ocı Unıd" olurdu). Kartta İngilizce sözcükler varsa İngilizce.
+        val cardLocale = TextNormalizer.localeFor(rawText)
 
         val emails = LinkedHashSet<String>()
         val phonesByDigits = LinkedHashMap<String, TypedPhone>() // rakamlar -> tür+numara
@@ -172,14 +191,14 @@ object CardTextParser {
         var company = ""
         val companyIndex = remaining.indexOfFirst { l ->
             val lower = l.text.lowercase(TR)
-            COMPANY_KEYWORDS.any { lower.contains(it) }
+            COMPANY_KEYWORDS.any { containsKeyword(lower, it) }
         }
         if (companyIndex >= 0) company = remaining.removeAt(companyIndex).text
 
         var title = ""
         val titleIndex = remaining.indexOfFirst { l ->
             val lower = l.text.lowercase(TR)
-            TITLE_KEYWORDS.any { lower.contains(it) }
+            TITLE_KEYWORDS.any { containsKeyword(lower, it) }
         }
         if (titleIndex >= 0) title = remaining.removeAt(titleIndex).text
 
@@ -197,13 +216,24 @@ object CardTextParser {
                 ?.filter { it.length >= 2 }
                 .orEmpty()
 
+            // Marka sözcükleri: e-posta alan adı, web sitesi ve firma adı.
+            // Kartın EN BÜYÜK yazısı çoğu zaman LOGO'dur (SODİTAŞ, ÇAKIRLAR,
+            // CESTEL); bunlar kişi adı değildir ve elenmelidir.
+            val brands = brandWords(company, website, emails)
+
             fun score(line: OcrLine, index: Int): Double {
                 val tokens = line.text.split(Regex("""\s+""")).filter { it.isNotBlank() }
                 var s = 0.0
                 if (tokens.size in 2..3) s += 2.0
-                s += tokens.count { TextNormalizer.foldTr(it.trim('.', ',')) in emailTokens } * 3.0
-                // İsim kartın en büyük yazısıdır: yazı boyutuna güçlü, karesel ağırlık
-                s += (line.height / maxHeight).toDouble().pow(2.0) * 4.0
+                // E-posta kullanıcı adıyla örtüşme en güçlü kanıttır
+                s += tokens.count { TextNormalizer.foldTr(it.trim('.', ',')) in emailTokens } * 5.0
+                // Punto yalnızca DESTEKLEYİCİ ipucudur; tek başına logoyu
+                // kazandırmaması için ağırlığı düşük ve doğrusal tutulur.
+                s += (line.height / maxHeight) * 1.5
+                // Logo/firma ile eşleşen satır kişi adı olamaz
+                if (isBrandish(line.text, brands)) s -= 6.0
+                // "Full L" gibi tek harflik parçalar (arka plan gürültüsü)
+                if (tokens.any { t -> t.trim('.', ',').length == 1 }) s -= 1.5
                 s -= index * 0.01 // eşitlikte üstteki satır kazanır
                 return s
             }
@@ -211,10 +241,13 @@ object CardTextParser {
             val best = candidates.maxByOrNull { (i, l) -> score(l, i) }!!
             // En iyi aday kartın en büyük yazısıysa, ona bitişik ve benzer
             // büyüklükteki isim satırlarını da kata: "ANIL" + "NİZAM" gibi iki
-            // satıra bölünmüş adlar tek isimde toplanır.
+            // satıra bölünmüş adlar tek isimde toplanır. Markayla eşleşen
+            // komşu satır ("Erdi Coşkun" + "CESTEL") KATILMAZ.
             val bestIsBig = best.value.height >= NAME_BIG_RATIO * maxHeight
-            val indices = if (bestIsBig) nameRunIndices(remaining, best.index, maxHeight)
-            else listOf(best.index)
+            val indices = if (bestIsBig) {
+                nameRunIndices(remaining, best.index, maxHeight)
+                    .filter { it == best.index || !isBrandish(remaining[it].text, brands) }
+            } else listOf(best.index)
 
             name = indices.joinToString(" ") { remaining[it].text.trim() }
                 .replace(Regex("""\s+"""), " ")
@@ -236,16 +269,58 @@ object CardTextParser {
         }
 
         return ParsedCard(
-            name = TextNormalizer.smartTitleCase(name),
-            title = TextNormalizer.smartTitleCase(title),
-            company = TextNormalizer.smartTitleCase(company),
+            name = TextNormalizer.smartTitleCase(name, cardLocale),
+            title = TextNormalizer.smartTitleCase(title, cardLocale),
+            company = TextNormalizer.smartTitleCase(company, cardLocale),
             phones = phonesByDigits.values.toList().sortedBy { it.type.ordinal },
             emails = emails.toList(),
             website = website,
-            address = addressLines.joinToString(", ") { TextNormalizer.smartTitleCase(it) },
+            address = addressLines.joinToString(", ") { TextNormalizer.smartTitleCase(it, cardLocale) },
             rawText = rawText
         )
     }
+
+    /**
+     * Kartın "marka" sözcükleri: e-posta alan adı, web adresi ve firma
+     * adındaki anlamlı kelimeler. Logo satırını kişi adından ayırmak için
+     * kullanılır (SODİTAŞ ↔ soditas.com.tr, CESTEL ↔ cestelkimya.com).
+     */
+    private fun brandWords(company: String, website: String, emails: Collection<String>): Set<String> {
+        val out = mutableSetOf<String>()
+        // Yalnızca ASIL alan adı (uzantıdan önceki son parça) marka sayılır.
+        // "anil.nizamdunivarsolutions.com" gibi adreslerde baştaki parça kişi
+        // adı olabilir; onu marka sayarsak kişinin adını eleriz.
+        fun addHost(host: String) {
+            val parts = host.substringBefore('/').split('.').filter { it.isNotBlank() }
+            var i = parts.size - 1
+            while (i >= 0 && (parts[i].length <= 3 || parts[i].lowercase(Locale.ROOT) in DOMAIN_SUFFIXES)) i--
+            if (i >= 0 && parts[i].length >= 4) out.add(TextNormalizer.foldTr(parts[i]))
+        }
+        emails.firstOrNull()?.substringAfter('@')?.let(::addHost)
+        if (website.isNotBlank()) addHost(website.removePrefix("www.").lowercase(Locale.ROOT))
+        company.split(Regex("""[^\p{L}]+""")).forEach { word ->
+            if (word.length >= 4) out.add(TextNormalizer.foldTr(word))
+        }
+        return out
+    }
+
+    /** Satır, kartın markasıyla (logo/firma/alan adı) örtüşüyor mu? */
+    private fun isBrandish(text: String, brands: Set<String>): Boolean {
+        if (brands.isEmpty()) return false
+        val folded = TextNormalizer.foldTr(text).filter { it.isLetter() }
+        if (folded.length < 4) return false
+        return brands.any { brand ->
+            // Satır markayı içeriyor ("SODİTAŞ SOLVENT..." ⊃ "soditas"), ya da
+            // marka satırı içeriyor AMA satır markanın en az yarısı kadar
+            // uzun. Oran şartı şart: "cestelkimya" ⊃ "cestel" (%55) marka
+            // sayılır; bozuk okunan "nizamdunivarsolutions" ⊃ "nizam" (%24)
+            // sayılmaz, yoksa kişinin soyadını elerdik.
+            folded.contains(brand) ||
+                (brand.contains(folded) && brand.length <= folded.length * 2)
+        }
+    }
+
+    private val DOMAIN_SUFFIXES = setOf("com", "net", "org", "gov", "edu", "info", "biz")
 
     private fun looksLikeName(text: String): Boolean {
         if (text.length < 3 || text.any { it.isDigit() }) return false
