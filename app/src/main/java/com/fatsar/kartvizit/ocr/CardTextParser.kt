@@ -234,6 +234,11 @@ object CardTextParser {
                 if (isBrandish(line.text, brands)) s -= 6.0
                 // "Full L" gibi tek harflik parçalar (arka plan gürültüsü)
                 if (tokens.any { t -> t.trim('.', ',').length == 1 }) s -= 1.5
+                // Kısa ve tamamen BÜYÜK yazılmış satırlar logo/kısaltma olma
+                // eğilimindedir ("OCI UNID", "SODİTAŞ"). Kişi adları genelde
+                // daha uzundur ya da düzgün büyük/küçük yazılır.
+                val letters = line.text.filter { it.isLetter() }
+                if (letters.length in 1..8 && letters.all { it.isUpperCase() }) s -= 2.0
                 s -= index * 0.01 // eşitlikte üstteki satır kazanır
                 return s
             }
@@ -253,6 +258,18 @@ object CardTextParser {
                 .replace(Regex("""\s+"""), " ")
                 .trim()
             indices.sortedDescending().forEach { remaining.removeAt(it) }
+
+            // Kartın KENDİ e-postası kişi adı gibi bölünüyorsa ("baris.gunes")
+            // ve seçilen satır bununla hiç örtüşmüyorsa, o satır büyük
+            // olasılıkla komşu karttan sızmış ya da adres parçasıdır. Bu
+            // durumda kartın kendi verisi olan e-postadaki ad yeğlenir.
+            if (emailTokens.size >= 2) {
+                val picked = name.split(Regex("""\s+"""))
+                    .map { TextNormalizer.foldTr(it.trim('.', ',')) }
+                if (picked.none { it in emailTokens }) {
+                    name = nameFromEmail(emails.first())
+                }
+            }
         }
 
         // 6) Yedek çıkarımlar

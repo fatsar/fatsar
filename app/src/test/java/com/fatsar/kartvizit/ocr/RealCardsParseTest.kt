@@ -129,6 +129,46 @@ class RealCardsParseTest {
     }
 
     @Test
+    fun `adres parcasi isim olmaz - e-postadaki ad yeglenir`() {
+        // Gerçek hata: OCR "MECLİS-İ MEBUSAN CADDESİ" satırını bölünce
+        // "MECLİS-İ MEBUSAN" parçasında adres anahtar kelimesi kalmadı ve
+        // kişi adı sanıldı. Kartın kendi e-postası (baris.gunes) ile hiç
+        // örtüşmediği için e-postadaki ad yeğlenmeli.
+        val card = CardTextParser.parse(
+            listOf(
+                line("SODİTAŞ", 40f),
+                line("MECLİS-İ MEBUSAN", 16f), // adres parçası, CADDESİ ayrı satırda
+                line("CADDESİ", 12f),
+                line("NO: 85 TÜTÜN HAN KAT: 1", 11f),
+                line("PHONE : +90 212 334 49 29", 11f),
+                line("E-MAIL : baris.gunes@soditas.com.tr", 11f)
+            )
+        )
+
+        assertTrue("ad e-postadan gelmeli: ${card.name}",
+            TextNormalizer.foldTr(card.name).contains("baris") &&
+                TextNormalizer.foldTr(card.name).contains("gunes"))
+    }
+
+    @Test
+    fun `komsu kartin logosu isim olmaz`() {
+        // Gerçek hata: yan karttaki "OCI UNID" logosu Maysta kümesine sızıp
+        // kişi adı seçildi ("Oc Unsd"). Kısa ve tamamen büyük yazılmış logo
+        // satırı, düzgün yazılmış kişi adına yenilmeli.
+        val card = CardTextParser.parse(
+            listOf(
+                line("OCI UNID", 30f), // komşu karttan sızan logo
+                line("Koda Yue", 18f),
+                line("Commercial Executive", 12f),
+                line("JIANGSU MAYSTA CHEMICAL CO., LTD.", 14f),
+                line("Tel: +86 25 85560992-721", 10f)
+            )
+        )
+
+        assertEquals("Koda Yue", card.name)
+    }
+
+    @Test
     fun `arka plan gurultusu isim olarak secilmez`() {
         // Mouse pad üzerindeki "Full L" yazısı kart kümesine karışmıştı
         val card = CardTextParser.parse(
