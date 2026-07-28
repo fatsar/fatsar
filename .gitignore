@@ -9,3 +9,8 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk.idsig
+
+# Play Store yükleme anahtarı ve parolaları asla depoya girmemeli
+keystore.properties
+upload-keystore.jks
+*.keystore

@@ -1,8 +1,8 @@
-# Kartvizit Tarayıcı 📇
+# KartCep 📇
 
 Kartvizitleri tarayıp **telefon rehberine ekleyen** ve tüm kayıtları **Excel (.xlsx) dosyası olarak Gmail ile gönderebilen** Android uygulaması.
 
-Tüm işlemler **cihaz üzerinde** çalışır: metin tanıma (OCR) için Google ML Kit'in cihaz içi modeli uygulamayla birlikte paketlenir. **İnternet bağlantısı veya herhangi bir yapay zekâ / bulut servisi gerekmez** — yalnızca Excel dosyasını e-postayla gönderirken Gmail'in kendisi internet kullanır.
+Tüm işlemler **cihaz üzerinde** çalışır: metin tanıma (OCR) ve karekod okuma için Google ML Kit'in cihaz içi modelleri uygulamayla birlikte paketlenir. **İnternet bağlantısı veya herhangi bir yapay zekâ / bulut servisi gerekmez** — yalnızca Excel dosyasını e-postayla gönderirken Gmail'in kendisi internet kullanır.
 
 ## Özellikler
 
@@ -10,8 +10,12 @@ Tüm işlemler **cihaz üzerinde** çalışır: metin tanıma (OCR) için Google
 - 🖼️ **Galeriden seçme** – telefondaki hazır fotoğrafları (ör. bilgisayarda taranıp telefona aktarılmış görselleri) seçin.
 - 📤 **Paylaşarak açma** – başka uygulamalardan (WhatsApp, Drive, Dosyalar…) herhangi bir görseli bu uygulamaya "Paylaş" ile gönderin.
 - 🔍 **Cihaz içi OCR + akıllı alan ayrıştırma** – ad, unvan, şirket, telefon(lar), e-posta, web sitesi ve adres otomatik tanınır (Türkçe ve İngilizce kartvizitlere göre ayarlandı). Kaydetmeden önce tüm alanları düzenleyebilirsiniz.
+- ☎️ **Telefon türlerine ayırma** – "GSM/Cep", "Tel/İş", "Faks", "Ev" etiketleri tanınır; her numara doğru türle ayrı ayrı saklanır, rehbere doğru türle eklenir ve Excel'de ayrı sütunlara (Cep/İş/Faks/Ev) yazılır.
+- 🔳 **Karekod (QR) okuma** – karttaki karekod/barkod cihaz üzerinde okunur; içindeki kişi bilgisi (vCard/MECARD) alanlara aktarılır, bağlantı web sitesi olur, diğer içerik nota eklenir.
+- 🖼️➕ **Tek fotoğrafta birden fazla kartvizit** – bir fotoğrafta yan yana/alt alta birden çok kart varsa konumlarına göre ayrılır ve her biri ayrı kayıt olarak oluşturulur.
 - ✨ **Otomatik metin düzeltme** – fazla boşluklar temizlenir; TAMAMEN BÜYÜK yazılmış ad/unvan/şirket/adres Türkçe kurallarına göre düzgün büyük-küçük harfe çevrilir ("AHMET YILMAZ" → "Ahmet Yılmaz", kısaltmalar korunur: "A.Ş.", "LTD"). Kişi adı, e-posta adresiyle eşleştirilerek firma adının isim sanılması önlenir.
 - 👤 **Telefon rehberine ekleme** – kişinin **adı ve soyadı ayrı alanlar** olarak rehbere yazılır; şirket, unvan, numara, e-posta ve adres de eklenir.
+- 📁 **Otomatik arşiv** – ana ekranda yalnızca son 5 tarama görünür; daha eskiler tek dokunuşla açılan "Önceki taramalar" klasörüne taşınır (uzun listede kaydırma derdi yok).
 - 🗂️ **Kategoriler** – kayıtları isteğe bağlı kategorilere ayırın ("Müşteriler", "Tedarikçiler"…); ana ekranda kategoriye göre filtreleyin. Kategori Excel'de ayrı sütun, vCard'da CATEGORIES alanı olarak dışa aktarılır.
 - 📇 **Rehber dosyası (.vcf) paylaşımı** – tüm kayıtları standart vCard dosyası olarak WhatsApp/e-posta/Bluetooth ile paylaşın; alıcı dosyaya dokunarak kişileri kendi telefon rehberine aktarır.
 - 📊 **Excel dosyası** – her kayıtta `kartvizitler.xlsx` otomatik güncellenir (harici kütüphane olmadan üretilen standart Office Open XML; Excel, Google E-Tablolar ve LibreOffice ile açılır).
@@ -57,6 +61,8 @@ app/src/main/java/com/fatsar/kartvizit/
 ├── EditContactActivity.kt       # OCR sonucunu düzenleme ve kaydetme
 ├── ocr/CardTextParser.kt        # Ham OCR metnini alanlara ayıran çözümleyici
 ├── ocr/TextNormalizer.kt        # Boşluk/büyük-küçük harf düzeltme, ad-soyad ayırma
+├── ocr/CardSegmenter.kt         # Tek fotoğraftaki birden çok kartı konuma göre ayırma
+├── ocr/ScanEnricher.kt          # Karekod içeriğini karta birleştirme (saf, test edilebilir)
 ├── export/XlsxWriter.kt         # Sıfır bağımlılıkla .xlsx üretimi
 ├── export/VcfWriter.kt          # vCard 3.0 (.vcf) rehber dosyası üretimi
 ├── export/ExportManager.kt      # Excel/vCard oluşturma, Gmail, paylaşım, İndirilenler

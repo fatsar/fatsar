@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kartvizit Tarayıcı</string>
+    <string name="app_name">KartCep</string>
 
     <!-- Ana ekran -->
     <string name="scan_with_camera">Kamerayla Tara</string>
     <string name="pick_from_gallery">Fotoğraf Seç</string>
-    <string name="empty_list">Henüz kayıtlı kartvizit yok.\n\nKamerayla bir kartvizit tarayın, galeriden fotoğraf seçin ya da başka bir uygulamadan bu uygulamaya görsel paylaşın.</string>
+    <string name="gallery_short">Galeri</string>
+    <string name="gallery_unavailable">Galeri açılamadı. Fotoğrafı Galeri uygulamasından paylaşarak da tarayabilirsiniz.</string>
+    <string name="search_hint">Ara: isim, firma, telefon, e-posta</string>
+    <string name="contact_count">%1$d kayıt</string>
+    <string name="contact_count_filtered">%1$d / %2$d kayıt</string>
+    <string name="empty_search_title">Sonuç bulunamadı</string>
+    <string name="empty_search_message">\"%1$s\" ile eşleşen kayıt yok. Farklı bir arama deneyin ya da diğer profillere bakın.</string>
+    <string name="empty_profile_title">Bu profil boş</string>
+    <string name="empty_profile_message">\"%1$s\" profilinde henüz kayıt yok. Aşağıdaki butonla bir kartvizit tarayın.</string>
+    <string name="menu_sort">Sıralama</string>
+    <string name="sort_newest">En yeni önce</string>
+    <string name="sort_name">Ada göre (A–Z)</string>
+    <string name="sort_company">Firmaya göre (A–Z)</string>
+    <string name="empty_title">Hadi başlayalım</string>
+    <string name="empty_list">Kamerayla bir kartvizit tarayın, galeriden fotoğraf seçin ya da başka bir uygulamadan görsel paylaşın. Bilgiler otomatik okunur.</string>
     <string name="no_text_found">Görselde okunabilir metin bulunamadı. Daha net bir fotoğraf deneyin.</string>
+    <string name="multiple_cards_saved">%1$d kartvizit bulundu ve kaydedildi. Düzenlemek için listeden dokunun.</string>
     <string name="scan_failed">Tarama başarısız oldu: %1$s</string>
     <string name="unnamed_contact">(İsimsiz kayıt)</string>
 
@@ -16,14 +31,41 @@
     <string name="menu_save_excel">Excel\'i İndirilenler\'e kaydet</string>
     <string name="menu_filter_category">Kategori filtresi</string>
     <string name="menu_set_email">Alıcı e-posta adresi</string>
+    <string name="menu_theme">Renk teması</string>
+    <string name="menu_version">Sürüm bilgisi</string>
+
+    <!-- Tema seçenekleri -->
+    <string name="theme_vivid">Canlı — fuşya · mor · turuncu</string>
+    <string name="theme_aqua">Turkuaz — turkuaz · deniz · zümrüt</string>
+    <string name="theme_pro">Profesyonel — lacivert · arduvaz · çelik</string>
+    <string name="theme_dialog_title">Renk teması seçin</string>
+    <string name="theme_dialog_message">Uygulamanın renk temasını seçin. Her tema, telefonunuz karanlık moddayken kendi koyu sürümüne geçer.</string>
+    <string name="version_info">Sürüm %1$s • derleme %2$s</string>
     <string name="filter_all">Tümü</string>
     <string name="filter_uncategorized">Kategorisiz</string>
+
+    <!-- Profiller (üstteki sekme butonları) -->
+    <string name="profile_all">Genel</string>
+    <string name="profile_all_reserved">\"Genel\" ayrılmış bir sekmedir; tüm kayıtları gösterir.</string>
+    <string name="profile_work">İş</string>
+    <string name="profile_personal">Özel</string>
+    <string name="add_profile_cd">Yeni profil ekle</string>
+    <string name="add_profile_title">Yeni profil</string>
+    <string name="add_profile_message">Yeni bir sekme (profil) oluşturun. Taranan kartlar seçili profile eklenir.</string>
+    <string name="add_profile_hint">Profil adı (ör. Tedarikçi)</string>
+    <string name="profile_exists">Bu profil zaten var.</string>
+    <string name="profile_added">\"%1$s\" profili eklendi.</string>
+    <string name="profile_rename">Yeniden adlandır</string>
+    <string name="profile_delete">Sil</string>
+    <string name="profile_rename_title">Profili yeniden adlandır</string>
+    <string name="profile_delete_confirm">\"%1$s\" profili silinsin mi? Bu profildeki kartlar \"%2$s\" profiline taşınır.</string>
+    <string name="profile_delete_last">En az bir profil kalmalı; son profil silinemez.</string>
     <string name="set_email_message">Excel dosyası gönderilirken alıcı olarak kullanılacak e-posta adresi (ör. kendi Gmail adresiniz):</string>
     <string name="email_hint">ornek@gmail.com</string>
 
     <!-- Excel / e-posta -->
     <string name="email_subject">Kartvizit Listesi (Excel)</string>
-    <string name="email_body">Kartvizit Tarayıcı uygulamasından gönderilen güncel kartvizit listesi ektedir.</string>
+    <string name="email_body">KartCep uygulamasından gönderilen güncel kartvizit listesi ektedir.</string>
     <string name="send_excel_chooser">Excel dosyasını gönder</string>
     <string name="share_vcf_chooser">Rehber dosyasını paylaş</string>
     <string name="vcf_subject">Kartvizit Rehberi (.vcf)</string>
@@ -35,7 +77,10 @@
     <string name="col_name">Ad Soyad</string>
     <string name="col_title">Unvan</string>
     <string name="col_company">Şirket</string>
-    <string name="col_phone">Telefon</string>
+    <string name="col_mobile">Cep Telefonu</string>
+    <string name="col_work_phone">İş Telefonu</string>
+    <string name="col_fax">Faks</string>
+    <string name="col_home_phone">Ev Telefonu</string>
     <string name="col_email">E-posta</string>
     <string name="col_website">Web Sitesi</string>
     <string name="col_address">Adres</string>
@@ -50,13 +95,45 @@
     <string name="add_to_contacts_failed">Kişi rehbere eklenemedi.</string>
     <string name="contacts_permission_denied">Rehber izni verilmediği için kişi eklenemedi. Kaydınız uygulamada saklandı.</string>
     <string name="already_in_contacts">Bu kişi rehbere zaten eklendi</string>
+    <string name="sent_to_contacts">Rehberde ✓ · yeniden gönder</string>
+
+    <!-- Rehbere yeniden gönderme (kopya uyarısı) -->
+    <string name="resend_title">Rehbere yeniden gönder</string>
+    <string name="resend_message">%1$s daha önce rehbere gönderildi. Yeniden gönderilirse rehberde kopya kişi oluşabilir. Yine de gönderilsin mi?</string>
+    <string name="resend_message_dated">%1$s en son %2$s tarihinde rehbere gönderildi. Yeniden gönderilirse rehberde kopya kişi oluşabilir. Yine de gönderilsin mi?</string>
+    <string name="resend">Yeniden gönder</string>
+    <string name="resend_checkbox">Rehbere yeniden gönder</string>
+
+    <!-- Buluta yedekleme -->
+    <string name="menu_backup">Buluta yedekle</string>
+    <string name="menu_auto_backup">Otomatik yedekle</string>
+    <string name="menu_restore">Yedekten geri yükle</string>
+    <string name="backup_choose_folder">Yedeklerin kaydedileceği klasörü seçin (Google Drive, OneDrive, telefon belleği vb.).</string>
+    <string name="backup_running">Yedekleniyor…</string>
+    <string name="backup_success">Buluta yedeklendi: %1$s</string>
+    <string name="backup_failed">Yedekleme başarısız oldu. Klasörü yeniden seçmeyi deneyin.</string>
+    <string name="backup_no_records">Önce en az bir kartvizit kaydedin.</string>
+    <string name="auto_backup_on">Otomatik yedekleme açık: her değişiklik seçtiğiniz klasöre yedeklenir.</string>
+    <string name="auto_backup_off">Otomatik yedekleme kapalı.</string>
+    <string name="restore_confirm_title">Yedekten geri yükle</string>
+    <string name="restore_confirm_message">Seçilen yedekteki kişiler mevcut listeye eklenir; aynı kimlikli kayıtlar güncellenir. Devam edilsin mi?</string>
+    <string name="restore">Geri yükle</string>
+    <string name="restore_success">%1$d kayıt geri yüklendi.</string>
+    <string name="restore_failed">Geri yükleme başarısız oldu. Geçerli bir KartCep yedeği (.zip veya .json) seçin.</string>
 
     <!-- Düzenleme ekranı -->
     <string name="edit_title">Kartvizit Bilgileri</string>
+    <string name="section_person">KİŞİ</string>
+    <string name="section_phones">TELEFONLAR</string>
+    <string name="section_contact">İLETİŞİM</string>
+    <string name="section_filing">SINIFLANDIRMA</string>
     <string name="hint_name">Ad Soyad</string>
     <string name="hint_title">Unvan</string>
     <string name="hint_company">Şirket</string>
-    <string name="hint_phones">Telefon(lar)</string>
+    <string name="hint_mobile">Cep Telefonu</string>
+    <string name="hint_work_phone">İş Telefonu</string>
+    <string name="hint_fax">Faks</string>
+    <string name="hint_home_phone">Ev Telefonu</string>
     <string name="hint_phones_helper">Birden fazla numarayı virgülle ayırın</string>
     <string name="hint_emails">E-posta(lar)</string>
     <string name="hint_website">Web sitesi</string>
@@ -66,9 +143,14 @@
     <string name="hint_notes">Notlar / Ham metin</string>
     <string name="check_add_to_contacts">Telefon rehberine de ekle</string>
     <string name="save">Kaydet</string>
+    <string name="add">Ekle</string>
     <string name="record_saved">Kayıt kaydedildi ve Excel dosyası güncellendi.</string>
     <string name="saved_and_added_to_contacts">Kayıt kaydedildi, rehbere eklendi ve Excel güncellendi.</string>
     <string name="nothing_to_save">Kaydedilecek bilgi yok. En az isim, şirket, telefon veya e-posta girin.</string>
+
+    <!-- Arşiv -->
+    <string name="archive_title">Önceki Taramalar</string>
+    <string name="btn_archive">📁 Önceki taramalar (%1$d)</string>
 
     <!-- Silme -->
     <string name="delete_title">Kaydı sil</string>

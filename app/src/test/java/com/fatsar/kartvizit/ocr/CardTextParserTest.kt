@@ -1,5 +1,6 @@
 package com.fatsar.kartvizit.ocr
 
+import com.fatsar.kartvizit.model.PhoneType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,8 +28,11 @@ class CardTextParserTest {
         assertEquals("Satış Müdürü", card.title)
         assertEquals("Yıldız Tekstil San. ve Tic. A.Ş.", card.company)
         assertEquals(2, card.phones.size)
-        assertEquals("+90 212 555 44 33", card.phones[0])
-        assertEquals("+90 532 123 45 67", card.phones[1])
+        // "Tel:" iş telefonu, "GSM:" cep telefonu olarak ayrılır
+        val work = card.phones.first { it.type == PhoneType.WORK }
+        val mobile = card.phones.first { it.type == PhoneType.MOBILE }
+        assertEquals("+90 212 555 44 33", work.number)
+        assertEquals("+90 532 123 45 67", mobile.number)
         assertEquals(listOf("ahmet.yilmaz@yildiztekstil.com.tr"), card.emails)
         assertEquals("www.yildiztekstil.com.tr", card.website)
         assertTrue(card.address.contains("Atatürk Mah."))
@@ -52,7 +56,8 @@ class CardTextParserTest {
         assertEquals("John Smith", card.name)
         assertEquals("Software Engineer", card.title)
         assertEquals("Acme Technology Inc.", card.company)
-        assertEquals(listOf("+1 (555) 010-9999"), card.phones)
+        assertEquals(1, card.phones.size)
+        assertEquals("+1 (555) 010-9999", card.phones[0].number)
         assertEquals(listOf("john.smith@acme.com"), card.emails)
         assertEquals("www.acme.com", card.website)
     }
@@ -106,6 +111,34 @@ class CardTextParserTest {
     }
 
     @Test
+    fun `iki satira bolunmus isim birlestirilir web adresi isim sanilmaz`() {
+        // Anıl Nizam kartındaki gerçek durum: isim iki satır ("ANIL" / "NİZAM"),
+        // en büyük yazı; web adresi OCR'da boşluklu ("univarsolutions. com")
+        // okununca URL sayılmayıp isim sanılıyordu; e-postadaki @ da yanlış
+        // okunmuş. İsim, en büyük punto olan iki satırın birleşimi olmalı.
+        val lines = listOf(
+            OcrLine("ANIL", height = 40f),
+            OcrLine("NİZAM", height = 40f),
+            OcrLine("Sales Manager", height = 16f),
+            OcrLine("Adhesive & Construction Chemicals, LMWF", height = 14f),
+            OcrLine("Univar Solutions", height = 22f),
+            OcrLine("Rüzgarlıbahçe Mah.", height = 14f),
+            OcrLine("Çam Pınarı Sok. No:1/13", height = 14f),
+            OcrLine("Kavacık-Beykoz 34805 İstanbul-Turkey", height = 14f),
+            OcrLine("P: +90 216 425 40 30", height = 14f),
+            OcrLine("D: +90 216 681 52 32", height = 14f),
+            OcrLine("M: +90 541 670 83 13", height = 14f),
+            OcrLine("anil.nizamdunivarsolutions.com", height = 14f),
+            OcrLine("univarsolutions. com", height = 14f)
+        )
+
+        val card = CardTextParser.parse(lines)
+
+        assertEquals("Anıl Nizam", card.name)
+        assertEquals("Univar Solutions", card.company)
+    }
+
+    @Test
     fun `fazla bosluklar temizlenir`() {
         val lines = listOf(
             OcrLine("  MEHMET   ÖZ  ", height = 30f),
@@ -115,5 +148,34 @@ class CardTextParserTest {
         val card = CardTextParser.parse(lines)
 
         assertEquals("Mehmet Öz", card.name)
+    }
+
+    @Test
+    fun `faks ve cep numaralari ayri turlerle etiketlenir`() {
+        val card = CardTextParser.parse(
+            """
+            Ali Veli
+            Tel: 0212 555 44 33
+            Faks: 0212 555 44 34
+            GSM: 0532 111 22 33
+            """.trimIndent()
+        )
+
+        assertEquals(3, card.phones.size)
+        assertEquals("0212 555 44 33", card.phones.first { it.type == PhoneType.WORK }.number)
+        assertEquals("0212 555 44 34", card.phones.first { it.type == PhoneType.FAX }.number)
+        assertEquals("0532 111 22 33", card.phones.first { it.type == PhoneType.MOBILE }.number)
+    }
+
+    @Test
+    fun `etiketsiz numara bicimine gore tahmin edilir`() {
+        val card = CardTextParser.parse(
+            """
+            Ali Veli
+            0532 111 22 33
+            """.trimIndent()
+        )
+        assertEquals(1, card.phones.size)
+        assertEquals(PhoneType.MOBILE, card.phones[0].type)
     }
 }

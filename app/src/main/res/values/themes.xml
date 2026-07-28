@@ -1,4 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Kartvizit" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!-- Temaya bağlı olmayan ortak ayarlar. Üç renk teması da bunu genişletir;
+         kullanıcı menüden hangisini seçerse Activity o temayla açılır. -->
+    <style name="Theme.KartCep.Base" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowAnimationStyle">@style/Animation.KartCep.Activity</item>
+    </style>
+
+    <!-- TEMA 1: Canlı (varsayılan) — fuşya · mor · turuncu -->
+    <style name="Theme.Kartvizit" parent="Theme.KartCep.Base">
+        <item name="colorPrimary">@color/vivid_primary</item>
+        <item name="colorOnPrimary">@color/vivid_on_primary</item>
+        <item name="colorPrimaryContainer">@color/vivid_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/vivid_on_primary_container</item>
+        <item name="colorSecondary">@color/vivid_secondary</item>
+        <item name="colorSecondaryContainer">@color/vivid_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/vivid_on_secondary_container</item>
+        <item name="colorTertiary">@color/vivid_tertiary</item>
+        <item name="colorTertiaryContainer">@color/vivid_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/vivid_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/vivid_background</item>
+        <item name="colorSurface">@color/vivid_surface</item>
+        <item name="colorSurfaceContainer">@color/vivid_surface_container</item>
+        <item name="colorOnSurface">@color/vivid_on_surface</item>
+        <item name="colorSurfaceVariant">@color/vivid_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/vivid_on_surface_variant</item>
+        <item name="colorOutline">@color/vivid_outline</item>
+        <item name="android:statusBarColor">@color/vivid_gradient_start</item>
+        <item name="headerGradient">@drawable/bg_header_gradient_vivid</item>
+    </style>
+
+    <!-- TEMA 2: Turkuaz — turkuaz · deniz · zümrüt -->
+    <style name="Theme.Kartvizit.Aqua" parent="Theme.KartCep.Base">
+        <item name="colorPrimary">@color/aqua_primary</item>
+        <item name="colorOnPrimary">@color/aqua_on_primary</item>
+        <item name="colorPrimaryContainer">@color/aqua_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/aqua_on_primary_container</item>
+        <item name="colorSecondary">@color/aqua_secondary</item>
+        <item name="colorSecondaryContainer">@color/aqua_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/aqua_on_secondary_container</item>
+        <item name="colorTertiary">@color/aqua_tertiary</item>
+        <item name="colorTertiaryContainer">@color/aqua_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/aqua_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/aqua_background</item>
+        <item name="colorSurface">@color/aqua_surface</item>
+        <item name="colorSurfaceContainer">@color/aqua_surface_container</item>
+        <item name="colorOnSurface">@color/aqua_on_surface</item>
+        <item name="colorSurfaceVariant">@color/aqua_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/aqua_on_surface_variant</item>
+        <item name="colorOutline">@color/aqua_outline</item>
+        <item name="android:statusBarColor">@color/aqua_gradient_start</item>
+        <item name="headerGradient">@drawable/bg_header_gradient_aqua</item>
+    </style>
+
+    <!-- TEMA 3: Profesyonel — lacivert · arduvaz · çelik -->
+    <style name="Theme.Kartvizit.Pro" parent="Theme.KartCep.Base">
+        <item name="colorPrimary">@color/pro_primary</item>
+        <item name="colorOnPrimary">@color/pro_on_primary</item>
+        <item name="colorPrimaryContainer">@color/pro_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/pro_on_primary_container</item>
+        <item name="colorSecondary">@color/pro_secondary</item>
+        <item name="colorSecondaryContainer">@color/pro_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/pro_on_secondary_container</item>
+        <item name="colorTertiary">@color/pro_tertiary</item>
+        <item name="colorTertiaryContainer">@color/pro_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/pro_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/pro_background</item>
+        <item name="colorSurface">@color/pro_surface</item>
+        <item name="colorSurfaceContainer">@color/pro_surface_container</item>
+        <item name="colorOnSurface">@color/pro_on_surface</item>
+        <item name="colorSurfaceVariant">@color/pro_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/pro_on_surface_variant</item>
+        <item name="colorOutline">@color/pro_outline</item>
+        <item name="android:statusBarColor">@color/pro_gradient_start</item>
+        <item name="headerGradient">@drawable/bg_header_gradient_pro</item>
+    </style>
+
+    <!-- Ekran geçişleri: açılışta belirme, kapanışta solma -->
+    <style name="Animation.KartCep.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/activity_fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/activity_hold</item>
+        <item name="android:activityCloseEnterAnimation">@anim/activity_hold</item>
+        <item name="android:activityCloseExitAnimation">@anim/activity_fade_out</item>
+    </style>
+
+    <!-- Degradeli başlık üzerindeki araç çubuğu: başlık ve simgeler beyaz -->
+    <style name="ThemeOverlay.KartCep.Header" parent="">
+        <item name="colorControlNormal">#FFFFFF</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#E8E8E8</item>
+    </style>
+
+    <!-- Tarama çubuğunun üst köşeleri yuvarlatılır -->
+    <style name="ShapeAppearance.KartCep.ScanBar" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <!-- Profil sekmesi: seçilebilir, buton (hap) görünümlü chip -->
+    <style name="Widget.KartCep.ProfileChip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipCornerRadius">20dp</item>
+        <item name="chipMinHeight">42dp</item>
+        <item name="chipStartPadding">16dp</item>
+        <item name="chipEndPadding">16dp</item>
+        <item name="chipBackgroundColor">@color/profile_chip_bg</item>
+        <item name="android:textColor">@color/profile_chip_text</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelLarge</item>
+        <item name="android:textStyle">bold</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipIconVisible">false</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+    </style>
+
+    <!-- Yeni profil ekleme ("+") chip'i: kesiksiz, ana renk vurgulu -->
+    <style name="Widget.KartCep.AddChip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipCornerRadius">20dp</item>
+        <item name="chipMinHeight">42dp</item>
+        <item name="chipBackgroundColor">?attr/colorPrimaryContainer</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipIconTint">?attr/colorOnPrimaryContainer</item>
+        <item name="chipStartPadding">10dp</item>
+        <item name="chipEndPadding">10dp</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+    </style>
+
+    <!-- Düzenleme formundaki bölüm başlığı -->
+    <style name="TextAppearance.KartCep.SectionHeader" parent="Widget.AppCompat.TextView">
+        <item name="android:textAppearance">?attr/textAppearanceLabelLarge</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:layout_marginStart">4dp</item>
+    </style>
+
+    <!-- Düzenleme formundaki bölüm kartı -->
+    <style name="Widget.KartCep.FormCard" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">18dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+        <item name="strokeColor">?attr/colorSurfaceVariant</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Formdaki metin alanları: yuvarlatılmış çerçeveli kutu -->
+    <style name="Widget.KartCep.Field" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+    </style>
+
+    <!-- Avatar (baş harf dairesi) -->
+    <style name="Widget.KartCep.Avatar" parent="Widget.AppCompat.TextView">
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:background">@drawable/bg_avatar</item>
+    </style>
 </resources>

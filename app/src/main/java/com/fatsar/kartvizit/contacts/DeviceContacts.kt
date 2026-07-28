@@ -12,6 +12,7 @@ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import android.provider.ContactsContract.CommonDataKinds.Website
 import android.util.Log
 import com.fatsar.kartvizit.model.ContactRecord
+import com.fatsar.kartvizit.model.PhoneType
 import com.fatsar.kartvizit.ocr.TextNormalizer
 
 /** Kayıtları telefon rehberine (kişilere) ekler. */
@@ -63,11 +64,10 @@ object DeviceContacts {
         }
 
         record.phones.forEach { phone ->
-            val type = if (TextNormalizer.isTurkishMobile(phone)) Phone.TYPE_MOBILE else Phone.TYPE_WORK
             ops.add(
                 data(Phone.CONTENT_ITEM_TYPE)
-                    .withValue(Phone.NUMBER, phone)
-                    .withValue(Phone.TYPE, type)
+                    .withValue(Phone.NUMBER, phone.number)
+                    .withValue(Phone.TYPE, phoneContactType(phone.type))
                     .build()
             )
         }
@@ -115,4 +115,11 @@ object DeviceContacts {
         }
     }
 
+    private fun phoneContactType(type: PhoneType): Int = when (type) {
+        PhoneType.MOBILE -> Phone.TYPE_MOBILE
+        PhoneType.FAX -> Phone.TYPE_FAX_WORK
+        PhoneType.HOME -> Phone.TYPE_HOME
+        PhoneType.WORK -> Phone.TYPE_WORK
+        PhoneType.OTHER -> Phone.TYPE_OTHER
+    }
 }

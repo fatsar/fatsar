@@ -9,6 +9,8 @@ jobs:
   build:
     name: Test ve APK Derleme
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Kaynak kodu al
         uses: actions/checkout@v4
@@ -26,16 +28,44 @@ jobs:
         run: ./gradlew --no-daemon :app:testDebugUnitTest
 
       - name: Debug APK derle
-        run: ./gradlew --no-daemon :app:assembleDebug
+        run: ./gradlew --no-daemon :app:assembleDebug -PbuildSha="${GITHUB_SHA:0:7}"
 
       - name: APK bilgisi
         run: ls -lh app/build/outputs/apk/debug/
+
+      # Play Store yalnızca AAB kabul eder. Bu adım aynı zamanda R8 küçültmesinin
+      # (minify + shrinkResources) bozulmadığını her gönderimde doğrular.
+      - name: Mağaza paketi (AAB) derle
+        run: ./gradlew --no-daemon :app:bundleRelease -PbuildSha="${GITHUB_SHA:0:7}"
+
+      - name: AAB bilgisi
+        run: ls -lh app/build/outputs/bundle/release/
+
+      - name: AAB artefaktını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kartcep-play-store-aab
+          path: app/build/outputs/bundle/release/*.aab
 
       - name: APK artefaktını yükle
         uses: actions/upload-artifact@v4
         with:
           name: kartvizit-tarayici-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      # APK'yı doğrudan indirilebilir bir GitHub Release olarak yayınlar.
+      # "guncel" etiketli tek bir yayın her derlemede güncellenir; böylece
+      # telefondan tek tıkla inip kurulabilen kalıcı bir bağlantı oluşur.
+      - name: Güncel APK'yı Release olarak yayınla
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk kartvizit-tarayici.apk
+          gh release delete guncel --yes --cleanup-tag 2>/dev/null || true
+          gh release create guncel kartvizit-tarayici.apk \
+            --title "KartCep — güncel APK" \
+            --notes "Otomatik derlenen en güncel sürüm (${GITHUB_SHA:0:7}). Telefona indirip kurun." \
+            --target "$GITHUB_SHA"
 
       - name: Test raporunu yükle (hata durumunda)
         if: failure()

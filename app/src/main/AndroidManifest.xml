@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Rehbere kişi eklemek için -->
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Rehbere kişi EKLEMEK için yalnızca yazma izni yeterlidir; uygulama
+         rehberi okumaz. (Okuma izni istenmemesi, mağaza incelemesinde de
+         gereksiz hassas izin beyanını ortadan kaldırır.) -->
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 
     <application
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"

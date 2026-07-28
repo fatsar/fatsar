@@ -1,4 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1565C0</color>
+    <!-- ================= TEMA 1: CANLI (fuşya · mor · turuncu) =================
+         Yüksek doygunluklu, enerjik gün batımı kimliği. -->
+    <color name="vivid_primary">#DB2777</color>
+    <color name="vivid_on_primary">#FFFFFF</color>
+    <color name="vivid_primary_container">#FFD7E7</color>
+    <color name="vivid_on_primary_container">#43001F</color>
+    <color name="vivid_secondary">#7C3AED</color>
+    <color name="vivid_secondary_container">#EADDFF</color>
+    <color name="vivid_on_secondary_container">#25005C</color>
+    <color name="vivid_tertiary">#EA580C</color>
+    <color name="vivid_tertiary_container">#FFE0C4</color>
+    <color name="vivid_on_tertiary_container">#3D1600</color>
+    <color name="vivid_background">#FFF7FB</color>
+    <color name="vivid_surface">#FFF7FB</color>
+    <color name="vivid_surface_container">#FFEAF3</color>
+    <color name="vivid_on_surface">#1F1024</color>
+    <color name="vivid_surface_variant">#F7DCEA</color>
+    <color name="vivid_on_surface_variant">#57404E</color>
+    <color name="vivid_outline">#8B6B7C</color>
+    <color name="vivid_gradient_start">#A855F7</color>
+    <color name="vivid_gradient_mid">#EC4899</color>
+    <color name="vivid_gradient_end">#F97316</color>
+
+    <!-- ================= TEMA 2: TURKUAZ (turkuaz · deniz · zümrüt) ============
+         Canlı ama serin; ferah ve dingin bir his. -->
+    <color name="aqua_primary">#0F766E</color>
+    <color name="aqua_on_primary">#FFFFFF</color>
+    <color name="aqua_primary_container">#9FF3E5</color>
+    <color name="aqua_on_primary_container">#00201C</color>
+    <color name="aqua_secondary">#0369A1</color>
+    <color name="aqua_secondary_container">#CDE7FF</color>
+    <color name="aqua_on_secondary_container">#001D33</color>
+    <color name="aqua_tertiary">#047857</color>
+    <color name="aqua_tertiary_container">#B8F2D8</color>
+    <color name="aqua_on_tertiary_container">#002114</color>
+    <color name="aqua_background">#F2FBFA</color>
+    <color name="aqua_surface">#F2FBFA</color>
+    <color name="aqua_surface_container">#E2F4F1</color>
+    <color name="aqua_on_surface">#0F1B19</color>
+    <color name="aqua_surface_variant">#D5E9E5</color>
+    <color name="aqua_on_surface_variant">#3D4B48</color>
+    <color name="aqua_outline">#6D807C</color>
+    <color name="aqua_gradient_start">#06B6D4</color>
+    <color name="aqua_gradient_mid">#14B8A6</color>
+    <color name="aqua_gradient_end">#0284C7</color>
+
+    <!-- ============== TEMA 3: PROFESYONEL (lacivert · arduvaz · çelik) =========
+         Koyu, ağırbaşlı ve kurumsal; vurgular ölçülü. -->
+    <color name="pro_primary">#1E40AF</color>
+    <color name="pro_on_primary">#FFFFFF</color>
+    <color name="pro_primary_container">#DBE4FF</color>
+    <color name="pro_on_primary_container">#001355</color>
+    <color name="pro_secondary">#475569</color>
+    <color name="pro_secondary_container">#DDE3EA</color>
+    <color name="pro_on_secondary_container">#131C26</color>
+    <color name="pro_tertiary">#0E7490</color>
+    <color name="pro_tertiary_container">#C7E9F2</color>
+    <color name="pro_on_tertiary_container">#00212B</color>
+    <color name="pro_background">#F7F8FA</color>
+    <color name="pro_surface">#F7F8FA</color>
+    <color name="pro_surface_container">#ECEFF4</color>
+    <color name="pro_on_surface">#16191F</color>
+    <color name="pro_surface_variant">#DEE2EA</color>
+    <color name="pro_on_surface_variant">#424750</color>
+    <color name="pro_outline">#737884</color>
+    <color name="pro_gradient_start">#334155</color>
+    <color name="pro_gradient_mid">#1E3A8A</color>
+    <color name="pro_gradient_end">#0F172A</color>
+
+    <!-- Uygulama simgesi arka planı (temadan bağımsız, sabit marka rengi) -->
+    <color name="ic_launcher_background">#DB2777</color>
 </resources>

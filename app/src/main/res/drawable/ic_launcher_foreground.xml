@@ -3,22 +3,35 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Kartvizit gövdesi -->
+    <!-- Arkadaki kart (elektrik moru, hafif eğik) -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="-10">
+        <path
+            android:fillColor="#A855F7"
+            android:pathData="M32,38 h44 a5,5 0 0 1 5,5 v16 a5,5 0 0 1 -5,5 h-44 a5,5 0 0 1 -5,-5 v-16 a5,5 0 0 1 5,-5 z" />
+    </group>
+    <!-- Kartvizit gövdesi (beyaz, yuvarlatılmış) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M28,38 h52 a4,4 0 0 1 4,4 v24 a4,4 0 0 1 -4,4 h-52 a4,4 0 0 1 -4,-4 v-24 a4,4 0 0 1 4,-4 z" />
-    <!-- Fotoğraf alanı -->
+        android:pathData="M32,42 h44 a5,5 0 0 1 5,5 v18 a5,5 0 0 1 -5,5 h-44 a5,5 0 0 1 -5,-5 v-18 a5,5 0 0 1 5,-5 z" />
+    <!-- Baş harf dairesi (fuşya) -->
     <path
-        android:fillColor="#90CAF9"
-        android:pathData="M32,44 h14 v14 h-14 z" />
+        android:fillColor="#DB2777"
+        android:pathData="M43,56 m-7,0 a7,7 0 1 0 14,0 a7,7 0 1 0 -14,0" />
     <!-- Metin satırları -->
     <path
-        android:fillColor="#1E88E5"
-        android:pathData="M50,46 h26 v4 h-26 z" />
+        android:fillColor="#F97316"
+        android:pathData="M56,52 h18 v3.5 h-18 z" />
     <path
-        android:fillColor="#64B5F6"
-        android:pathData="M50,54 h26 v3 h-26 z" />
+        android:fillColor="#F9C8DF"
+        android:pathData="M56,59 h14 v3 h-14 z" />
+    <!-- Tarama köşeleri (turkuaz vurgu) -->
     <path
-        android:fillColor="#64B5F6"
-        android:pathData="M32,62 h44 v3 h-44 z" />
+        android:fillColor="#22D3EE"
+        android:pathData="M24,36 h9 v3 h-6 v6 h-3 z" />
+    <path
+        android:fillColor="#22D3EE"
+        android:pathData="M84,76 h-9 v-3 h6 v-6 h3 z" />
 </vector>

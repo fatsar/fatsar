@@ -2,15 +2,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- Galeri asıl olarak alttaki eylem çubuğundadır; burada yedek yol -->
     <item
-        android:id="@+id/action_share_excel"
-        android:icon="@drawable/ic_share"
-        android:title="@string/menu_share_excel"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/action_gallery"
+        android:title="@string/pick_from_gallery"
+        app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_share_vcf"
-        android:title="@string/menu_share_vcf"
+        android:id="@+id/action_sort"
+        android:title="@string/menu_sort"
+        app:showAsAction="never" />
+
+    <!-- Dışa aktarma -->
+    <item
+        android:id="@+id/action_share_excel"
+        android:title="@string/menu_share_excel"
         app:showAsAction="never" />
 
     <item
@@ -19,12 +25,40 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_filter_category"
-        android:title="@string/menu_filter_category"
+        android:id="@+id/action_share_vcf"
+        android:title="@string/menu_share_vcf"
+        app:showAsAction="never" />
+
+    <!-- Yedekleme -->
+    <item
+        android:id="@+id/action_backup"
+        android:title="@string/menu_backup"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_auto_backup"
+        android:checkable="true"
+        android:title="@string/menu_auto_backup"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_restore"
+        android:title="@string/menu_restore"
+        app:showAsAction="never" />
+
+    <!-- Ayarlar -->
+    <item
+        android:id="@+id/action_theme"
+        android:title="@string/menu_theme"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_set_email"
         android:title="@string/menu_set_email"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_version"
+        android:title="@string/menu_version"
         app:showAsAction="never" />
 </menu>
