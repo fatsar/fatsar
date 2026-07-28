@@ -147,13 +147,55 @@
             android:visibility="gone" />
     </FrameLayout>
 
-    <!-- Birincil eylem: kamerayla tara. Galeri seçeneği araç çubuğundadır. -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabScan"
+    <!-- Yüzen eylem çubuğu: iki tarama yolu da parmağın kolay eriştiği altta.
+         Solda galeri (ikincil), sağda kamera (birincil, dolu renk). -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/actionBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="18dp"
-        android:text="@string/scan_with_camera"
-        app:icon="@drawable/ic_camera" />
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="18dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="10dp"
+        app:strokeColor="?attr/colorSurfaceVariant"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="7dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGallery"
+                style="@style/Widget.Material3.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:minWidth="0dp"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:text="@string/gallery_short"
+                app:cornerRadius="25dp"
+                app:icon="@drawable/ic_image"
+                app:iconGravity="textStart"
+                app:iconSize="20dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCamera"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_marginStart="6dp"
+                android:paddingStart="22dp"
+                android:paddingEnd="22dp"
+                android:text="@string/scan_with_camera"
+                app:cornerRadius="25dp"
+                app:icon="@drawable/ic_camera"
+                app:iconGravity="textStart"
+                app:iconSize="20dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

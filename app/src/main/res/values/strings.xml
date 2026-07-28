@@ -5,6 +5,8 @@
     <!-- Ana ekran -->
     <string name="scan_with_camera">Kamerayla Tara</string>
     <string name="pick_from_gallery">Fotoğraf Seç</string>
+    <string name="gallery_short">Galeri</string>
+    <string name="gallery_unavailable">Galeri açılamadı. Fotoğrafı Galeri uygulamasından paylaşarak da tarayabilirsiniz.</string>
     <string name="search_hint">Ara: isim, firma, telefon, e-posta</string>
     <string name="contact_count">%1$d kayıt</string>
     <string name="contact_count_filtered">%1$d / %2$d kayıt</string>

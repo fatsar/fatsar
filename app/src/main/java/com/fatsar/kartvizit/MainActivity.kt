@@ -93,8 +93,27 @@ class MainActivity : AppCompatActivity() {
 
     private val pickImage =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-            if (uri != null) processImage(uri)
+            if (uri != null) processImage(uri) else pickImageFallbackIfNeeded()
         }
+
+    /**
+     * Sistem foto seçicinin sonuç döndürmediği cihazlar için yedek yol:
+     * klasik belge seçici. Okuma izni açıkça alınır, yoksa görüntü açılamaz.
+     */
+    private val pickImageFallback =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                runCatching {
+                    contentResolver.takePersistableUriPermission(
+                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
+                processImage(uri)
+            }
+        }
+
+    /** Kullanıcı foto seçiciyi iptal etti mi, yoksa seçici mi çalışmadı? */
+    private var galleryOpenedAt = 0L
 
     private val contactsPermission =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
@@ -150,7 +169,7 @@ class MainActivity : AppCompatActivity() {
             root = binding.root,
             header = binding.headerBar,
             bottomPadded = binding.recycler,
-            bottomMargin = binding.fabScan
+            bottomMargin = binding.actionBar
         )
 
         adapter = ContactsAdapter(
@@ -165,7 +184,8 @@ class MainActivity : AppCompatActivity() {
         )
         binding.recycler.adapter = adapter
 
-        binding.fabScan.setOnClickListener { launchCamera() }
+        binding.btnCamera.setOnClickListener { launchCamera() }
+        binding.btnGallery.setOnClickListener { pickFromGallery() }
 
         // Arama: yazdıkça listeyi süz (isim, firma, unvan, telefon, e-posta)
         binding.inputSearch.addTextChangedListener(object : android.text.TextWatcher {
@@ -229,10 +249,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.action_gallery -> {
-            pickImage.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-            )
-            true
+            pickFromGallery(); true
         }
         R.id.action_sort -> {
             showSortDialog(); true
@@ -273,6 +290,31 @@ class MainActivity : AppCompatActivity() {
             val uri = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
             if (uri != null) processImage(uri)
         }
+    }
+
+    /** Galeriden kartvizit fotoğrafı seç. */
+    private fun pickFromGallery() {
+        galleryOpenedAt = System.currentTimeMillis()
+        val ok = runCatching {
+            pickImage.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }.isSuccess
+        if (!ok) openDocumentPicker()
+    }
+
+    /**
+     * Foto seçici anında (kullanıcı seçim yapamayacak kadar kısa sürede) boş
+     * dönerse seçici o cihazda çalışmıyor demektir; klasik seçiciye geçilir.
+     * Gerçek bir iptalde bu süre çok daha uzundur, yeniden açılmaz.
+     */
+    private fun pickImageFallbackIfNeeded() {
+        if (System.currentTimeMillis() - galleryOpenedAt < 700L) openDocumentPicker()
+    }
+
+    private fun openDocumentPicker() {
+        runCatching { pickImageFallback.launch(arrayOf("image/*")) }
+            .onFailure { toast(getString(R.string.gallery_unavailable)) }
     }
 
     private fun launchCamera() {
@@ -490,7 +532,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setButtonsEnabled(enabled: Boolean) {
-        binding.fabScan.isEnabled = enabled
+        binding.btnCamera.isEnabled = enabled
+        binding.btnGallery.isEnabled = enabled
     }
 
     /**

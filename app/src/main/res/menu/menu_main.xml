@@ -2,12 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Sık kullanılan ikinci tarama yolu: galeriden fotoğraf seç -->
+    <!-- Galeri asıl olarak alttaki eylem çubuğundadır; burada yedek yol -->
     <item
         android:id="@+id/action_gallery"
-        android:icon="@drawable/ic_image"
         android:title="@string/pick_from_gallery"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_sort"
