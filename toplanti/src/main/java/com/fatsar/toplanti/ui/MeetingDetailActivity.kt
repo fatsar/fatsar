@@ -23,6 +23,7 @@ import com.fatsar.toplanti.export.ExportFormat
 import com.fatsar.toplanti.export.ShareManager
 import com.fatsar.toplanti.model.Attachment
 import com.fatsar.toplanti.model.Meeting
+import com.fatsar.toplanti.model.MeetingMode
 import com.fatsar.toplanti.model.MeetingStatus
 import com.fatsar.toplanti.model.Speaker
 import com.fatsar.toplanti.model.TaskItem
@@ -184,9 +185,14 @@ class MeetingDetailActivity : AppCompatActivity() {
             VoskModelManager.LANG_EN -> " • " + getString(R.string.lang_en)
             else -> ""
         }
+        // Canlı kayıt ile içe aktarılan dosya açıkça ayrılır (FR-007)
+        val modeLabel = getString(
+            if (m.mode == MeetingMode.IMPORTED) R.string.mode_imported else R.string.mode_live
+        )
         binding.metaText.text =
             "${Fmt.dateTime(m.meetingDate)} • ${Fmt.duration(m.durationMs)} • $statusLabel$langLabel" +
-                if (m.tags.isNotEmpty()) "\n" + m.tags.joinToString(", ") { "#$it" } else ""
+                "\n$modeLabel" +
+                if (m.tags.isNotEmpty()) " • " + m.tags.joinToString(", ") { "#$it" } else ""
 
         // Başlık onayı kartı (AC-014): öneri, kullanıcı onaylayana dek nihai olmaz
         val needsTitle = m.status == MeetingStatus.REVIEW && !m.titleConfirmed

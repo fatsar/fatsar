@@ -9,7 +9,7 @@ Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz ü
 ## Özellikler
 
 - 🎙️ **Canlı kayıt** – ön plan servisiyle ekran kilitliyken bile kesintisiz kayıt; duraklat/sürdür/bitir; süre ve ses seviyesi göstergesi (FR-001..005).
-- 📁 **Dosya içe aktarma** – mevcut ses/video dosyalarını (m4a, mp3, wav, mp4…) seçerek veya başka uygulamadan "Paylaş" ile içe alın (FR-006).
+- 📁 **Mevcut kayıttan not çıkarma** – canlı kayıt kadar öne çıkan ikinci giriş: telefonunuzdaki ses/video dosyalarını (m4a, mp3, wav, aac, ogg, opus, mp4, 3gp…) seçin; **birden çok dosya aynı anda** alınabilir, başka uygulamalardan "Paylaş" ile de gönderilebilir. Dosya işlenmeden önce doğrulanır (ses izi, süre); adı başlık önerisi, tarihi arşiv tarihi olarak kullanılır (FR-006, FR-007).
 - ✍️ **Türkçe + İngilizce transkripsiyon** – segment bazında zaman damgası, konuşmacı etiketi ve güven skoru (FR-010, FR-015); düşük güvenli bölümler işaretlenir ve **dokunarak kayıttan dinlenir** (FR-016, AC-011).
 - 🌐 **Otomatik dil algılama** – kaydın ilk ~45 saniyesi her iki modelle çözülür; güven skoru ve tanınan sözcük sayısına göre dil seçilir. Kayıt öncesi ekrandan elle Türkçe/İngilizce de seçilebilir.
 - 🧹 **Ham + temiz transkript** – "ıı", "eee", "şey" gibi dolgular ve açık tekrarlar temizlenir; ham metin değiştirilemez biçimde korunur, düzeltmeler ayrı tutulur (FR-011..014).
@@ -27,16 +27,24 @@ Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz ü
 Uygulama Material 3 üzerine kurulu özel bir tasarım sistemi kullanır; açık ve koyu tema ayrı ayrı tanımlıdır.
 
 - **Renk:** indigo (birincil), teal (ikincil/gizlilik), amber (inceleme gerekli), rose (kayıt/hata), yeşil (tamamlandı). Durumlar hem renk hem metin etiketiyle gösterilir — yalnızca renge bağlı gösterge yoktur (PRD 16.4).
-- **Ana ekran:** büyük başlık, hap biçimli arama alanı, tarih başlıklarıyla gruplanan toplantı kartları; her kartta mod ikonu (canlı kayıt / içe aktarma), süre, etiketler ve durum rozeti. İnceleme bekleyen toplantılar amber kenarlıkla öne çıkar.
+- **Ana ekran:** büyük başlık, hap biçimli arama alanı, tarih başlıklarıyla gruplanan toplantı kartları; her kartta mod ikonu (canlı kayıt / içe aktarma), süre, etiketler ve durum rozeti. İnceleme bekleyen toplantılar amber kenarlıkla öne çıkar. Alt çubukta iki eşdeğer eylem: **Kayda başla** ve **Ses dosyası**.
 - **Kayıt ekranı:** degrade zemin, yanıp sönen kayıt rozeti, büyük süre göstergesi ve **canlı dalga formu** (`WaveformView`), ek ekleme kartı, hap biçimli denetimler.
 - **Toplantı detayı:** ikonlu sekmeler; özet kartları, tür rengiyle işaretlenmiş not/karar/soru/risk kartları, konuşmacı avatarlı transkript balonları, durum ikonlu görev kartları ve alttan yüzen oynatma çubuğu.
 
 ## Kullanım
 
-1. **Yeni toplantı** → katılımcı rızası hatırlatmasını onaylayın → kayıt başlar. İsterseniz kayıt sırasında fotoğraf/video ekleyin.
+**A) Canlı kayıt**
+
+1. **Kayda başla** → katılımcı rızası hatırlatmasını onaylayın → kayıt başlar. İsterseniz kayıt sırasında fotoğraf/video ekleyin.
 2. **Bitir ve işle** → yazıya dökme ve analiz arka planda sürer; bittiğinde bildirim gelir.
 3. **İnceleme**: önerilen başlığı onaylayın/düzenleyin, "Onay gerekli" görevleri doğrulayın, konuşmacıları adlandırın, gerekirse segmentleri düzeltin → **İncelemeyi tamamla**.
 4. **Paylaş**: bölümleri ve ekleri seçin; e-posta taslağı hazır açılır ya da PDF/DOCX/TXT/JSON/ZIP olarak dışa aktarın.
+
+**B) Mevcut ses kaydından not çıkarma**
+
+1. Ana ekranda **Ses dosyası**'na dokunun (ya da başka bir uygulamada dosyayı "Paylaş" → Toplantı Asistanı). Birden çok dosya seçebilirsiniz.
+2. Dosya kopyalanıp doğrulanır; ses izi yoksa veya dosya bozuksa nedeni belirtilerek uyarılırsınız.
+3. İşleme arka planda başlar — dil otomatik algılanır. Sonrasında akış canlı kayıtla aynıdır: inceleme, düzeltme, paylaşım.
 
 ## Gerekli izinler
 

@@ -30,6 +30,7 @@
             <!-- Başka uygulamalardan paylaşılan ses/video dosyalarını içe aktar -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="audio/*" />
                 <data android:mimeType="video/*" />

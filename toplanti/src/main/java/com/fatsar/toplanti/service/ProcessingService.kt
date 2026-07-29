@@ -135,6 +135,10 @@ class ProcessingService : Service() {
                 }
                 val defaultSpeaker = meeting.speakers.first()
                 segments.forEach { it.speakerId = defaultSpeaker.id }
+                // Süre bilinmiyorsa (ör. metadata vermeyen dosya) transkriptten türet
+                if (meeting.durationMs <= 0L) {
+                    meeting.durationMs = segments.lastOrNull()?.endMs ?: 0L
+                }
                 updateProgress(90)
 
                 // 5) Analiz: özet, notlar, kararlar, görevler, başlık önerisi

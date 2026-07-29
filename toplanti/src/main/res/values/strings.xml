@@ -15,10 +15,25 @@
     <string name="home_subtitle">Kayıt, transkript ve notlar yalnızca bu cihazda</string>
     <string name="search_hint">Başlık, etiket veya içerikte ara</string>
     <string name="empty_title">Henüz toplantı yok</string>
-    <string name="empty_body">Kaydı başlatmak için aşağıdaki düğmeye dokunun ya da sağ üstten mevcut bir ses/video dosyasını içe aktarın.</string>
+    <string name="empty_body">Canlı kayıt başlatabilir ya da telefonunuzdaki mevcut bir ses/video kaydından not çıkarabilirsiniz.</string>
     <string name="new_meeting">Yeni toplantı</string>
-    <string name="action_import">Dosya içe aktar</string>
-    <string name="import_failed">Dosya içe aktarılamadı. Desteklenen bir ses/video dosyası seçin.</string>
+    <string name="action_record">Kayda başla</string>
+    <string name="action_import">Ses dosyasından not çıkar</string>
+    <string name="action_import_short">Ses dosyası</string>
+
+    <!-- İçe aktarma -->
+    <string name="import_progress_title">Dosya hazırlanıyor</string>
+    <plurals name="import_progress">
+        <item quantity="one">Dosya kopyalanıyor ve doğrulanıyor…</item>
+        <item quantity="other">%d dosya kopyalanıyor ve doğrulanıyor…</item>
+    </plurals>
+    <string name="imported_default_name">kayit</string>
+    <string name="import_failed_title">Dosya içe aktarılamadı</string>
+    <string name="import_failed_body">%1$s\n\nDesteklenen biçimler: m4a, mp3, wav, aac, ogg, opus, mp4, 3gp ve cihazınızın çözebildiği diğer ses/video dosyaları.</string>
+    <string name="import_unreadable">Dosya okunamadı</string>
+    <string name="import_no_audio">Dosyada ses izi bulunamadı veya dosya bozuk</string>
+    <string name="mode_live">Canlı kayıt</string>
+    <string name="mode_imported">Dosyadan içe aktarıldı</string>
 
     <!-- Durumlar -->
     <string name="status_recording">Kayıtta</string>
