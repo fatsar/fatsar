@@ -1,4 +1,156 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.Toplanti" parent="Theme.Material3.DayNight.NoActionBar" />
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.Toplanti" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Renk sistemi -->
+        <item name="colorPrimary">@color/brand_600</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/brand_100</item>
+        <item name="colorOnPrimaryContainer">@color/brand_900</item>
+
+        <item name="colorSecondary">@color/accent_600</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/accent_100</item>
+        <item name="colorOnSecondaryContainer">@color/accent_900</item>
+
+        <item name="colorTertiary">@color/warn_600</item>
+        <item name="colorTertiaryContainer">@color/warn_100</item>
+        <item name="colorOnTertiaryContainer">@color/warn_900</item>
+
+        <item name="colorError">@color/rec_600</item>
+        <item name="colorOnError">@color/white</item>
+        <item name="colorErrorContainer">@color/rec_100</item>
+        <item name="colorOnErrorContainer">@color/rec_900</item>
+
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="colorOnBackground">@color/ink_900</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/ink_900</item>
+        <item name="colorSurfaceVariant">@color/surface_high</item>
+        <item name="colorOnSurfaceVariant">@color/ink_600</item>
+        <item name="colorSurfaceContainerLowest">@color/white</item>
+        <item name="colorSurfaceContainerLow">@color/surface_low</item>
+        <item name="colorSurfaceContainer">@color/surface</item>
+        <item name="colorSurfaceContainerHigh">@color/surface_high</item>
+        <item name="colorSurfaceContainerHighest">@color/surface_high</item>
+        <item name="colorOutline">@color/ink_300</item>
+        <item name="colorOutlineVariant">@color/ink_200</item>
+
+        <!-- Sistem çubukları içerikle aynı yüzeyde -->
+        <item name="android:statusBarColor">?android:colorBackground</item>
+        <item name="android:navigationBarColor">?android:colorBackground</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+
+        <!-- Bileşen varsayılanları -->
+        <item name="materialCardViewStyle">@style/Widget.Toplanti.Card</item>
+        <item name="materialButtonStyle">@style/Widget.Toplanti.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Toplanti.Button.Outlined</item>
+        <item name="tabStyle">@style/Widget.Toplanti.Tabs</item>
+        <item name="toolbarStyle">@style/Widget.Toplanti.Toolbar</item>
+        <item name="extendedFloatingActionButtonStyle">@style/Widget.Toplanti.Fab</item>
+        <item name="shapeAppearanceCornerLarge">@style/Shape.Toplanti.Large</item>
+        <item name="shapeAppearanceCornerMedium">@style/Shape.Toplanti.Medium</item>
+    </style>
+
+    <!-- Şekil -->
+    <style name="Shape.Toplanti.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <style name="Shape.Toplanti.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="Shape.Toplanti.Pill" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Kart: yükselti yerine ince kenarlık -->
+    <style name="Widget.Toplanti.Card" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">?attr/colorOutlineVariant</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+    </style>
+
+    <style name="Widget.Toplanti.Button" parent="Widget.Material3.Button">
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:textSize">15sp</item>
+        <item name="shapeAppearanceOverlay">@style/Shape.Toplanti.Pill</item>
+    </style>
+
+    <style name="Widget.Toplanti.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="strokeColor">?attr/colorOutline</item>
+        <item name="shapeAppearanceOverlay">@style/Shape.Toplanti.Pill</item>
+    </style>
+
+    <style name="Widget.Toplanti.Tabs" parent="Widget.Material3.TabLayout.Secondary">
+        <item name="tabMode">scrollable</item>
+        <item name="tabIndicatorColor">?attr/colorPrimary</item>
+        <item name="tabIndicatorFullWidth">false</item>
+        <item name="tabTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="tabSelectedTextColor">?attr/colorPrimary</item>
+        <item name="tabIconTint">@color/tab_icon_tint</item>
+        <item name="tabPaddingStart">14dp</item>
+        <item name="tabPaddingEnd">14dp</item>
+    </style>
+
+    <style name="Widget.Toplanti.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="titleTextColor">?attr/colorOnSurface</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Toplanti.Toolbar</item>
+    </style>
+
+    <style name="Widget.Toplanti.Fab" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
+        <item name="android:textSize">15sp</item>
+        <item name="iconSize">22dp</item>
+    </style>
+
+    <!-- Tipografi -->
+    <style name="TextAppearance.Toplanti.Toolbar" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">19sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.Toplanti.Display" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textSize">64sp</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <style name="TextAppearance.Toplanti.Screen" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">28sp</item>
+    </style>
+
+    <style name="TextAppearance.Toplanti.Section" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.09</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="TextAppearance.Toplanti.Chip" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <!-- Yardımcı bileşen stilleri -->
+    <style name="Widget.Toplanti.Chip" parent="">
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Toplanti.Chip</item>
+    </style>
 </resources>

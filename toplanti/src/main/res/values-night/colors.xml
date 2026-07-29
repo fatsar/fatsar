@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Koyu temada yüzeyler ve marka tonları -->
+    <color name="bg">#0B1120</color>
+    <color name="surface">#111827</color>
+    <color name="surface_low">#0F172A</color>
+    <color name="surface_high">#1E293B</color>
+
+    <color name="brand_100">#312E81</color>
+    <color name="brand_600">#818CF8</color>
+    <color name="accent_100">#0F3F3A</color>
+    <color name="accent_600">#2DD4BF</color>
+    <color name="rec_100">#4C0519</color>
+    <color name="rec_600">#FB7185</color>
+    <color name="warn_100">#3F2A06</color>
+    <color name="warn_600">#FBBF24</color>
+    <color name="ok_100">#052E16</color>
+    <color name="ok_600">#4ADE80</color>
+
+    <color name="card_stroke">#1E293B</color>
+
+    <color name="speaker_1">#818CF8</color>
+    <color name="speaker_2">#2DD4BF</color>
+    <color name="speaker_3">#FBBF24</color>
+    <color name="speaker_4">#F472B6</color>
+    <color name="speaker_5">#60A5FA</color>
+    <color name="speaker_6">#A78BFA</color>
+
+    <color name="rec_grad_start">#171E33</color>
+    <color name="rec_grad_end">#0B1120</color>
+</resources>

@@ -3,99 +3,172 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_recording"
+    android:fitsSystemWindows="true"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:paddingHorizontal="24dp">
 
-    <TextView
-        android:id="@+id/statusText"
+    <!-- Durum rozeti -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="@string/status_recording_live"
-        android:textAppearance="?attr/textAppearanceTitleMedium" />
+        android:layout_marginTop="40dp"
+        android:background="@drawable/bg_chip"
+        android:backgroundTint="?attr/colorErrorContainer"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp">
 
+        <View
+            android:id="@+id/recordDot"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="?attr/colorError" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/status_recording_live"
+            android:textAppearance="@style/TextAppearance.Toplanti.Chip"
+            android:textColor="?attr/colorOnErrorContainer" />
+    </LinearLayout>
+
+    <!-- Süre -->
     <TextView
         android:id="@+id/timerText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="28dp"
         android:text="00:00"
-        android:textAppearance="?attr/textAppearanceDisplayLarge" />
-
-    <ProgressBar
-        android:id="@+id/levelBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:max="100" />
+        android:textAppearance="@style/TextAppearance.Toplanti.Display"
+        android:textColor="?attr/colorOnSurface" />
 
     <TextView
-        android:id="@+id/attachmentInfo"
+        android:id="@+id/hintText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textAppearance="?attr/textAppearanceBodyMedium" />
+        android:layout_marginTop="4dp"
+        android:text="@string/recording_hint"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <!-- Canlı dalga formu -->
+    <com.fatsar.toplanti.ui.WaveformView
+        android:id="@+id/waveform"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:layout_marginTop="28dp" />
 
     <Space
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <!-- Ek ekleme kartı -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/add_attachment_label"
+                    android:textAppearance="@style/TextAppearance.Toplanti.Section" />
+
+                <TextView
+                    android:id="@+id/attachmentInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPhoto"
+                    style="@style/Widget.Material3.Button.TonalButton.Icon"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_photo"
+                    app:icon="@drawable/ic_camera"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGallery"
+                    style="@style/Widget.Material3.Button.TonalButton.Icon"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_gallery"
+                    app:icon="@drawable/ic_image"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVideo"
+                    style="@style/Widget.Material3.Button.TonalButton.Icon"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/btn_video"
+                    app:icon="@drawable/ic_video"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Kayıt denetimleri -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPhoto"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:text="@string/btn_photo" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGallery"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:text="@string/btn_gallery" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideo"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/btn_video" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginBottom="28dp"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPause"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.Toplanti.Button.Outlined"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="10dp"
             android:layout_weight="1"
-            android:text="@string/pause" />
+            android:text="@string/pause"
+            app:icon="@drawable/ic_pause"
+            app:iconGravity="textStart" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnFinish"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_weight="1.3"
             android:text="@string/finish"
-            app:icon="@drawable/ic_done" />
+            app:icon="@drawable/ic_check_circle"
+            app:iconGravity="textStart" />
     </LinearLayout>
 </LinearLayout>

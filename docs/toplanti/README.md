@@ -22,6 +22,15 @@ Depodaki Kartvizit Tarayıcı ile aynı ilkeyle çalışır: **her şey cihaz ü
 - 📤 **Dışa aktarma** – PDF, DOCX, TXT, JSON ve eklerle ZIP; DOCX/PDF üretimi harici kütüphanesiz (FR-064).
 - 🗑️ **Kalıcı silme** – silinecek tüm bağlı veriler listelenir, onaydan sonra toplantıya ait her şey cihazdan kaldırılır (FR-054, AC-034).
 
+## Arayüz
+
+Uygulama Material 3 üzerine kurulu özel bir tasarım sistemi kullanır; açık ve koyu tema ayrı ayrı tanımlıdır.
+
+- **Renk:** indigo (birincil), teal (ikincil/gizlilik), amber (inceleme gerekli), rose (kayıt/hata), yeşil (tamamlandı). Durumlar hem renk hem metin etiketiyle gösterilir — yalnızca renge bağlı gösterge yoktur (PRD 16.4).
+- **Ana ekran:** büyük başlık, hap biçimli arama alanı, tarih başlıklarıyla gruplanan toplantı kartları; her kartta mod ikonu (canlı kayıt / içe aktarma), süre, etiketler ve durum rozeti. İnceleme bekleyen toplantılar amber kenarlıkla öne çıkar.
+- **Kayıt ekranı:** degrade zemin, yanıp sönen kayıt rozeti, büyük süre göstergesi ve **canlı dalga formu** (`WaveformView`), ek ekleme kartı, hap biçimli denetimler.
+- **Toplantı detayı:** ikonlu sekmeler; özet kartları, tür rengiyle işaretlenmiş not/karar/soru/risk kartları, konuşmacı avatarlı transkript balonları, durum ikonlu görev kartları ve alttan yüzen oynatma çubuğu.
+
 ## Kullanım
 
 1. **Yeni toplantı** → katılımcı rızası hatırlatmasını onaylayın → kayıt başlar. İsterseniz kayıt sırasında fotoğraf/video ekleyin.

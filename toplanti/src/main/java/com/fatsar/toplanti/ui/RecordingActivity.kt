@@ -130,7 +130,7 @@ class RecordingActivity : AppCompatActivity(), RecordingService.Listener {
     override fun onTick(elapsedMs: Long, level: Int) {
         runOnUiThread {
             binding.timerText.text = Fmt.duration(elapsedMs)
-            binding.levelBar.progress = level
+            binding.waveform.push(level)
         }
     }
 
@@ -241,6 +241,8 @@ class RecordingActivity : AppCompatActivity(), RecordingService.Listener {
             .setMessage(R.string.finish_recording_message)
             .setPositiveButton(R.string.finish_recording_confirm) { _, _ ->
                 binding.btnFinish.isEnabled = false
+                binding.btnPause.isEnabled = false
+                binding.recordDot.clearAnimation()
                 binding.statusText.text = getString(R.string.status_finishing)
                 service?.finishRecording()
             }
@@ -251,8 +253,23 @@ class RecordingActivity : AppCompatActivity(), RecordingService.Listener {
     private fun updatePauseButton() {
         val paused = service?.isPaused == true
         binding.btnPause.setText(if (paused) R.string.resume else R.string.pause)
+        binding.btnPause.setIconResource(if (paused) R.drawable.ic_play else R.drawable.ic_pause)
         binding.statusText.text =
             getString(if (paused) R.string.status_paused else R.string.status_recording_live)
+        // Kayıt sürerken yanıp sönen nokta, duraklatınca sabit kalır
+        if (paused) {
+            binding.recordDot.clearAnimation()
+            binding.recordDot.alpha = 0.4f
+        } else {
+            binding.recordDot.alpha = 1f
+            binding.recordDot.startAnimation(
+                android.view.animation.AlphaAnimation(1f, 0.25f).apply {
+                    duration = 750
+                    repeatMode = android.view.animation.Animation.REVERSE
+                    repeatCount = android.view.animation.Animation.INFINITE
+                }
+            )
+        }
     }
 
     private fun openDetail() {

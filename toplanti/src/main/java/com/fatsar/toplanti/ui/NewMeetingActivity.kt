@@ -73,7 +73,7 @@ class NewMeetingActivity : AppCompatActivity() {
 
     private fun startRecording() {
         val repo = MeetingRepository(applicationContext)
-        val language = when (binding.langGroup.checkedRadioButtonId) {
+        val language = when (binding.langGroup.checkedButtonId) {
             R.id.langTr -> VoskModelManager.LANG_TR
             R.id.langEn -> VoskModelManager.LANG_EN
             else -> VoskModelManager.LANG_AUTO

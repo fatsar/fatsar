@@ -11,8 +11,11 @@
     <string name="untitled_meeting">Adsız toplantı</string>
 
     <!-- Ana ekran -->
-    <string name="search_hint">Başlık, etiket veya içerikte ara…</string>
-    <string name="empty_list">Henüz toplantı yok.\n\n▸ Yeni toplantı başlatmak için + düğmesine dokunun.\n▸ Mevcut bir ses/video kaydını içe aktarmak için sağ üstteki menüyü kullanın.</string>
+    <string name="home_title">Toplantılarım</string>
+    <string name="home_subtitle">Kayıt, transkript ve notlar yalnızca bu cihazda</string>
+    <string name="search_hint">Başlık, etiket veya içerikte ara</string>
+    <string name="empty_title">Henüz toplantı yok</string>
+    <string name="empty_body">Kaydı başlatmak için aşağıdaki düğmeye dokunun ya da sağ üstten mevcut bir ses/video dosyasını içe aktarın.</string>
     <string name="new_meeting">Yeni toplantı</string>
     <string name="action_import">Dosya içe aktar</string>
     <string name="import_failed">Dosya içe aktarılamadı. Desteklenen bir ses/video dosyası seçin.</string>
@@ -33,6 +36,8 @@
     <string name="lang_auto">Otomatik algıla</string>
     <string name="lang_tr">Türkçe</string>
     <string name="lang_en">İngilizce</string>
+    <string name="lang_auto_hint">Otomatik seçimde kaydın ilk dakikası iki modelle de çözülür ve dil buna göre belirlenir.</string>
+    <string name="title_section">Başlık</string>
     <string name="start_recording">Kaydı başlat</string>
     <string name="mic_denied_title">Mikrofon izni gerekli</string>
     <string name="mic_denied_message">Canlı kayıt için mikrofon izni gerekir. İzin vermek istemezseniz ana ekrandan mevcut bir ses/video dosyasını içe aktarabilirsiniz.</string>
@@ -47,6 +52,8 @@
     <string name="btn_photo">Fotoğraf</string>
     <string name="btn_gallery">Galeri</string>
     <string name="btn_video">Video</string>
+    <string name="recording_hint">Ekranı kapatabilirsiniz, kayıt arka planda sürer</string>
+    <string name="add_attachment_label">Toplantıya ek</string>
     <string name="finish_recording_title">Kaydı bitir</string>
     <string name="finish_recording_message">Kayıt sonlandırılacak ve yazıya dökme işlemi başlayacak. Devam edilsin mi?</string>
     <string name="finish_recording_confirm">Bitir ve işle</string>
@@ -107,6 +114,7 @@
     <string name="speaker_default">Konuşmacı %1$d</string>
     <string name="playing_from">%1$s konumundan oynatılıyor</string>
     <string name="stop">Durdur</string>
+    <string name="play_source">Kaynağı dinle</string>
 
     <!-- Görevler -->
     <string name="add_task">Görev ekle</string>

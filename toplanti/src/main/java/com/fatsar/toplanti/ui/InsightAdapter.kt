@@ -1,8 +1,11 @@
 package com.fatsar.toplanti.ui
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.fatsar.toplanti.R
 import com.fatsar.toplanti.databinding.ItemDateHeaderBinding
@@ -11,8 +14,9 @@ import com.fatsar.toplanti.model.Insight
 import com.fatsar.toplanti.model.InsightType
 
 /**
- * Notlar sekmesi: önemli notlar, kararlar, açık sorular ve riskler
- * tür başlıklarıyla gruplanır (FR-021). Dokunma → kaynağı dinleme (FR-022).
+ * Notlar sekmesi: kararlar, önemli notlar, açık sorular ve riskler tür
+ * başlıklarıyla gruplanır (FR-021); her madde kaynak rengiyle işaretlenir
+ * ve dokununca kaynağından dinlenir (FR-022).
  */
 class InsightAdapter(
     private val onClick: (Insight) -> Unit
@@ -65,11 +69,26 @@ class InsightAdapter(
 
     private inner class ItemVH(val binding: ItemInsightBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(insight: Insight) {
+            val ctx = binding.root.context
             binding.insightText.text = insight.content
-            binding.confidenceText.text = binding.root.context.getString(
+            binding.confidenceText.text = ctx.getString(
                 R.string.confidence_short, (insight.confidence * 100).toInt()
             )
+            binding.accentBar.backgroundTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(ctx, accentColor(insight.type))
+            )
+            // Kaynak bağlantısı yoksa "dinle" ipucu gösterilmez
+            val hasSource = insight.sourceSegmentIds.isNotEmpty()
+            binding.sourceIcon.visibility = if (hasSource) View.VISIBLE else View.GONE
+            binding.sourceHint.visibility = if (hasSource) View.VISIBLE else View.GONE
             binding.root.setOnClickListener { onClick(insight) }
+        }
+
+        private fun accentColor(type: InsightType): Int = when (type) {
+            InsightType.DECISION -> R.color.ok_600
+            InsightType.IMPORTANT_NOTE -> R.color.brand_600
+            InsightType.QUESTION -> R.color.accent_600
+            InsightType.RISK -> R.color.rec_600
         }
     }
 }

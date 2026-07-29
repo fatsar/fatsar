@@ -1,5 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#00695C</color>
-    <color name="low_confidence_bg">#33FFC107</color>
+    <!-- Marka: indigo (birincil), teal (ikincil), rose (kayıt/hata), amber (inceleme) -->
+    <color name="brand_900">#1E1B4B</color>
+    <color name="brand_700">#4338CA</color>
+    <color name="brand_600">#4F46E5</color>
+    <color name="brand_400">#818CF8</color>
+    <color name="brand_200">#C7D2FE</color>
+    <color name="brand_100">#E0E7FF</color>
+
+    <color name="accent_900">#053F3B</color>
+    <color name="accent_600">#0D9488</color>
+    <color name="accent_400">#2DD4BF</color>
+    <color name="accent_100">#CCFBF1</color>
+
+    <color name="rec_900">#4C0519</color>
+    <color name="rec_600">#E11D48</color>
+    <color name="rec_400">#FB7185</color>
+    <color name="rec_100">#FFE4E6</color>
+
+    <color name="warn_900">#451A03</color>
+    <color name="warn_600">#D97706</color>
+    <color name="warn_400">#FBBF24</color>
+    <color name="warn_100">#FEF3C7</color>
+
+    <color name="ok_600">#16A34A</color>
+    <color name="ok_400">#4ADE80</color>
+    <color name="ok_100">#DCFCE7</color>
+
+    <!-- Nötr (ink) skalası -->
+    <color name="ink_950">#020617</color>
+    <color name="ink_900">#0F172A</color>
+    <color name="ink_800">#1E293B</color>
+    <color name="ink_700">#334155</color>
+    <color name="ink_600">#475569</color>
+    <color name="ink_500">#64748B</color>
+    <color name="ink_400">#94A3B8</color>
+    <color name="ink_300">#CBD5E1</color>
+    <color name="ink_200">#E2E8F0</color>
+    <color name="ink_100">#F1F5F9</color>
+    <color name="ink_50">#F8FAFC</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Tema yüzeyleri (açık) -->
+    <color name="bg">#F6F7FB</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_low">#FBFCFE</color>
+    <color name="surface_high">#EEF1F7</color>
+
+    <!-- Kart kenarlığı (kodda kullanılan tema uyumlu ton) -->
+    <color name="card_stroke">#E2E8F0</color>
+
+    <!-- Konuşmacı renkleri (segment avatarları) -->
+    <color name="speaker_1">#4F46E5</color>
+    <color name="speaker_2">#0D9488</color>
+    <color name="speaker_3">#D97706</color>
+    <color name="speaker_4">#DB2777</color>
+    <color name="speaker_5">#2563EB</color>
+    <color name="speaker_6">#7C3AED</color>
+
+    <!-- Kayıt ekranı degrade uçları -->
+    <color name="rec_grad_start">#EEF2FF</color>
+    <color name="rec_grad_end">#F6F7FB</color>
+
+    <color name="ic_launcher_background">#4F46E5</color>
 </resources>

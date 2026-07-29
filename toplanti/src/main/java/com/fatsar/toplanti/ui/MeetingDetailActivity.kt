@@ -209,7 +209,7 @@ class MeetingDetailActivity : AppCompatActivity() {
         // Genel bakış
         binding.shortSummaryText.text = m.shortSummary.ifBlank { getString(R.string.no_summary) }
         binding.detailedSummaryText.text = m.detailedSummary
-        binding.detailedSummaryHeader.visibility =
+        binding.detailedSummaryCard.visibility =
             if (m.detailedSummary.isBlank()) View.GONE else View.VISIBLE
         binding.confidenceNote.text = getString(
             R.string.confidence_note,

@@ -1,12 +1,16 @@
 package com.fatsar.toplanti.ui
 
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.fatsar.toplanti.R
 import com.fatsar.toplanti.databinding.ItemDateHeaderBinding
 import com.fatsar.toplanti.databinding.ItemMeetingBinding
 import com.fatsar.toplanti.model.Meeting
+import com.fatsar.toplanti.model.MeetingMode
 import com.fatsar.toplanti.model.MeetingStatus
 import com.fatsar.toplanti.util.Fmt
 import java.util.Calendar
@@ -73,22 +77,54 @@ class MeetingListAdapter(
         fun bind(m: Meeting) {
             val ctx = binding.root.context
             binding.title.text = m.displayTitle(untitled)
-            val statusText = when (m.status) {
-                MeetingStatus.RECORDING -> ctx.getString(R.string.status_recording)
-                MeetingStatus.PROCESSING -> ctx.getString(R.string.status_processing)
-                MeetingStatus.REVIEW -> ctx.getString(R.string.status_review)
-                MeetingStatus.DONE -> ctx.getString(R.string.status_done)
-                MeetingStatus.FAILED -> ctx.getString(R.string.status_failed)
-            }
-            val extras = mutableListOf(Fmt.duration(m.durationMs), statusText)
-            if (m.tags.isNotEmpty()) extras.add(m.tags.joinToString(", ") { "#$it" })
-            binding.subtitle.text = extras.joinToString(" • ")
+
+            val meta = mutableListOf(Fmt.duration(m.durationMs))
+            if (m.tags.isNotEmpty()) meta.add(m.tags.joinToString(" ") { "#$it" })
+            binding.subtitle.text = meta.joinToString("  •  ")
+
+            // Kayıt / içe aktarma ayrımı ikonla gösterilir (FR-007)
+            binding.modeIcon.setImageResource(
+                if (m.mode == MeetingMode.IMPORTED) R.drawable.ic_folder_open else R.drawable.ic_mic
+            )
+
+            val (labelRes, bgRes, fgRes) = statusStyle(m.status)
+            binding.statusChip.text = ctx.getString(labelRes)
+            binding.statusChip.backgroundTintList =
+                ColorStateList.valueOf(ContextCompat.getColor(ctx, bgRes))
+            binding.statusChip.setTextColor(ContextCompat.getColor(ctx, fgRes))
+            binding.iconTile.backgroundTintList =
+                ColorStateList.valueOf(ContextCompat.getColor(ctx, bgRes))
+            binding.modeIcon.imageTintList =
+                ColorStateList.valueOf(ContextCompat.getColor(ctx, fgRes))
+
+            // İnceleme bekleyen toplantılar kenarlıkla öne çıkar
+            val needsReview = m.status == MeetingStatus.REVIEW
+            val density = ctx.resources.displayMetrics.density
+            binding.root.strokeWidth = ((if (needsReview) 2 else 1) * density).toInt()
+            binding.root.setStrokeColor(
+                ColorStateList.valueOf(
+                    ContextCompat.getColor(
+                        ctx,
+                        if (needsReview) R.color.warn_600 else R.color.card_stroke
+                    )
+                )
+            )
+
             binding.root.setOnClickListener { onClick(m) }
         }
     }
 
-    companion object {
-        private const val TYPE_HEADER = 0
-        private const val TYPE_ITEM = 1
+    /** @return (etiket, arka plan rengi, metin/ikon rengi) */
+    private fun statusStyle(status: MeetingStatus): Triple<Int, Int, Int> = when (status) {
+        MeetingStatus.RECORDING -> Triple(R.string.status_recording, R.color.rec_100, R.color.rec_600)
+        MeetingStatus.PROCESSING -> Triple(R.string.status_processing, R.color.brand_100, R.color.brand_600)
+        MeetingStatus.REVIEW -> Triple(R.string.status_review, R.color.warn_100, R.color.warn_600)
+        MeetingStatus.DONE -> Triple(R.string.status_done, R.color.ok_100, R.color.ok_600)
+        MeetingStatus.FAILED -> Triple(R.string.status_failed, R.color.rec_100, R.color.rec_600)
+    }
+
+    private companion object {
+        const val TYPE_HEADER = 0
+        const val TYPE_ITEM = 1
     }
 }

@@ -3,55 +3,84 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp">
+    android:paddingVertical="6dp">
+
+    <TextView
+        android:id="@+id/speakerAvatar"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:background="@drawable/bg_circle"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.Toplanti.Chip"
+        android:textColor="#FFFFFF" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_marginStart="10dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/speakerText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/timeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/lowConfidenceMark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip"
+                android:backgroundTint="?attr/colorTertiaryContainer"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="@string/low_confidence"
+                android:textAppearance="@style/TextAppearance.Toplanti.Chip"
+                android:textColor="?attr/colorOnTertiaryContainer"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/editedMark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_chip"
+                android:backgroundTint="?attr/colorSecondaryContainer"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="@string/edited_label"
+                android:textAppearance="@style/TextAppearance.Toplanti.Chip"
+                android:textColor="?attr/colorOnSecondaryContainer"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/timeText"
-            android:layout_width="wrap_content"
+            android:id="@+id/segmentText"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:textColor="?attr/colorPrimary" />
-
-        <TextView
-            android:id="@+id/speakerText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/lowConfidenceMark"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="@color/low_confidence_bg"
-            android:paddingHorizontal="6dp"
-            android:text="@string/low_confidence"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/editedMark"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="@string/edited_label"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:visibility="gone" />
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_segment_bubble"
+            android:lineSpacingExtra="3dp"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/segmentText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textAppearance="?attr/textAppearanceBodyMedium" />
 </LinearLayout>

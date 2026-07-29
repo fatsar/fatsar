@@ -1,38 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="10dp">
-
-    <ImageView
-        android:id="@+id/attachmentIcon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:contentDescription="@string/tab_attachments"
-        android:src="@drawable/ic_image" />
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="5dp"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp">
 
-        <TextView
-            android:id="@+id/attachmentName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceBodyLarge" />
+        <FrameLayout
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:background="@drawable/bg_icon_tile"
+            android:backgroundTint="?attr/colorSecondaryContainer">
 
-        <TextView
-            android:id="@+id/attachmentMeta"
-            android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/attachmentIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/tab_attachments"
+                android:src="@drawable/ic_image"
+                app:tint="?attr/colorOnSecondaryContainer" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodySmall" />
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/attachmentName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:maxLines="1"
+                android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+            <TextView
+                android:id="@+id/attachmentMeta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_chevron"
+            app:tint="?attr/colorOutline" />
     </LinearLayout>
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>
