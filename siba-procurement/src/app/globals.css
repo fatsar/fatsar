@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/*
+ * Siba Procurement Command Center — design tokens.
+ * Professional, information-dense, light industrial theme (single mode).
+ * Chart colors follow the validated reference palette (docs/architecture.md).
+ */
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+
+  /* surfaces */
+  --color-page: #f3f3f1;
+  --color-surface: #fcfcfb;
+  --color-sunken: #f0efec;
+
+  /* ink */
+  --color-ink: #17181c;
+  --color-ink-secondary: #4f4e4b;
+  --color-ink-muted: #86847e;
+  --color-line: #e1e0d9;
+  --color-line-strong: #c9c8c0;
+
+  /* navigation (command-center sidebar) */
+  --color-nav: #141d2e;
+  --color-nav-hover: #1e2b44;
+  --color-nav-active: #24365c;
+  --color-nav-text: #aab6cc;
+  --color-nav-text-active: #ffffff;
+
+  /* accent */
+  --color-accent: #2a78d6;
+  --color-accent-strong: #1c5cab;
+  --color-accent-soft: #e7f0fb;
+
+  /* status family (risk & signals) — text labels always accompany color */
+  --color-ok: #0ca30c;
+  --color-ok-soft: #e3f3e3;
+  --color-ok-ink: #0a5c0a;
+  --color-warn: #fab219;
+  --color-warn-soft: #fcf3da;
+  --color-warn-ink: #815800;
+  --color-serious: #ec835a;
+  --color-serious-soft: #fbe9e2;
+  --color-serious-ink: #97401a;
+  --color-crit: #d03b3b;
+  --color-crit-soft: #f9e4e4;
+  --color-crit-ink: #931f1f;
+
+  /* categorical chart series (validated order — do not shuffle) */
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #1baf7a;
+  --color-series-4: #eda100;
+}
+
+body {
+  background-color: var(--color-page);
+  color: var(--color-ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* numeric table columns align with tabular figures */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}

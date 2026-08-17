@@ -1,0 +1,233 @@
+// Siba Procurement Command Center — database schema
+//
+// NOTE ON PORTABILITY (SQLite now → PostgreSQL later):
+// - SQLite does not support Prisma enums, so classification fields are String.
+//   Allowed values are defined ONCE in src/domain/enums.ts and enforced by zod
+//   in every server action. When migrating to PostgreSQL these become enums.
+// - SQLite does not support Decimal; quantities/prices are Float. Acceptable
+//   for procurement analytics; switch to Decimal on PostgreSQL if needed.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Material {
+  id            String  @id @default(cuid())
+  code          String  @unique
+  name          String
+  category      String // MaterialCategory union (src/domain/enums.ts)
+  unit          String  @default("kg") // base unit for stock, consumption and normalized prices
+  specification String?
+
+  preferredSupplierId String?
+  preferredSupplier   Supplier? @relation("PreferredSupplier", fields: [preferredSupplierId], references: [id])
+
+  // Consumption & demand (in `unit`)
+  avgMonthlyConsumption Float?
+  avgDailyConsumption   Float? // if null, derived as avgMonthlyConsumption / 30
+  forecastMonthlyDemand Float?
+
+  // Stock (in `unit`) — usableStock is derived: currentStock - reservedStock
+  currentStock  Float @default(0)
+  reservedStock Float @default(0)
+  safetyStock   Float @default(0)
+  minimumStock  Float @default(0)
+
+  // Replenishment
+  leadTimeDays    Int?
+  openPurchaseQty Float     @default(0) // ordered, ETA not yet confirmed
+  inboundQty      Float     @default(0) // shipped / ETA confirmed
+  inboundEta      DateTime?
+
+  // Pricing (per `unit`, in `currency`)
+  lastPurchasePrice Float?
+  lastPurchaseDate  DateTime?
+  targetPrice       Float?
+  currency          String    @default("USD")
+  incoterm          String?
+
+  notes    String?
+  isActive Boolean @default(true)
+  isSample Boolean @default(false) // marks development SAMPLE data
+
+  suppliers  MaterialSupplier[]
+  quotations Quotation[]
+  actions    ActionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model Supplier {
+  id      String  @id @default(cuid())
+  code    String  @unique
+  name    String
+  country String
+  city    String?
+  website String?
+
+  // Primary contact (multiple contacts per supplier is a Phase 2 refinement)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+
+  preferredCurrency  String  @default("USD")
+  defaultIncoterm    String?
+  paymentTerms       String? // human-readable, e.g. "LC 60 days"
+  paymentTermDays    Int? // numeric days for comparisons
+  normalLeadTimeDays Int?
+
+  // Ratings 0–10; combined into a 0–100 Supplier Score using
+  // configurable weights stored in Setting (key: supplierScoreWeights)
+  qualityRating        Float?
+  pricingRating        Float?
+  deliveryRating       Float?
+  responsivenessRating Float?
+  technicalRating      Float?
+  commercialRating     Float?
+
+  notes    String?
+  isActive Boolean @default(true)
+  isSample Boolean @default(false)
+
+  materials    MaterialSupplier[]
+  quotations   Quotation[]
+  preferredFor Material[]         @relation("PreferredSupplier")
+  actions      ActionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// Approved supplier ↔ material relation ("approved suppliers" / "materials supplied")
+model MaterialSupplier {
+  id         String  @id @default(cuid())
+  materialId String
+  supplierId String
+  isApproved Boolean @default(true)
+  note       String?
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, supplierId])
+}
+
+model Quotation {
+  id              String @id @default(cuid())
+  quotationNumber String // supplier document number; not globally unique across suppliers
+
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id])
+
+  quotationDate DateTime
+  quantity      Float // total quoted quantity, in quantityUnit
+  quantityUnit  String // QuantityUnit union — must be convertible to material.unit
+
+  containerCount  Int?
+  qtyPerContainer Float?
+
+  price           Float // as quoted, per priceUnit, in currency
+  currency        String
+  priceUnit       String // QuantityUnit union — unit the price refers to
+  normalizedPrice Float // deterministic: price converted to "per material.unit"
+
+  incoterm        String?
+  destinationPort String?
+  paymentTerms    String?
+  paymentTermDays Int?
+
+  leadTimeDays           Int? // total delivery lead time
+  productionLeadTimeDays Int?
+  validUntil             DateTime?
+  freightIncluded        Boolean   @default(false)
+
+  status String @default("ACTIVE") // QuotationStatus union; expiry also derived from validUntil
+
+  remarks       String?
+  attachmentRef String? // file name / URL reference only (no upload in Phase 1)
+
+  actions ActionItem[]
+
+  isSample  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([materialId, quotationDate])
+  @@index([supplierId])
+  @@index([quotationNumber])
+}
+
+model ActionItem {
+  id    String @id @default(cuid())
+  title String
+
+  materialId  String?
+  material    Material?  @relation(fields: [materialId], references: [id])
+  supplierId  String?
+  supplier    Supplier?  @relation(fields: [supplierId], references: [id])
+  quotationId String?
+  quotation   Quotation? @relation(fields: [quotationId], references: [id])
+
+  actionType String // ActionType union
+  owner      String?
+  dueDate    DateTime?
+  priority   String    @default("MEDIUM") // ActionPriority union
+  status     String    @default("OPEN") // ActionStatus union
+  notes      String?
+
+  isSample  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+}
+
+model MarketIntelligence {
+  id    String   @id @default(cuid())
+  date  DateTime
+  title String
+
+  category          String // IntelCategory union
+  affectedMaterials String // comma-separated material codes and/or category names
+  geography         String?
+  summary           String
+  expectedImpact    String?
+  priceDirection    String  @default("UNCERTAIN") // PriceDirection union
+  supplyImpact      String? // SupplyImpact union
+  riskLevel         String  @default("MEDIUM") // RiskLevel union
+
+  source String?
+  url    String?
+  notes  String?
+
+  isActive Boolean @default(true) // inactive = stale / superseded
+  isSample Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, date])
+}
+
+// Key-value store for configurable business parameters
+// (supplier score weights, recommendation thresholds, offer scoring weights).
+// Values are JSON strings; typed accessors live in src/server/settings.ts
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
