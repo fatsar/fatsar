@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "KartvizitTarayici"
 include(":app")
+include(":notlar")

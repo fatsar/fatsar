@@ -9,6 +9,8 @@ jobs:
   build:
     name: Test ve APK Derleme
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Kaynak kodu al
         uses: actions/checkout@v4
@@ -23,23 +25,55 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Birim testlerini çalıştır
-        run: ./gradlew --no-daemon :app:testDebugUnitTest
+        run: ./gradlew --no-daemon :app:testDebugUnitTest :notlar:testDebugUnitTest
 
-      - name: Debug APK derle
-        run: ./gradlew --no-daemon :app:assembleDebug
+      - name: Debug APK'ları derle
+        run: ./gradlew --no-daemon :app:assembleDebug :notlar:assembleDebug
 
       - name: APK bilgisi
-        run: ls -lh app/build/outputs/apk/debug/
+        run: ls -lh app/build/outputs/apk/debug/ notlar/build/outputs/apk/debug/
 
-      - name: APK artefaktını yükle
+      - name: Kartvizit APK artefaktını yükle
         uses: actions/upload-artifact@v4
         with:
           name: kartvizit-tarayici-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Notlar APK artefaktını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: notlar-debug-apk
+          path: notlar/build/outputs/apk/debug/notlar-debug.apk
+
+      # Kurulumu kolaylaştırmak için APK'lar "son-derleme" ön sürümünde yayınlanır:
+      # her push'ta güncellenen, oturum açmadan indirilebilen sabit bağlantılar.
+      - name: APK'ları yayına al (son-derleme)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp notlar/build/outputs/apk/debug/notlar-debug.apk notlar.apk
+          cp app/build/outputs/apk/debug/app-debug.apk kartvizit-tarayici.apk
+          gh release delete son-derleme --yes --cleanup-tag || true
+          gh release create son-derleme notlar.apk kartvizit-tarayici.apk \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Son derleme (test)" \
+            --notes "Bu depodaki uygulamaların en son otomatik derlemesi.
+
+          | Uygulama | Dosya |
+          |---|---|
+          | Notlar | \`notlar.apk\` |
+          | Kartvizit Tarayıcı | \`kartvizit-tarayici.apk\` |
+
+          Dal: \`$GITHUB_REF_NAME\` · Commit: \`$GITHUB_SHA\`
+
+          APK'lar **hata ayıklama (debug) anahtarıyla** imzalıdır; kurarken bilinmeyen kaynaklara izin vermeniz istenebilir. Play Store sürümü değildir. Bu sürüm her yeni derlemede güncellenir."
 
       - name: Test raporunu yükle (hata durumunda)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-raporu
-          path: app/build/reports/
+          path: |
+            app/build/reports/
+            notlar/build/reports/

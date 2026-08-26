@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Notlar</string>
+
+    <!-- Liste bölmesi -->
+    <string name="search_hint">Notlarda ara</string>
+    <string name="search_clear">Aramayı temizle</string>
+    <string name="new_note">Yeni not</string>
+    <string name="untitled">Başlıksız not</string>
+    <string name="empty_list">Henüz not yok</string>
+    <string name="empty_list_hint">Yazmaya başlamak için “Yeni not”a dokunun ya da Ctrl+N tuşlarına basın.</string>
+    <string name="no_results">“%1$s” için sonuç yok</string>
+    <string name="no_results_hint">Farklı bir sözcük deneyin.</string>
+    <string name="note_count">%1$d not</string>
+    <string name="note_count_filtered">%1$d / %2$d not</string>
+
+    <!-- Düzenleyici -->
+    <string name="editor_hint"># Başlık\n\nBuraya yazın… Markdown desteklenir.</string>
+    <string name="no_note_selected">Not seçilmedi</string>
+    <string name="no_note_selected_hint">Soldaki listeden bir not seçin veya yeni bir not oluşturun.</string>
+    <string name="action_preview">Önizleme</string>
+    <string name="action_edit">Düzenle</string>
+    <string name="action_pen">Kalemle yaz</string>
+    <string name="action_delete">Notu sil</string>
+    <string name="action_pin">Sabitle</string>
+    <string name="action_unpin">Sabitlemeyi kaldır</string>
+    <string name="action_share">Paylaş</string>
+    <string name="action_shortcuts">Klavye kısayolları</string>
+    <string name="action_back_to_list">Listeye dön</string>
+
+    <!-- Zaman damgaları -->
+    <string name="time_just_now">az önce</string>
+    <string name="time_minutes">%1$d dk önce</string>
+    <string name="time_hours">%1$d sa önce</string>
+    <string name="time_yesterday">dün %1$s</string>
+    <string name="time_days">%1$d gün önce</string>
+    <string name="edited_at">Düzenlendi: %1$s</string>
+
+    <!-- Silme -->
+    <string name="delete_title">Not silinsin mi?</string>
+    <string name="delete_message">“%1$s” kalıcı olarak silinecek.</string>
+    <string name="delete_confirm">Sil</string>
+    <string name="cancel">Vazgeç</string>
+    <string name="undo">Geri al</string>
+    <string name="note_deleted">Not silindi</string>
+
+    <!-- Kalem / çizim -->
+    <string name="sketch_title">Kalem katmanı</string>
+    <string name="pen_tool_pen">Kalem</string>
+    <string name="pen_tool_highlighter">Fosforlu</string>
+    <string name="pen_tool_eraser">Silgi</string>
+    <string name="pen_thin">İnce uç</string>
+    <string name="pen_medium">Orta uç</string>
+    <string name="pen_thick">Kalın uç</string>
+    <string name="pen_undo">Geri al</string>
+    <string name="pen_redo">İleri al</string>
+    <string name="pen_clear">Tümünü temizle</string>
+    <string name="pen_save">Kaydet</string>
+    <string name="pen_discard">Değişiklikleri at</string>
+    <string name="pen_stylus_only">Yalnızca kalem (avuç içi reddi)</string>
+    <string name="pen_stylus_detected">Kalem algılandı — parmak dokunuşları artık çizmiyor</string>
+    <string name="pen_color_ink">Siyah</string>
+    <string name="pen_color_red">Kırmızı</string>
+    <string name="pen_color_blue">Mavi</string>
+    <string name="pen_color_green">Yeşil</string>
+    <string name="pen_color_yellow">Sarı</string>
+    <string name="pen_hint">S Pen ya da başka bir kalemle doğrudan yazın: bastırınca kalın, hafif dokununca ince çizer. Kalemin yan tuşuna basılı tutmak silgiye geçirir.</string>
+    <string name="pen_saved">Çizim nota eklendi</string>
+    <string name="pen_removed">Çizim kaldırıldı</string>
+    <string name="sketch_badge">Kalem çizimi var</string>
+    <string name="sketch_preview_description">Nota eklenmiş kalem çizimi</string>
+
+    <!-- Klavye ve kalem yardımı -->
+    <string name="shortcuts_title">Klavye ve kalem</string>
+    <string name="shortcuts_body">
+        <![CDATA[
+        <b>Klavye</b><br/>
+        Ctrl + N — yeni not<br/>
+        Ctrl + F — aramaya git<br/>
+        Ctrl + P — önizleme / düzenleme<br/>
+        Ctrl + E — düzenleyiciye odaklan<br/>
+        Ctrl + B / Ctrl + I — kalın / eğik<br/>
+        Ctrl + K — bağlantı ekle<br/>
+        Ctrl + L — madde işareti<br/>
+        Ctrl + Shift + K — görev kutusu<br/>
+        Ctrl + D — notu sil<br/>
+        Ctrl + S — hemen kaydet<br/>
+        Esc — aramayı temizle / listeye dön<br/>
+        ↑ ↓ — listede gezin, Enter ile aç<br/><br/>
+        <b>Kalem (S Pen ve diğer stylus’lar)</b><br/>
+        • Metin alanına doğrudan el yazısıyla yazın; Android yazıyı metne çevirir (Android 14+).<br/>
+        • Önizlemedeyken kalemle dokunmak düzenleyiciyi açar ve el yazısına hazırlar.<br/>
+        • “Kalemle yaz” ile basınç ve eğim duyarlı çizim katmanı açılır.<br/>
+        • Kalemin yan tuşu basılıyken silgi olur; kalem algılandığında avuç içi dokunuşları yok sayılır.
+        ]]>
+    </string>
+    <string name="close">Kapat</string>
+    <string name="handwriting_ready">El yazısına hazır — kalemle yazmaya başlayın</string>
+
+    <!-- Paylaşım -->
+    <string name="share_note">Notu paylaş</string>
+    <string name="shared_from">Notlar</string>
+    <string name="saved">Kaydedildi</string>
+    <string name="welcome_note"># Notlar\'a hoş geldiniz\n\nBu uygulama tamamen **cihazınızda** çalışır: bulut yok, hesap yok, internet yok. Yazdıklarınız telefonun kendi belleğinde saklanır.\n\n## Markdown\n\n- **kalın**, *eğik*, `kod`, ~~üstü çizili~~, ==vurgulu==\n- Listeler, alıntılar ve başlıklar\n- [Bağlantı](https://example.com)\n\n&gt; Önizlemeyi açmak için üstteki göz simgesine (ya da Ctrl+P) dokunun.\n\n## Yapılacaklar\n\n- [x] İlk notu okumak\n- [ ] Kendi notunu yazmak\n- [ ] S Pen ile bir şeyler karalamak\n\n## Kalem\n\nSamsung S Pen ve diğer kalemler desteklenir. Metin alanına doğrudan el yazısıyla yazabilir, “Kalemle yaz” ile basınç duyarlı çizim katmanı açabilirsiniz.\n\n---\n\nSilmek için: ⋮ menüsü → Notu sil.</string>
+</resources>

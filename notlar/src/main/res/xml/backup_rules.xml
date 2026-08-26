@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notlar ve çizimler cihaz yedeklemesine dahildir; başka bir şey saklanmaz. -->
+<full-backup-content>
+    <include domain="file" path="notlar.json" />
+    <include domain="file" path="cizimler/" />
+</full-backup-content>
