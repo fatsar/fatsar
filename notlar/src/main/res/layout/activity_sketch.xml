@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/sketchToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:menu="@menu/menu_sketch"
+        app:navigationIcon="@drawable/ic_close"
+        app:navigationContentDescription="@string/close"
+        app:title="@string/sketch_title" />
+
+    <com.fatsar.notlar.ui.PenCanvasView
+        android:id="@+id/canvas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/sketch_paper" />
+
+    <TextView
+        android:id="@+id/penHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp"
+        android:text="@string/pen_hint"
+        android:textAppearance="?attr/textAppearanceLabelSmall"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainerLow"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="8dp">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toolGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <Button
+                android:id="@+id/toolPen"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/pen_tool_pen"
+                android:minWidth="0dp"
+                app:icon="@drawable/ic_pen"
+                app:iconPadding="0dp" />
+
+            <Button
+                android:id="@+id/toolHighlighter"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/pen_tool_highlighter"
+                android:minWidth="0dp"
+                app:icon="@drawable/ic_highlighter"
+                app:iconPadding="0dp" />
+
+            <Button
+                android:id="@+id/toolEraser"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/pen_tool_eraser"
+                android:minWidth="0dp"
+                app:icon="@drawable/ic_eraser"
+                app:iconPadding="0dp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/swatches"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/colorInk"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_swatch"
+                android:backgroundTint="@color/pen_ink"
+                android:contentDescription="@string/pen_color_ink"
+                android:focusable="true"
+                android:foreground="@drawable/fg_swatch_selection" />
+
+            <View
+                android:id="@+id/colorRed"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_swatch"
+                android:backgroundTint="@color/pen_red"
+                android:contentDescription="@string/pen_color_red"
+                android:focusable="true"
+                android:foreground="@drawable/fg_swatch_selection" />
+
+            <View
+                android:id="@+id/colorBlue"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_swatch"
+                android:backgroundTint="@color/pen_blue"
+                android:contentDescription="@string/pen_color_blue"
+                android:focusable="true"
+                android:foreground="@drawable/fg_swatch_selection" />
+
+            <View
+                android:id="@+id/colorGreen"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_swatch"
+                android:backgroundTint="@color/pen_green"
+                android:contentDescription="@string/pen_color_green"
+                android:focusable="true"
+                android:foreground="@drawable/fg_swatch_selection" />
+
+            <View
+                android:id="@+id/colorYellow"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_swatch"
+                android:backgroundTint="@color/pen_yellow"
+                android:contentDescription="@string/pen_color_yellow"
+                android:focusable="true"
+                android:foreground="@drawable/fg_swatch_selection" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainerLow"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:paddingBottom="10dp">
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/widthSlider"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:contentDescription="@string/pen_medium"
+            android:stepSize="1"
+            android:value="3"
+            android:valueFrom="1"
+            android:valueTo="12" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/stylusOnlySwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:checked="true"
+            android:text="@string/pen_stylus_only"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+    </LinearLayout>
+</LinearLayout>

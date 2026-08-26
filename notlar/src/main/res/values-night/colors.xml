@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="md_accent">#9BB0FF</color>
+    <color name="md_muted">#9AA3B2</color>
+    <color name="md_code_background">#232833</color>
+    <color name="md_highlight">#5A5222</color>
+    <color name="md_rule">#3A404B</color>
+
+    <color name="sketch_paper">#121417</color>
+    <color name="pen_ink">#F3F5F9</color>
+</resources>

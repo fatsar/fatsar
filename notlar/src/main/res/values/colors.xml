@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#23304A</color>
+
+    <!-- Önizlemede kullanılan markdown renkleri (gece sürümü values-night'ta) -->
+    <color name="md_accent">#3B5BDB</color>
+    <color name="md_muted">#6B7280</color>
+    <color name="md_code_background">#EDF0F6</color>
+    <color name="md_highlight">#FFF0A0</color>
+    <color name="md_rule">#C9CED6</color>
+
+    <!-- Kalem tuvali -->
+    <color name="sketch_paper">#FFFDFB</color>
+    <color name="pen_ink">#12141A</color>
+    <color name="pen_red">#E5484D</color>
+    <color name="pen_blue">#2F6FED</color>
+    <color name="pen_green">#22A06B</color>
+    <color name="pen_yellow">#F5C518</color>
+</resources>

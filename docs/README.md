@@ -1,5 +1,7 @@
 # Kartvizit Tarayıcı 📇
 
+> Bu depodaki diğer uygulama: [**Notlar**](notlar.md) — markdown not defteri (S Pen desteğiyle).
+
 Kartvizitleri tarayıp **telefon rehberine ekleyen** ve tüm kayıtları **Excel (.xlsx) dosyası olarak Gmail ile gönderebilen** Android uygulaması.
 
 Tüm işlemler **cihaz üzerinde** çalışır: metin tanıma (OCR) için Google ML Kit'in cihaz içi modeli uygulamayla birlikte paketlenir. **İnternet bağlantısı veya herhangi bir yapay zekâ / bulut servisi gerekmez** — yalnızca Excel dosyasını e-postayla gönderirken Gmail'in kendisi internet kullanır.
