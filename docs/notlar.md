@@ -65,7 +65,13 @@ Notlar cihaz yedeklemesine dahildir (`backup_rules.xml`); başka hiçbir yere g�
 
 ## APK'yı edinme
 
-Her push'ta GitHub Actions APK'yı derler: depo **Actions** sekmesi → son “Android CI” çalışması → **Artifacts** → `notlar-debug-apk`. İndirdiğiniz `notlar-debug.apk` dosyasını telefona kopyalayıp açarak kurabilirsiniz.
+En kolay yol — doğrudan indirme bağlantısı (oturum açmak gerekmez):
+
+**https://github.com/fatsar/fatsar/releases/download/son-derleme/notlar.apk**
+
+Bu dosya her yeni derlemede güncellenen [“Son derleme (test)”](https://github.com/fatsar/fatsar/releases/tag/son-derleme) ön sürümünde tutulur. Telefonda bağlantıya dokunup açarak kurabilirsiniz (bilinmeyen kaynaklara izin vermeniz istenebilir; APK hata ayıklama anahtarıyla imzalıdır).
+
+Alternatif: depo **Actions** sekmesi → son “Android CI” çalışması → **Artifacts** → `notlar-debug-apk` (zip içinde, GitHub oturumu gerekir).
 
 ## Kendi makinenizde derleme
 
