@@ -129,6 +129,32 @@ jobs:
             hermes/android/core/build/reports/
             hermes/android/app/build/reports/
 
+      # Arayüz testlerinin sonucu günlüğün sonunda tek bakışta görünsün.
+      - name: Arayüz testi özeti
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          files = sorted(glob.glob("hermes/android/app/build/test-results/testDebugUnitTest/*.xml"))
+          if not files:
+              print("ARAYÜZ TESTİ: sonuç dosyası yok (adım çalışmamış olabilir)")
+          total = fails = 0
+          for f in files:
+              root = ET.parse(f).getroot()
+              for tc in root.iter("testcase"):
+                  total += 1
+                  bad = list(tc.iter("failure")) + list(tc.iter("error"))
+                  if bad:
+                      fails += 1
+                      print("BAŞARISIZ: %s" % tc.get("name"))
+                      text = (bad[0].text or "")[:1200]
+                      for line in text.splitlines()[:25]:
+                          print("    " + line)
+                  else:
+                      print("GEÇTİ    : %s" % tc.get("name"))
+          print("ARAYÜZ TESTİ ÖZETİ: %d testten %d başarısız" % (total, fails))
+          PY
+
       - name: Sürüm olarak yayınla (indirme bağlantısı)
         env:
           GH_TOKEN: ${{ github.token }}
