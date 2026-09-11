@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
 import org.junit.Rule
@@ -76,6 +77,11 @@ class ArayuzAkisiTest {
         rule.waitForIdle()
         adim("API formu açıldı") { rule.onNodeWithText("API bilgileri").assertIsDisplayed() }
 
+        // Test ağa çıkmasın: kaydedince uygulama bağlantıyı sınıyor. Bağlantının
+        // anında reddedildiği yerel bir adres verilir, böylece test hızlı ve
+        // dış dünyadan bağımsız kalır.
+        rule.onNodeWithText("API adresi").performTextClearance()
+        rule.onNodeWithText("API adresi").performTextInput("http://127.0.0.1:1")
         rule.onNodeWithText("API anahtarı").performTextInput("test-anahtari-123")
         rule.waitForIdle()
         adim("anahtar alana yazıldı") { rule.onNodeWithText("test-anahtari-123").assertIsDisplayed() }
