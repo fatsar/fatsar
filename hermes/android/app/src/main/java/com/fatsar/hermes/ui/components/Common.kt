@@ -11,6 +11,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -239,26 +241,36 @@ fun EmptyState(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
-    Column(
+    // Küçük ekranlarda (özellikle üstte sunucu şeridi varken) taşmaması için
+    // içerik kaydırılabilir bir kutuda ortalanır.
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(emoji, fontSize = 56.sp)
-        Spacer(Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        if (actionLabel != null && onAction != null) {
-            Spacer(Modifier.height(20.dp))
-            Button(onClick = onAction, shape = RoundedCornerShape(14.dp)) { Text(actionLabel) }
+        Column(
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(emoji, fontSize = 52.sp)
+            Spacer(Modifier.height(14.dp))
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            if (actionLabel != null && onAction != null) {
+                Spacer(Modifier.height(18.dp))
+                Button(onClick = onAction, shape = RoundedCornerShape(14.dp)) { Text(actionLabel) }
+            }
         }
     }
 }

@@ -120,8 +120,7 @@ fun BotListScreen(
                 EmptyState(
                     emoji = "🤖",
                     title = "Henüz botunuz yok",
-                    subtitle = "Hazır şablonlardan seçerek saniyeler içinde ilk botunuzu oluşturun: " +
-                        "sohbet botu, sunucu bekçisi, haber özetleyici…",
+                    subtitle = "Hazır şablonlardan seçin: sohbet botu, sunucu bekçisi, haber özetleyici…",
                     actionLabel = "İlk botu oluştur",
                     onAction = onNewBot,
                 )
