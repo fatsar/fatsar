@@ -47,7 +47,10 @@ class BotEngine(
     private val repository: Repository,
 ) {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    // Ağ çağrıları, akış toplama ve disk yazma ana iş parçacığında yapılmaz:
+    // arayüz akıcı kalır. Durum akışları (StateFlow) iş parçacığı güvenlidir,
+    // Compose bunları ana iş parçacığında toplar.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val transport = HttpTransport()
     private val jobs = ConcurrentHashMap<String, Job>()
 
