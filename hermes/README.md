@@ -181,13 +181,21 @@ hermes/
 └── docs/PROTOKOL.md           # Hermes Agent HTTP/SSE protokolü
 ```
 
+**Test durumu:** çekirdek (53) ve sunucu (36) testleri her derlemede zorunlu olarak koşar.
+Arayüz testleri (Robolectric) *bilgilendirme* amaçlıdır: uygulamanın açıldığını ve
+ekranlar arasında gezinildiğini doğrular, ama koşucuya göre yavaşlayabildiği için
+APK üretimini durdurmaz. Sonuçları CI günlüğünün sonundaki "Arayüz testi özeti"
+adımında görebilirsiniz. Gerçek emülatörde denemek için `Hermes arayüz testi (emülatör)`
+iş akışını Actions sekmesinden elle çalıştırın.
+
 ```bash
 # Sunucu testleri
 python3 -m unittest discover -s hermes/agent/tests -v
 
 # Çekirdek testleri + APK
 cd hermes/android
-./gradlew :core:test
+./gradlew :core:test               # çekirdek (53 test)
+./gradlew :app:testDebugUnitTest   # arayüz testleri (Robolectric)
 ./gradlew :app:assembleRelease     # app/build/outputs/apk/release/
 ```
 
