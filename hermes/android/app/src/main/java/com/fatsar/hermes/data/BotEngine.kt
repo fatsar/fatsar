@@ -304,8 +304,10 @@ class BotEngine(
             } catch (e: Exception) {
                 appendError(botId, placeholderId, HttpTransport.friendlyError(e))
             } finally {
+                // Yanıt bitti: hem asistan balonunun hem de yarım kalmış araç
+                // kartlarının "çalışıyor" göstergesi kapatılır.
                 updateChat(botId) { list ->
-                    list.map { if (it.id == placeholderId) it.copy(streaming = false) else it }
+                    list.map { if (it.streaming) it.copy(streaming = false) else it }
                 }
                 persist(botId)
                 setStatus(botId, if (statusIsError(botId, placeholderId)) BotStatus.ERROR else BotStatus.IDLE)

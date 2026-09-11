@@ -106,3 +106,21 @@ class PairingTest {
         assertEquals(com.fatsar.hermes.core.model.ServerKind.HERMES, profile.kind)
     }
 }
+
+class PairingDeepLinkTest {
+
+    @Test
+    fun `hermes derin baglantisi cozulur`() {
+        val payload = com.fatsar.hermes.core.logic.Pairing.decode(
+            "hermes://pair?u=http%3A%2F%2F1.2.3.4%3A8713&t=gizli-token&n=VPS%20Sunucu",
+        )!!
+        assertEquals("http://1.2.3.4:8713", payload.url)
+        assertEquals("gizli-token", payload.token)
+        assertEquals("VPS Sunucu", payload.name)
+    }
+
+    @Test
+    fun `parametresiz derin baglanti null doner`() {
+        assertEquals(null, com.fatsar.hermes.core.logic.Pairing.decode("hermes://pair"))
+    }
+}

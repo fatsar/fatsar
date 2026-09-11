@@ -27,8 +27,14 @@ object Pairing {
         return PREFIX + b64
     }
 
-    /** Kod geçersizse null döner. Boşluk/satır sonu/"hermes1:" yazımına toleranslıdır. */
+    /**
+     * Kod geçersizse null döner. Şu biçimlerin hepsini kabul eder:
+     * - "HERMES1:<base64>" (metin içinde geçse bile)
+     * - "hermes://pair?u=http://…&t=token&n=ad" (derin bağlantı)
+     * Boşluk, satır sonu ve büyük/küçük harf farkına toleranslıdır.
+     */
     fun decode(raw: String): PairingPayload? {
+        decodeDeepLink(raw)?.let { return it }
         val cleaned = raw.trim().replace(Regex("\\s+"), "")
         val idx = cleaned.indexOf(PREFIX, ignoreCase = true)
         if (idx < 0) return null
@@ -53,4 +59,30 @@ object Pairing {
         token = payload.token,
         createdAt = now,
     )
+
+    private fun decodeDeepLink(raw: String): PairingPayload? {
+        val text = raw.trim()
+        val index = text.indexOf("hermes://", ignoreCase = true)
+        if (index < 0) return null
+        val query = text.substring(index).substringAfter('?', "").substringBefore('#')
+        if (query.isBlank()) return null
+        val params = query.split("&").mapNotNull { part ->
+            val key = part.substringBefore('=')
+            val value = part.substringAfter('=', "")
+            if (key.isBlank()) {
+                null
+            } else {
+                key.lowercase() to runCatching {
+                    java.net.URLDecoder.decode(value, "UTF-8")
+                }.getOrDefault(value)
+            }
+        }.toMap()
+        val url = params["u"] ?: params["url"] ?: return null
+        if (url.isBlank()) return null
+        return PairingPayload(
+            url = url,
+            token = params["t"] ?: params["token"] ?: "",
+            name = params["n"] ?: params["name"] ?: "",
+        )
+    }
 }
