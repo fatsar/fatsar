@@ -1,6 +1,7 @@
 package com.fatsar.hermes
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -14,9 +15,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Uygulamayı emülatörsüz (JVM üzerinde, Robolectric ile) gerçekten çalıştırır:
- * açılış → API bağlantısı ekleme → şablondan bot oluşturma → sohbet ekranı.
- * Böylece her derlemede arayüzün açıldığı ve akışın yürüdüğü doğrulanır.
+ * Uygulamayı emülatörsüz (JVM üzerinde, Robolectric ile) gerçekten çalıştırır.
+ * Böylece her derlemede arayüzün açıldığı ve ana akışın yürüdüğü doğrulanır.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -33,38 +33,58 @@ class ArayuzAkisiTest {
     }
 
     @Test
-    fun baglanti_eklenip_bot_olusturulabilir() {
-        // 1) Kurulum: doğrudan API
-        rule.onNodeWithText("Doğrudan API kullanacağım").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithText("API anahtarı").performTextInput("test-anahtari-123")
-        rule.onNodeWithText("Kaydet").performClick()
-        rule.waitForIdle()
-
-        // 2) Bot listesi boş durumu
-        rule.onNodeWithText("Henüz botunuz yok").assertIsDisplayed()
-        rule.onNodeWithText("İlk botu oluştur").performClick()
-        rule.waitForIdle()
-
-        // 3) Şablon seçimi
-        rule.onNodeWithText("Nasıl bir bot istiyorsunuz?").assertIsDisplayed()
-        rule.onNodeWithText("Sohbet Botu").performClick()
-        rule.waitForIdle()
-
-        // 4) Şablon bot tanımını doldurdu mu?
-        rule.onNodeWithText("Görev tanımı").assertIsDisplayed()
-        rule.onAllNodesWithText("Sohbet Botu").onFirst().assertIsDisplayed()
-        rule.onNodeWithText("Kaydet").performClick()
-        rule.waitForIdle()
-
-        // 5) Sohbet ekranı geldi mi?
-        rule.onNodeWithText("Mesaj yazın…").assertIsDisplayed()
-    }
-
-    @Test
     fun kurulum_atlanip_bot_listesine_gecilebilir() {
         rule.onNodeWithText("Önce bir bakayım").performClick()
         rule.waitForIdle()
+        rule.onNodeWithText("Botlarım").assertIsDisplayed()
+        rule.onNodeWithText("Henüz botunuz yok").assertIsDisplayed()
+    }
+
+    /** Asıl iş: şablondan bot oluşturup sohbet ekranına ulaşmak. */
+    @Test
+    fun sablondan_bot_olusturulup_sohbet_ekrani_acilir() {
+        rule.onNodeWithText("Önce bir bakayım").performClick()
+        rule.waitForIdle()
+
+        rule.onNodeWithText("İlk botu oluştur").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Nasıl bir bot istiyorsunuz?").assertIsDisplayed()
+
+        rule.onNodeWithText("Sohbet Botu").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Görev tanımı").assertIsDisplayed()
+        rule.onNodeWithText("Kaydet").assertIsEnabled()
+
+        rule.onNodeWithText("Kaydet").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Mesaj yazın…").assertIsDisplayed()
+
+        // Geri dönünce bot listede duruyor mu?
+        rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        rule.waitForIdle()
+        rule.onAllNodesWithText("Sohbet Botu").onFirst().assertIsDisplayed()
+    }
+
+    /**
+     * Kurulum sihirbazındaki API formu. Adım adım doğrular ki hata çıkarsa
+     * nerede olduğu belli olsun (metin alana girdi mi, düğme etkin mi, ekran değişti mi).
+     */
+    @Test
+    fun kurulum_sihirbazindan_api_baglantisi_eklenebilir() {
+        rule.onNodeWithText("Doğrudan API kullanacağım").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("API bilgileri").assertIsDisplayed()
+
+        rule.onNodeWithText("API anahtarı").performTextInput("test-anahtari-123")
+        rule.waitForIdle()
+        // 1) Metin gerçekten alana girdi mi?
+        rule.onNodeWithText("test-anahtari-123").assertIsDisplayed()
+        // 2) Kaydet düğmesi etkinleşti mi?
+        rule.onNodeWithText("Kaydet").assertIsEnabled()
+
+        rule.onNodeWithText("Kaydet").performClick()
+        rule.waitForIdle()
+        // 3) Bot listesine geçildi mi?
         rule.onNodeWithText("Botlarım").assertIsDisplayed()
     }
 }
