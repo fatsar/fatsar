@@ -15,6 +15,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         resourceConfigurations += listOf("tr", "en")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Kendi imza anahtarınız varsa (HERMES_KEYSTORE_FILE ortam değişkeni ile
@@ -87,6 +88,11 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     testImplementation("junit:junit:4.13.2")
+
+    // Emülatörde uçtan uca arayüz testi
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
