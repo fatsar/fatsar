@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.printToString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -73,18 +74,26 @@ class ArayuzAkisiTest {
     fun kurulum_sihirbazindan_api_baglantisi_eklenebilir() {
         rule.onNodeWithText("Doğrudan API kullanacağım").performClick()
         rule.waitForIdle()
-        rule.onNodeWithText("API bilgileri").assertIsDisplayed()
+        adim("API formu açıldı") { rule.onNodeWithText("API bilgileri").assertIsDisplayed() }
 
         rule.onNodeWithText("API anahtarı").performTextInput("test-anahtari-123")
         rule.waitForIdle()
-        // 1) Metin gerçekten alana girdi mi?
-        rule.onNodeWithText("test-anahtari-123").assertIsDisplayed()
-        // 2) Kaydet düğmesi etkinleşti mi?
-        rule.onNodeWithText("Kaydet").assertIsEnabled()
+        adim("anahtar alana yazıldı") { rule.onNodeWithText("test-anahtari-123").assertIsDisplayed() }
+        adim("kaydet düğmesi etkin") { rule.onNodeWithText("Kaydet").assertIsEnabled() }
 
         rule.onNodeWithText("Kaydet").performClick()
         rule.waitForIdle()
-        // 3) Bot listesine geçildi mi?
-        rule.onNodeWithText("Botlarım").assertIsDisplayed()
+        adim("bot listesine geçildi") { rule.onNodeWithText("Botlarım").assertIsDisplayed() }
+    }
+
+    /** Hata çıkarsa hangi adımda olduğunu ve ekranda ne olduğunu mesaja koyar. */
+    private fun adim(aciklama: String, govde: () -> Unit) {
+        try {
+            govde()
+        } catch (e: Throwable) {
+            val agac = runCatching { rule.onRoot().printToString(maxDepth = 12) }
+                .getOrElse { "(ekran ağacı okunamadı)" }
+            throw AssertionError("ADIM BAŞARISIZ: $aciklama\n${e.message}\n--- EKRAN ---\n$agac", e)
+        }
     }
 }

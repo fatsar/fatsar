@@ -59,6 +59,13 @@ android {
         unitTests {
             // Robolectric'in gerçek kaynak/tema dosyalarını okuyabilmesi için
             isIncludeAndroidResources = true
+            all {
+                it.testLogging {
+                    events("passed", "failed", "skipped")
+                    exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                    showStandardStreams = false
+                }
+            }
         }
     }
 
