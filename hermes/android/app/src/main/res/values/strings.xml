@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hermes Bot</string>
+    <string name="notification_channel_status">Bot durumu</string>
+    <string name="notification_channel_results">Bot sonuçları</string>
+</resources>

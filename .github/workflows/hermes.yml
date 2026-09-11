@@ -1,0 +1,130 @@
+name: Hermes Bot Konsol
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+    paths:
+      - "hermes/**"
+      - ".github/workflows/hermes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  APK_NAME: hermes-bot-konsol.apk
+  RELEASE_TAG: hermes-v1.0.0
+
+jobs:
+  build:
+    name: Test, APK derleme ve yayınlama
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Agent testleri (Python)
+        run: python3 -m unittest discover -s hermes/agent/tests -v
+
+      - name: JDK 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK kur
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle önbelleği
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('hermes/android/**/*.gradle.kts') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # APK'nın her derlemede AYNI imzayla çıkması için: böylece yeni sürüm
+      # eski sürümün üzerine kurulabilir. Anahtar depoda tutulmaz.
+      - name: İmza anahtarı önbelleği
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: hermes-signing-v1
+
+      # İsteğe bağlı: kendi imza anahtarınızı depo gizli değeri olarak eklerseniz
+      # (HERMES_KEYSTORE_BASE64 + HERMES_KEYSTORE_PASSWORD) release APK onunla imzalanır.
+      - name: Kendi imza anahtarını hazırla (varsa)
+        env:
+          KEYSTORE_B64: ${{ secrets.HERMES_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/hermes.jks"
+            echo "HERMES_KEYSTORE_FILE=$RUNNER_TEMP/hermes.jks" >> "$GITHUB_ENV"
+            echo "Depoya ait imza anahtarı kullanılacak."
+          else
+            echo "Gizli imza anahtarı yok; önbellekteki geliştirme anahtarı kullanılacak."
+          fi
+
+      - name: Çekirdek birim testleri
+        working-directory: hermes/android
+        run: ./gradlew --no-daemon :core:test
+
+      - name: APK derle (release)
+        working-directory: hermes/android
+        env:
+          HERMES_KEYSTORE_PASSWORD: ${{ secrets.HERMES_KEYSTORE_PASSWORD }}
+          HERMES_KEY_ALIAS: ${{ secrets.HERMES_KEY_ALIAS }}
+          HERMES_KEY_PASSWORD: ${{ secrets.HERMES_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :app:assembleRelease
+
+      - name: APK'yı adlandır ve doğrula
+        id: apk
+        run: |
+          set -e
+          SRC=hermes/android/app/build/outputs/apk/release/app-release.apk
+          ls -lh "$SRC"
+          cp "$SRC" "$APK_NAME"
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BUILD_TOOLS/aapt" dump badging "$APK_NAME" | head -6
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK_NAME"
+          echo "size=$(du -h "$APK_NAME" | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: APK'yı artefakt olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-bot-konsol-apk
+          path: ${{ env.APK_NAME }}
+
+      - name: Test raporu (hata durumunda)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-raporu
+          path: |
+            hermes/android/core/build/reports/
+            hermes/android/app/build/reports/
+
+      - name: Sürüm olarak yayınla (indirme bağlantısı)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          NOTES=$(printf '%s\n' \
+            "Hermes Bot Konsol — kendi sunucunuzdaki (VPS / ev bilgisayarı) Hermes Agent'a bağlanıp" \
+            "birden çok yapay zekâ botu oluşturan ve çalıştıran Android uygulaması." \
+            "" \
+            "**Kurulum:** APK'yı telefona indirin, dosyaya dokunun, \"bilinmeyen kaynaklara izin ver\" deyin." \
+            "**Sunucu tarafı:** hermes/agent/hermes_agent.py (Python 3, ek kurulum gerektirmez)." \
+            "**Rehber:** hermes/README.md" \
+            "" \
+            "Boyut: ${{ steps.apk.outputs.size }} · Derleme: ${{ github.sha }}")
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$APK_NAME" --clobber
+          else
+            gh release create "$RELEASE_TAG" "$APK_NAME" \
+              --title "Hermes Bot Konsol 1.0" \
+              --notes "$NOTES" \
+              --target "${{ github.sha }}"
+          fi
+          echo "İndirme: https://github.com/${{ github.repository }}/releases/download/$RELEASE_TAG/$APK_NAME"
