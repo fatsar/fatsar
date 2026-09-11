@@ -2,12 +2,10 @@ name: Hermes arayüz testi (emülatör)
 
 # APK yayınını bloke etmemesi için ayrı iş akışı: burada uygulama gerçek bir
 # Android emülatöründe açılır ve "bağlantı ekle → bot oluştur → sohbet" akışı denenir.
+# Emülatör koşucuları yavaş ve zaman zaman takılıyor; bu yüzden yalnızca elle
+# tetiklenir. Her derlemedeki arayüz doğrulaması Robolectric testleriyle yapılır
+# (hermes.yml içinde :app:testDebugUnitTest).
 on:
-  push:
-    branches: ["main", "claude/**"]
-    paths:
-      - "hermes/android/**"
-      - ".github/workflows/hermes-emulator.yml"
   workflow_dispatch:
 
 jobs:

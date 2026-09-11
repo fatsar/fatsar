@@ -84,6 +84,12 @@ jobs:
         working-directory: hermes/android
         run: ./gradlew --no-daemon :core:test
 
+      # Arayüz gerçekten çalıştırılır (Robolectric, emülatör gerekmez):
+      # açılış → bağlantı ekleme → şablondan bot oluşturma → sohbet ekranı
+      - name: Arayüz testleri
+        working-directory: hermes/android
+        run: ./gradlew --no-daemon :app:testDebugUnitTest
+
       - name: APK derle (release)
         working-directory: hermes/android
         env:

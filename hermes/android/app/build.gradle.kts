@@ -55,6 +55,13 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric'in gerçek kaynak/tema dosyalarını okuyabilmesi için
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += setOf(
@@ -90,9 +97,15 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+    // Arayüzü emülatörsüz (JVM üzerinde) çalıştırıp deneyen testler
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation(composeBom)
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    // Emülatörde uçtan uca arayüz testi
+    // Aynı akışın gerçek cihaz/emülatör sürümü (elle çalıştırmak için)
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
