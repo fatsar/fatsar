@@ -1,0 +1,27 @@
+# Hermes Agent systemd birimi
+# Kurulum: /etc/systemd/system/hermes-agent.service içine kopyalayın.
+[Unit]
+Description=Hermes Agent (Android bot konsolu sunucusu)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hermes
+Group=hermes
+WorkingDirectory=/opt/hermes
+ExecStart=/usr/bin/python3 /opt/hermes/hermes_agent.py --host 0.0.0.0 --port 8713 --data-dir /opt/hermes/data
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/hermes-agent.log
+StandardError=append:/var/log/hermes-agent.log
+
+# Güvenlik sınırları
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/hermes /var/log/hermes-agent.log
+
+[Install]
+WantedBy=multi-user.target
