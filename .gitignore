@@ -9,3 +9,6 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk.idsig
+__pycache__/
+*.pyc
+hermes-data/

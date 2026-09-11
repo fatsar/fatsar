@@ -87,8 +87,8 @@ fun SetupScreen(
                 Spacer(Modifier.height(8.dp))
                 Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp)) {
                     MonoText(
-                        "curl -fsSL https://raw.githubusercontent.com/fatsar/fatsar/" +
-                            "main/hermes/agent/hermes_agent.py -o hermes_agent.py\n" +
+                        "curl -fsSL https://github.com/fatsar/fatsar/releases/download/hermes-v1.0.0/hermes_agent.py \\\n" +
+                            "  -o hermes_agent.py\n" +
                             "python3 hermes_agent.py",
                         modifier = Modifier.padding(12.dp),
                     )

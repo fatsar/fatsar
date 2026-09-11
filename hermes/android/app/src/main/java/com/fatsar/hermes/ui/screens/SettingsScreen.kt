@@ -22,7 +22,7 @@ import com.fatsar.hermes.ui.components.MonoText
 import com.fatsar.hermes.ui.components.SectionTitle
 
 private const val AGENT_URL =
-    "https://raw.githubusercontent.com/fatsar/fatsar/main/hermes/agent/hermes_agent.py"
+    "https://github.com/fatsar/fatsar/releases/download/hermes-v1.0.0/hermes_agent.py"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

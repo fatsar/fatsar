@@ -39,7 +39,7 @@ Uygulama istersek **agent olmadan da** çalışır: doğrudan xAI/OpenAI/Ollama 
 Sunucuya SSH ile bağlanın ve tek satır:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fatsar/fatsar/main/hermes/agent/install.sh | sudo bash
+curl -fsSL https://github.com/fatsar/fatsar/releases/download/hermes-v1.0.0/install.sh | sudo bash
 ```
 
 Betik şunları yapar: `hermes` sistem kullanıcısı açar, `/opt/hermes` altına kurar, **systemd servisi** tanımlar (sunucu yeniden başlasa da otomatik açılır), erişim anahtarını üretir ve ekrana **eşleştirme kodunu** yazar:

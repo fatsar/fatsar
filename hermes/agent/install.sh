@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Hermes Agent kurulum betiği — Ubuntu/Debian tabanlı VPS (Hostinger, Contabo, Hetzner…)
 #
-#   curl -fsSL https://raw.githubusercontent.com/fatsar/fatsar/main/hermes/agent/install.sh | sudo bash
+#   curl -fsSL https://github.com/fatsar/fatsar/releases/download/hermes-v1.0.0/install.sh | sudo bash
 #
 # Yaptıkları: hermes kullanıcısı açar, /opt/hermes'e kurar, systemd servisi tanımlar,
 # erişim anahtarını üretir ve telefona yapıştırılacak eşleştirme kodunu yazdırır.
@@ -9,7 +9,7 @@ set -euo pipefail
 
 DIR="${HERMES_DIR:-/opt/hermes}"
 PORT="${HERMES_PORT:-8713}"
-RAW_URL="${HERMES_SOURCE:-https://raw.githubusercontent.com/fatsar/fatsar/main/hermes/agent/hermes_agent.py}"
+RAW_URL="${HERMES_SOURCE:-https://github.com/fatsar/fatsar/releases/download/hermes-v1.0.0/hermes_agent.py}"
 SERVICE=/etc/systemd/system/hermes-agent.service
 
 if [ "$(id -u)" -ne 0 ]; then

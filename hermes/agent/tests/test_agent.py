@@ -395,3 +395,105 @@ class TestHelpers(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestOpenAiStreaming(unittest.TestCase):
+    """stream_openai'yi OpenAI uyumlu sahte bir sunucuya karşı sınar."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.requests = []
+
+        class FakeOpenAI(BaseHTTPRequestHandler):
+            def do_POST(self):
+                length = int(self.headers.get("Content-Length") or 0)
+                payload = json.loads(self.rfile.read(length).decode())
+                cls.requests.append((dict(self.headers), payload))
+                # İkinci tur (araç sonucu gönderildikten sonra) düz metin döner.
+                has_tool_result = any(m.get("role") == "tool" for m in payload.get("messages", []))
+                if has_tool_result:
+                    chunks = [
+                        '{"choices":[{"delta":{"content":"Disk "}}]}',
+                        '{"choices":[{"delta":{"content":"iyi."}}]}',
+                        '{"choices":[{"delta":{},"finish_reason":"stop"}],'
+                        '"usage":{"prompt_tokens":30,"completion_tokens":4}}',
+                        "[DONE]",
+                    ]
+                else:
+                    chunks = [
+                        '{"choices":[{"delta":{"role":"assistant"}}]}',
+                        '{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1",'
+                        '"function":{"name":"now","arguments":"{\\"utc"}}]}}]}',
+                        '{"choices":[{"delta":{"tool_calls":[{"index":0,'
+                        '"function":{"arguments":"_offset_hours\\": 3}"}}]}}]}',
+                        '{"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+                        "[DONE]",
+                    ]
+                body = "".join("data: %s\n\n" % c for c in chunks).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_GET(self):
+                body = json.dumps({"data": [{"id": "sahte-model-1"}, {"id": "sahte-model-2"}]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *a):
+                pass
+
+        cls.port = free_port()
+        cls.srv = ThreadingHTTPServer(("127.0.0.1", cls.port), FakeOpenAI)
+        threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
+        cls.tmp = tempfile.mkdtemp(prefix="hermes-openai-")
+        cls.store = ha.Store(cls.tmp)
+        cls.store.config["backends"]["test"] = {
+            "base_url": "http://127.0.0.1:%d/v1" % cls.port,
+            "api_key": "sahte-anahtar",
+            "default_model": "sahte-model-1",
+        }
+        cls.old_proxy = os.environ.pop("http_proxy", None)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.srv.shutdown()
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+        if cls.old_proxy:
+            os.environ["http_proxy"] = cls.old_proxy
+
+    def test_arac_cagrisi_parcali_gelse_de_birlestirilir(self):
+        bot = {"id": "b_oa", "name": "OpenAI Bot", "backend": "test",
+               "model": "sahte-model-1", "tools": ["now"], "memory_turns": 0}
+        events = []
+        run = ha.run_bot(self.store, bot, "Disk durumu?", history=[],
+                         emit=lambda e, d: events.append((e, d)))
+
+        self.assertEqual("ok", run["status"])
+        self.assertEqual("Disk iyi.", run["output"])
+        # Parçalı gelen JSON argümanları birleştirildi mi?
+        call = [d for e, d in events if e == "tool.call"][0]
+        self.assertEqual("now", call["name"])
+        self.assertEqual({"utc_offset_hours": 3}, call["args"])
+        self.assertTrue([d for e, d in events if e == "tool.result"][0]["ok"])
+        # Token kullanımı toplandı mı?
+        self.assertEqual(30, run["usage"]["prompt_tokens"])
+        # İstek doğru kuruldu mu?
+        headers, payload = self.requests[0]
+        self.assertEqual("Bearer sahte-anahtar", headers.get("Authorization"))
+        self.assertTrue(payload["stream"])
+        self.assertEqual("sahte-model-1", payload["model"])
+        self.assertEqual("now", payload["tools"][0]["function"]["name"])
+
+    def test_model_listesi_okunur(self):
+        self.assertEqual(["sahte-model-1", "sahte-model-2"], ha.list_models(self.store, "test"))
+
+    def test_anahtarsiz_arka_uc_anlasilir_hata_verir(self):
+        self.store.config["backends"]["anahtarsiz"] = {"base_url": "http://127.0.0.1:1/v1", "api_key": ""}
+        with self.assertRaises(ha.AgentError) as ctx:
+            list(ha.stream_backend(self.store, "anahtarsiz", "m", [], [], 0.5, 100))
+        self.assertIn("API anahtarı", ctx.exception.message)

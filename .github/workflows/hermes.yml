@@ -45,12 +45,26 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       # APK'nın her derlemede AYNI imzayla çıkması için: böylece yeni sürüm
-      # eski sürümün üzerine kurulabilir. Anahtar depoda tutulmaz.
+      # eski sürümün üzerine kurulabilir. Anahtar depoda tutulmaz, önbellekte yaşar.
       - name: İmza anahtarı önbelleği
         uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
+          path: ~/.android
           key: hermes-signing-v1
+
+      - name: İmza anahtarı yoksa üret
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -keystore ~/.android/debug.keystore \
+              -storepass android -keypass android -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10950 \
+              -dname "CN=Hermes Bot Konsol, O=fatsar, C=TR"
+            echo "Yeni imza anahtarı üretildi (bundan sonraki derlemeler önbellekten aynısını kullanır)."
+          else
+            echo "Önbellekten gelen imza anahtarı kullanılacak."
+          fi
+          keytool -list -keystore ~/.android/debug.keystore -storepass android | tail -2
 
       # İsteğe bağlı: kendi imza anahtarınızı depo gizli değeri olarak eklerseniz
       # (HERMES_KEYSTORE_BASE64 + HERMES_KEYSTORE_PASSWORD) release APK onunla imzalanır.
@@ -119,10 +133,13 @@ jobs:
             "**Rehber:** hermes/README.md" \
             "" \
             "Boyut: ${{ steps.apk.outputs.size }} · Derleme: ${{ github.sha }}")
+          # Sunucu tarafı dosyaları da sürüme eklenir: kurulum komutu hangi dalda
+          # olduğumuzdan bağımsız olarak çalışsın.
+          cp hermes/agent/hermes_agent.py hermes/agent/install.sh .
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "$APK_NAME" --clobber
+            gh release upload "$RELEASE_TAG" "$APK_NAME" hermes_agent.py install.sh --clobber
           else
-            gh release create "$RELEASE_TAG" "$APK_NAME" \
+            gh release create "$RELEASE_TAG" "$APK_NAME" hermes_agent.py install.sh \
               --title "Hermes Bot Konsol 1.0" \
               --notes "$NOTES" \
               --target "${{ github.sha }}"
