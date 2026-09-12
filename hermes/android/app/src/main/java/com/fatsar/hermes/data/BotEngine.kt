@@ -456,7 +456,7 @@ class BotEngine(
     suspend fun pollScheduledResults() {
         for (bot in scheduledBots()) {
             val client = clientFor(bot) ?: continue
-            val runs = runCatching { client.runHistory(bot.id, 5) }.getOrElse { continue }
+            val runs = runCatching { client.runHistory(bot.id, 5) }.getOrNull() ?: continue
             val newest = runs.firstOrNull { it.isScheduled && it.status == "ok" } ?: continue
             val seen = _data.value.seenRuns[bot.id]
             if (seen == newest.runId) continue
