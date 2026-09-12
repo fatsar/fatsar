@@ -3,39 +3,38 @@ package com.fatsar.hermes.core.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** Bağlanılabilecek uç nokta türleri. */
-enum class ServerKind {
-    /** Kendi VPS'inizde / bilgisayarınızda çalışan Hermes Agent. */
-    HERMES,
-
-    /** OpenAI uyumlu herhangi bir API (xAI Grok, OpenRouter, Groq, vLLM, LM Studio...). */
-    OPENAI,
-
-    /** Ollama sunucusu (yerel modeller). */
-    OLLAMA,
-    ;
-
-    val label: String
-        get() = when (this) {
-            HERMES -> "Hermes Agent"
-            OPENAI -> "OpenAI uyumlu"
-            OLLAMA -> "Ollama"
-        }
-}
-
-/** Bir sunucu/bağlantı profili. Birden çok VPS veya ev bilgisayarı tanımlanabilir. */
+/**
+ * Bir Hermes Agent bağlantısı (VPS ya da ev bilgisayarı). Uygulama yalnızca
+ * agent'a bağlanır; model sağlayıcıları ve anahtarları agent'ta tanımlıdır.
+ * Birden çok sunucu tanımlanabilir.
+ */
 @Serializable
 data class ServerProfile(
     val id: String,
     val name: String,
-    val kind: ServerKind = ServerKind.HERMES,
     val baseUrl: String,
     val token: String = "",
     val note: String = "",
     val createdAt: Long = 0L,
+)
+
+/**
+ * Agent'ta tanımlı bir LLM sağlayıcısı. [ready] false ise agent'ta anahtarı/adresi
+ * eksiktir; uygulama bunu seçtirmez, [note] ile nedenini gösterir.
+ */
+@Serializable
+data class BackendInfo(
+    val name: String,
+    val ready: Boolean = false,
+    @SerialName("is_default") val isDefault: Boolean = false,
+    @SerialName("default_model") val defaultModel: String = "",
+    @SerialName("base_url") val baseUrl: String = "",
+    @SerialName("supports_tools") val supportsTools: Boolean = true,
+    val note: String = "",
 ) {
-    /** Sunucu tarafında bot kaydı/zamanlama desteği var mı? */
-    val supportsRemoteBots: Boolean get() = kind == ServerKind.HERMES
+    /** Kullanıcıya gösterilecek ad: "xai (grok-3)". */
+    val label: String
+        get() = if (defaultModel.isBlank()) name else "$name ($defaultModel)"
 }
 
 enum class ScheduleMode {
@@ -159,6 +158,9 @@ data class AgentInfo(
     val host: String = "",
     val bots: Int = 0,
     val backends: List<String> = emptyList(),
+    @SerialName("backends_ready") val backendsReady: List<String> = emptyList(),
+    @SerialName("default_backend") val defaultBackend: String = "",
+    @SerialName("shell_enabled") val shellEnabled: Boolean = false,
     val tools: List<String> = emptyList(),
 )
 
@@ -167,9 +169,30 @@ data class RunSummary(
     @SerialName("run_id") val runId: String,
     @SerialName("bot_id") val botId: String = "",
     val status: String = "",
+    val trigger: String = "",
     @SerialName("started_at") val startedAt: Double = 0.0,
     @SerialName("duration_ms") val durationMs: Long = 0L,
     val preview: String = "",
+) {
+    /** Agent'ın zamanlayıcısı tarafından başlatılmış mı? */
+    val isScheduled: Boolean get() = trigger == "schedule"
+}
+
+/** Tek bir çalışmanın tam kaydı (agent'ta saklanır). */
+@Serializable
+data class RunDetail(
+    @SerialName("run_id") val runId: String = "",
+    @SerialName("bot_id") val botId: String = "",
+    @SerialName("bot_name") val botName: String = "",
+    val status: String = "",
+    val trigger: String = "",
+    val backend: String = "",
+    val model: String = "",
+    val input: String = "",
+    val output: String = "",
+    val error: String = "",
+    @SerialName("started_at") val startedAt: Double = 0.0,
+    @SerialName("duration_ms") val durationMs: Long = 0L,
 )
 
 enum class BotStatus { IDLE, RUNNING, ERROR, DISABLED }

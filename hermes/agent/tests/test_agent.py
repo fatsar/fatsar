@@ -117,6 +117,39 @@ class TestAuthAndHealth(AgentTestBase):
         self.assertEqual("***", data["config"]["token"])
 
 
+class TestBackends(AgentTestBase):
+
+    def test_hazir_arka_uclar_listelenir(self):
+        self.store.config["backends"]["xai"]["api_key"] = "xai-test"
+        self.store.config["backends"]["openai"]["api_key"] = ""
+        data = self.call("/v1/backends")
+        by_name = {b["name"]: b for b in data["backends"]}
+
+        # Anahtarı olan sağlayıcı hazır
+        self.assertTrue(by_name["xai"]["ready"])
+        self.assertEqual("grok-3", by_name["xai"]["default_model"])
+        # Anahtarı olmayan hazır değil ve nedeni yazıyor
+        self.assertFalse(by_name["openai"]["ready"])
+        self.assertIn("anahtar", by_name["openai"]["note"].lower())
+        # Echo her zaman hazır, Ollama base_url ile hazır
+        self.assertTrue(by_name["echo"]["ready"])
+        self.assertTrue(by_name["ollama"]["ready"])
+        # Varsayılan işaretli
+        self.assertTrue(by_name[data["default_backend"]]["is_default"])
+
+    def test_anahtarlar_listede_sizmaz(self):
+        self.store.config["backends"]["xai"]["api_key"] = "xai-gizli-anahtar"
+        raw = self.call("/v1/backends", raw=True)
+        self.assertNotIn("xai-gizli-anahtar", raw)
+
+    def test_saglik_hazir_arka_uclari_bildirir(self):
+        self.store.config["backends"]["xai"]["api_key"] = "xai-test"
+        data = self.call("/v1/health")
+        self.assertIn("xai", data["backends_ready"])
+        self.assertIn("echo", data["backends_ready"])
+        self.assertNotIn("anthropic", data["backends_ready"])
+
+
 class TestBotCrud(AgentTestBase):
 
     def test_bot_kaydet_listele_sil(self):

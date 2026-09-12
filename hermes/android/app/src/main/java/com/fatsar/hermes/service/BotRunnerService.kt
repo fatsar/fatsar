@@ -18,9 +18,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Telefonda zamanlanmış botları uygulama kapalıyken de çalıştırır.
- * (Hermes Agent'a bağlı botların zamanlaması sunucuda yürür; bu servis
- * yalnızca doğrudan API'ye bağlanan botlar için gereklidir.)
+ * Zamanlanmış botlar agent'ta (sunucuda) çalışır; telefon kapalıyken bile.
+ * Bu servis yalnızca o sonuçları düzenli aralıklarla getirir: sohbete ekler
+ * ve bot bildirim istiyorsa bildirim gösterir.
  */
 class BotRunnerService : Service() {
 
@@ -31,8 +31,12 @@ class BotRunnerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val engine = HermesApplication.engineOf(this)
-        val count = engine.locallyScheduledBots().size
-        val text = if (count > 0) "$count zamanlanmış bot izleniyor" else "Bot bekleniyor"
+        val count = engine.scheduledBots().size
+        val text = if (count > 0) {
+            "$count zamanlanmış botun sonuçları izleniyor"
+        } else {
+            "Sonuç bekleniyor"
+        }
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
@@ -51,8 +55,8 @@ class BotRunnerService : Service() {
         if (loop == null) {
             loop = scope.launch {
                 while (isActive) {
-                    runCatching { engine.runDueSchedules() }
-                    delay(engine.nextLocalTick())
+                    runCatching { engine.pollScheduledResults() }
+                    delay(engine.pollIntervalMillis())
                 }
             }
         }

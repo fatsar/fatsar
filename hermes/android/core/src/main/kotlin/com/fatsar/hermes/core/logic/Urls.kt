@@ -1,7 +1,5 @@
 package com.fatsar.hermes.core.logic
 
-import com.fatsar.hermes.core.model.ServerKind
-
 /** Adres düzenleme yardımcıları: kullanıcı ne yazarsa yazsın çalışan bir URL üretir. */
 object Urls {
 
@@ -56,35 +54,12 @@ object Urls {
     fun isInsecurePublic(url: String): Boolean =
         url.startsWith("http://", ignoreCase = true) && !isLocalAddress(url)
 
-    /** OpenAI uyumlu sohbet uç noktası. */
-    fun openAiChatUrl(base: String): String {
-        val b = normalizeBase(base)
-        return when {
-            b.endsWith("/chat/completions") -> b
-            b.endsWith("/v1") -> "$b/chat/completions"
-            b.contains("/v1/") -> b.trimEnd('/') + "/chat/completions"
-            else -> "$b/v1/chat/completions"
-        }
-    }
-
-    /** OpenAI uyumlu model listesi uç noktası. */
-    fun openAiModelsUrl(base: String): String {
-        val b = normalizeBase(base)
-        return when {
-            b.endsWith("/chat/completions") -> b.removeSuffix("/chat/completions") + "/models"
-            b.endsWith("/v1") -> "$b/models"
-            else -> "$b/v1/models"
-        }
-    }
-
-    fun ollamaUrl(base: String, path: String): String = normalizeBase(base) + path
-
     fun hermesUrl(base: String, path: String): String = normalizeBase(base) + path
 
-    /** Profil türüne göre kullanıcıya gösterilecek örnek adres. */
-    fun placeholderFor(kind: ServerKind): String = when (kind) {
-        ServerKind.HERMES -> "http://sunucu-ip:8713"
-        ServerKind.OPENAI -> "https://api.x.ai/v1"
-        ServerKind.OLLAMA -> "http://sunucu-ip:11434"
-    }
+    /** Adres alanında gösterilecek örnek. */
+    const val ADDRESS_PLACEHOLDER = "http://sunucu-ip:8713"
+
+    /** Sorgu değerini güvenli biçimde kodlar. */
+    fun encodeQuery(value: String): String =
+        runCatching { java.net.URLEncoder.encode(value, "UTF-8") }.getOrDefault(value)
 }

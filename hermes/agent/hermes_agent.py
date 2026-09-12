@@ -792,6 +792,41 @@ TOOLS = {
 }
 
 
+def backend_status(store):
+    """Agent'ta tanımlı LLM sağlayıcıları ve kullanıma hazır olup olmadıkları.
+
+    Uygulama bu listeden seçim yapar; anahtarlar telefona hiç gönderilmez."""
+    default = store.config.get("default_backend", "echo")
+    out = []
+    for name in sorted((store.config.get("backends") or {}).keys()):
+        conf = backend_conf(store, name)
+        base_url = conf.get("base_url", "")
+        has_key = bool((conf.get("api_key") or "").strip())
+        if name == "echo":
+            ready, note = True, "Anahtarsız deneme arka ucu"
+        elif name == "ollama":
+            ready = bool(base_url)
+            note = "" if ready else "base_url ayarlı değil"
+        else:
+            ready = bool(base_url) and has_key
+            if not base_url:
+                note = "base_url ayarlı değil"
+            elif not has_key:
+                note = "API anahtarı ayarlı değil"
+            else:
+                note = ""
+        out.append({
+            "name": name,
+            "ready": ready,
+            "is_default": name == default,
+            "default_model": conf.get("default_model", ""),
+            "base_url": base_url,
+            "supports_tools": name != "anthropic",
+            "note": note,
+        })
+    return out
+
+
 def available_tools(store):
     names = []
     for name in TOOLS:
@@ -1177,10 +1212,17 @@ class Handler(BaseHTTPRequestHandler):
                 "host": socket.gethostname(),
                 "bots": len(store.bots),
                 "backends": sorted(store.config.get("backends", {}).keys()),
+                "backends_ready": [b["name"] for b in backend_status(store) if b["ready"]],
                 "default_backend": store.config.get("default_backend", "echo"),
                 "tools": available_tools(store),
                 "shell_enabled": bool(store.config.get("allow_shell")),
                 "scheduler": bool(store.config.get("scheduler_enabled", True)),
+            })
+
+        if path == "/v1/backends" and method == "GET":
+            return self._json(200, {
+                "backends": backend_status(store),
+                "default_backend": store.config.get("default_backend", "echo"),
             })
 
         if path == "/v1/models" and method == "GET":

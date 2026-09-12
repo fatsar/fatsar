@@ -26,25 +26,6 @@ class UrlsTest {
     }
 
     @Test
-    fun `openai sohbet adresi dogru kurulur`() {
-        assertEquals("https://api.x.ai/v1/chat/completions", Urls.openAiChatUrl("https://api.x.ai/v1"))
-        assertEquals("https://api.openai.com/v1/chat/completions", Urls.openAiChatUrl("https://api.openai.com"))
-        assertEquals("https://openrouter.ai/api/v1/chat/completions", Urls.openAiChatUrl("https://openrouter.ai/api/v1"))
-        assertEquals("http://1.2.3.4:8000/v1/chat/completions", Urls.openAiChatUrl("1.2.3.4:8000"))
-        assertEquals(
-            "https://x.com/v1/chat/completions",
-            Urls.openAiChatUrl("https://x.com/v1/chat/completions"),
-        )
-    }
-
-    @Test
-    fun `openai model adresi dogru kurulur`() {
-        assertEquals("https://api.x.ai/v1/models", Urls.openAiModelsUrl("https://api.x.ai/v1"))
-        assertEquals("https://api.x.ai/v1/models", Urls.openAiModelsUrl("https://api.x.ai/v1/chat/completions"))
-        assertEquals("http://localhost:1234/v1/models", Urls.openAiModelsUrl("http://localhost:1234"))
-    }
-
-    @Test
     fun `yerel adresler tanimlanir`() {
         assertTrue(Urls.isLocalAddress("http://192.168.1.5:8713"))
         assertTrue(Urls.isLocalAddress("http://10.8.0.2"))
@@ -62,8 +43,14 @@ class UrlsTest {
     }
 
     @Test
-    fun `ollama adresi eklenir`() {
-        assertEquals("http://1.2.3.4:11434/api/tags", Urls.ollamaUrl("1.2.3.4:11434", "/api/tags"))
+    fun `agent adresi yol ile birlestirilir`() {
+        assertEquals("http://1.2.3.4:8713/v1/health", Urls.hermesUrl("1.2.3.4:8713/", "/v1/health"))
+    }
+
+    @Test
+    fun `sorgu degeri kodlanir`() {
+        assertEquals("yerel+sunucu", Urls.encodeQuery("yerel sunucu"))
+        assertEquals("xai", Urls.encodeQuery("xai"))
     }
 }
 
@@ -103,7 +90,6 @@ class PairingTest {
         assertEquals("http://1.2.3.4:8713", profile.baseUrl)
         assertEquals("tok", profile.token)
         assertEquals("1.2.3.4", profile.name)
-        assertEquals(com.fatsar.hermes.core.model.ServerKind.HERMES, profile.kind)
     }
 }
 

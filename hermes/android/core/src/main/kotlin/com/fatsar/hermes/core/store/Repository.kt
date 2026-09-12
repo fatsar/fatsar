@@ -16,7 +16,9 @@ data class AppData(
     val servers: List<ServerProfile> = emptyList(),
     val bots: List<BotSpec> = emptyList(),
     @SerialName("active_bot_id") val activeBotId: String = "",
-    @SerialName("last_runs") val lastRuns: Map<String, Long> = emptyMap(),
+    /** Bot -> telefona en son bildirilen çalışma kimliği (aynı sonucu iki kez bildirmemek için). */
+    @SerialName("seen_runs") val seenRuns: Map<String, String> = emptyMap(),
+    /** Agent'taki zamanlanmış çalışma sonuçları telefona getirilip bildirilsin mi? */
     @SerialName("background_enabled") val backgroundEnabled: Boolean = true,
     @SerialName("onboarded") val onboarded: Boolean = false,
 )

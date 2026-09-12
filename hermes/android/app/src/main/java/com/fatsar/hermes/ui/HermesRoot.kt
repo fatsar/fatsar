@@ -97,9 +97,9 @@ fun HermesRoot(
     // Bağlantı durumlarını açılışta tazele
     LaunchedEffect(Unit) { engine.refreshConnections() }
 
-    // Arka plan servisi yalnızca telefonda zamanlanmış bot varsa çalışır.
+    // Arka plan servisi yalnızca zamanlanmış bot varsa çalışır (sonuçları getirir).
     LaunchedEffect(data.backgroundEnabled, data.bots, data.servers) {
-        if (data.backgroundEnabled && engine.locallyScheduledBots().isNotEmpty()) {
+        if (data.backgroundEnabled && engine.scheduledBots().isNotEmpty()) {
             BotRunnerService.start(context)
         } else {
             BotRunnerService.stop(context)

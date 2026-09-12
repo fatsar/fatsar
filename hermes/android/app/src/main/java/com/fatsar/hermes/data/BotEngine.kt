@@ -1,14 +1,13 @@
 package com.fatsar.hermes.data
 
 import android.content.Context
-import com.fatsar.hermes.core.backend.Backend
-import com.fatsar.hermes.core.backend.Backends
+import com.fatsar.hermes.core.backend.HermesClient
 import com.fatsar.hermes.core.logic.Ids
 import com.fatsar.hermes.core.logic.Pairing
 import com.fatsar.hermes.core.logic.Prompts
-import com.fatsar.hermes.core.logic.Scheduler
 import com.fatsar.hermes.core.logic.Urls
 import com.fatsar.hermes.core.model.AgentInfo
+import com.fatsar.hermes.core.model.BackendInfo
 import com.fatsar.hermes.core.model.BotSpec
 import com.fatsar.hermes.core.model.BotStatus
 import com.fatsar.hermes.core.model.ChatMessage
@@ -16,7 +15,7 @@ import com.fatsar.hermes.core.model.ConnectionState
 import com.fatsar.hermes.core.model.RunEvent
 import com.fatsar.hermes.core.model.Role
 import com.fatsar.hermes.core.model.RunSummary
-import com.fatsar.hermes.core.model.ServerKind
+import com.fatsar.hermes.core.model.ScheduleMode
 import com.fatsar.hermes.core.model.ServerProfile
 import com.fatsar.hermes.core.net.HttpTransport
 import com.fatsar.hermes.core.store.AppData
@@ -39,17 +38,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Uygulamanın tüm çalışma zamanı durumu: sunucular, botlar, sohbetler, akışlar.
- * Application ömrü boyunca yaşar; ekranlar yalnızca akışları dinler.
+ * Uygulamanın tüm çalışma zamanı durumu.
+ *
+ * Uygulama yalnızca kendi sunucunuzdaki **Hermes Agent**'a bağlanır: model
+ * sağlayıcıları, anahtarlar ve zamanlama agent'ta yaşar. Telefon bu yüzden
+ * yalnızca agent'ın hazır bildirdiği sağlayıcılar arasından seçim yapar.
  */
 class BotEngine(
     private val context: Context,
     private val repository: Repository,
 ) {
 
-    // Ağ çağrıları, akış toplama ve disk yazma ana iş parçacığında yapılmaz:
-    // arayüz akıcı kalır. Durum akışları (StateFlow) iş parçacığı güvenlidir,
-    // Compose bunları ana iş parçacığında toplar.
+    // Ağ çağrıları, akış toplama ve disk yazma ana iş parçacığında yapılmaz.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val transport = HttpTransport()
     private val jobs = ConcurrentHashMap<String, Job>()
@@ -69,6 +69,11 @@ class BotEngine(
     private val _agents = MutableStateFlow<Map<String, AgentInfo>>(emptyMap())
     val agents: StateFlow<Map<String, AgentInfo>> = _agents.asStateFlow()
 
+    /** sunucu kimliği -> agent'ta tanımlı LLM sağlayıcıları */
+    private val _backends = MutableStateFlow<Map<String, List<BackendInfo>>>(emptyMap())
+    val backends: StateFlow<Map<String, List<BackendInfo>>> = _backends.asStateFlow()
+
+    /** "sunucuKimliği|sağlayıcı" -> model adları */
     private val _models = MutableStateFlow<Map<String, List<String>>>(emptyMap())
     val models: StateFlow<Map<String, List<String>>> = _models.asStateFlow()
 
@@ -92,6 +97,10 @@ class BotEngine(
 
     fun serverFor(bot: BotSpec): ServerProfile? = server(bot.serverId) ?: _data.value.servers.firstOrNull()
 
+    private fun clientFor(profile: ServerProfile) = HermesClient(profile, transport)
+
+    private fun clientFor(bot: BotSpec): HermesClient? = serverFor(bot)?.let { clientFor(it) }
+
     private fun update(transform: (AppData) -> AppData) {
         val next = transform(_data.value)
         _data.value = next
@@ -102,7 +111,7 @@ class BotEngine(
         scope.launch { _messages.emit(text) }
     }
 
-    // -------------------------------------------------------------- sunucu
+    // ----------------------------------------------------------- sunucular
 
     fun upsertServer(profile: ServerProfile) {
         val normalized = profile.copy(baseUrl = Urls.normalizeBase(profile.baseUrl))
@@ -130,9 +139,10 @@ class BotEngine(
         }
         _connections.update { it - serverId }
         _agents.update { it - serverId }
+        _backends.update { it - serverId }
     }
 
-    /** Agent'ın yazdırdığı "HERMES1:..." kodundan sunucu ekler. */
+    /** Agent'ın yazdırdığı "HERMES1:..." kodundan ya da hermes:// bağlantısından sunucu ekler. */
     fun addFromPairing(code: String): Boolean {
         val payload = Pairing.decode(code) ?: return false
         val now = System.currentTimeMillis()
@@ -145,18 +155,21 @@ class BotEngine(
         return true
     }
 
+    /** Bağlantıyı sınar; başarılıysa agent bilgisi ve sağlayıcı listesi de tazelenir. */
     fun checkConnection(serverId: String) {
         val profile = server(serverId) ?: return
         _connections.update { it + (serverId to ConnectionState.CHECKING) }
         scope.launch {
-            val result = runCatching { backendOf(profile).health() }
-            result.onSuccess { info ->
-                _agents.update { it + (serverId to info) }
-                _connections.update { it + (serverId to ConnectionState.ONLINE) }
-            }.onFailure { error ->
-                _connections.update { it + (serverId to ConnectionState.OFFLINE) }
-                notice(HttpTransport.friendlyError(error))
-            }
+            runCatching { clientFor(profile).health() }
+                .onSuccess { info ->
+                    _agents.update { it + (serverId to info) }
+                    _connections.update { it + (serverId to ConnectionState.ONLINE) }
+                    loadBackends(serverId)
+                }
+                .onFailure { error ->
+                    _connections.update { it + (serverId to ConnectionState.OFFLINE) }
+                    notice(HttpTransport.friendlyError(error))
+                }
         }
     }
 
@@ -164,16 +177,35 @@ class BotEngine(
         _data.value.servers.forEach { checkConnection(it.id) }
     }
 
-    fun loadModels(serverId: String) {
+    /** Agent'ta tanımlı LLM sağlayıcılarını getirir (anahtarlar telefona inmez). */
+    fun loadBackends(serverId: String) {
         val profile = server(serverId) ?: return
         scope.launch {
-            runCatching { backendOf(profile).models() }
-                .onSuccess { list -> _models.update { it + (serverId to list) } }
-                .onFailure { notice("Model listesi alınamadı: " + HttpTransport.friendlyError(it)) }
+            runCatching { clientFor(profile).backends() }
+                .onSuccess { list -> _backends.update { it + (serverId to list) } }
+                .onFailure { notice("Sağlayıcı listesi alınamadı: " + HttpTransport.friendlyError(it)) }
         }
     }
 
-    private fun backendOf(profile: ServerProfile): Backend = Backends.create(profile, transport)
+    fun modelsKey(serverId: String, backend: String) = "$serverId|$backend"
+
+    /** Seçilen sağlayıcının agent üzerinden görünen modellerini getirir. */
+    fun loadModels(serverId: String, backend: String) {
+        val profile = server(serverId) ?: return
+        val key = modelsKey(serverId, backend)
+        scope.launch {
+            runCatching { clientFor(profile).models(backend) }
+                .onSuccess { list -> _models.update { it + (key to list) } }
+                .onFailure {
+                    _models.update { it + (key to emptyList()) }
+                    notice("Model listesi alınamadı: " + HttpTransport.friendlyError(it))
+                }
+        }
+    }
+
+    /** Bir sunucuda kullanıma hazır sağlayıcılar. */
+    fun readyBackends(serverId: String?): List<BackendInfo> =
+        _backends.value[serverId].orEmpty().filter { it.ready }
 
     // ----------------------------------------------------------------- bot
 
@@ -186,11 +218,10 @@ class BotEngine(
                 bots = if (exists) data.bots.map { if (it.id == clean.id) clean else it } else data.bots + clean,
             )
         }
-        // Hermes Agent'ta tanımlı botlar sunucuda da güncellensin (zamanlama orada çalışır).
-        val profile = serverFor(clean)
-        if (profile != null && profile.kind == ServerKind.HERMES) {
+        // Bot tanımı agent'a yazılır: zamanlama orada çalışır, telefon kapalıyken de.
+        clientFor(clean)?.let { client ->
             scope.launch {
-                runCatching { backendOf(profile).pushBot(clean) }
+                runCatching { client.pushBot(clean) }
                     .onFailure { notice("Bot sunucuya yazılamadı: " + HttpTransport.friendlyError(it)) }
             }
         }
@@ -198,21 +229,19 @@ class BotEngine(
 
     fun deleteBot(botId: String) {
         val bot = bot(botId) ?: return
-        val profile = serverFor(bot)
+        val client = clientFor(bot)
         jobs.remove(botId)?.cancel()
         update { data ->
             data.copy(
                 bots = data.bots.filterNot { it.id == botId },
-                lastRuns = data.lastRuns - botId,
+                seenRuns = data.seenRuns - botId,
                 activeBotId = if (data.activeBotId == botId) "" else data.activeBotId,
             )
         }
         repository.deleteBotData(botId)
         _chats.update { it - botId }
         _status.update { it - botId }
-        if (profile != null && profile.kind == ServerKind.HERMES) {
-            scope.launch { runCatching { backendOf(profile).deleteBot(botId) } }
-        }
+        client?.let { scope.launch { runCatching { it.deleteBot(botId) } } }
     }
 
     fun duplicateBot(botId: String) {
@@ -222,6 +251,9 @@ class BotEngine(
     }
 
     fun setActiveBot(botId: String) = update { it.copy(activeBotId = botId) }
+
+    /** Zamanlanmış botlar (hepsi agent'ta çalışır). */
+    fun scheduledBots(): List<BotSpec> = _data.value.bots.filter { it.enabled && it.schedule.isActive }
 
     // -------------------------------------------------------------- sohbet
 
@@ -244,18 +276,7 @@ class BotEngine(
         _chats.update { it + (botId to emptyList()) }
         repository.clearTranscript(botId)
         val bot = bot(botId) ?: return
-        val profile = serverFor(bot) ?: return
-        if (profile.kind == ServerKind.HERMES) {
-            scope.launch {
-                runCatching {
-                    transport.request(
-                        Urls.hermesUrl(profile.baseUrl, "/v1/bots/$botId/messages"),
-                        "DELETE",
-                        mapOf("Authorization" to "Bearer ${profile.token}"),
-                    )
-                }
-            }
-        }
+        clientFor(bot)?.let { client -> scope.launch { client.clearMessages(botId) } }
     }
 
     fun isRunning(botId: String): Boolean = jobs[botId]?.isActive == true
@@ -263,7 +284,13 @@ class BotEngine(
     fun stop(botId: String) {
         jobs.remove(botId)?.cancel()
         updateChat(botId) { list ->
-            list.map { if (it.streaming) it.copy(streaming = false, content = it.content.ifBlank { "(durduruldu)" }) else it }
+            list.map {
+                if (it.streaming) {
+                    it.copy(streaming = false, content = it.content.ifBlank { "(durduruldu)" })
+                } else {
+                    it
+                }
+            }
         }
         persist(botId)
         setStatus(botId, BotStatus.IDLE)
@@ -273,14 +300,14 @@ class BotEngine(
         _status.update { it + (botId to value) }
     }
 
-    /** Kullanıcı mesajını gönderir ve yanıtı akıtır. */
+    /** Kullanıcı mesajını agent'a gönderir ve yanıtı akıtır. */
     fun send(botId: String, text: String) {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
         val bot = bot(botId) ?: return
-        val profile = serverFor(bot)
-        if (profile == null) {
-            notice("Önce Sunucular ekranından bir bağlantı ekleyin.")
+        val client = clientFor(bot)
+        if (client == null) {
+            notice("Önce Sunucular ekranından Hermes Agent bağlantınızı ekleyin.")
             return
         }
         if (isRunning(botId)) {
@@ -297,18 +324,15 @@ class BotEngine(
         persist(botId)
         setStatus(botId, BotStatus.RUNNING)
 
-        val backend = backendOf(profile)
         val builder = StringBuilder()
         jobs[botId] = scope.launch {
             try {
-                backend.run(bot, history, trimmed).collect { event ->
+                client.run(bot, history, trimmed).collect { event ->
                     handleEvent(botId, placeholderId, builder, event)
                 }
             } catch (e: Exception) {
                 appendError(botId, placeholderId, HttpTransport.friendlyError(e))
             } finally {
-                // Yanıt bitti: hem asistan balonunun hem de yarım kalmış araç
-                // kartlarının "çalışıyor" göstergesi kapatılır.
                 updateChat(botId) { list ->
                     list.map { if (it.streaming) it.copy(streaming = false) else it }
                 }
@@ -346,14 +370,13 @@ class BotEngine(
 
             is RunEvent.ToolCall -> {
                 val toolId = "tool_" + event.callId.ifBlank { Ids.newId("c", System.currentTimeMillis()) }
-                val label = "${event.name}(${Prompts.preview(event.args, 120)})"
                 insertBeforeAssistant(
                     botId,
                     messageId,
                     ChatMessage(
                         id = toolId,
                         role = Role.TOOL,
-                        content = label,
+                        content = "${event.name}(${Prompts.preview(event.args, 120)})",
                         ts = System.currentTimeMillis(),
                         toolName = event.name,
                         streaming = true,
@@ -380,10 +403,8 @@ class BotEngine(
                 persist(botId)
             }
 
-            is RunEvent.Usage -> {
-                _usage.update {
-                    it + (botId to "${event.promptTokens}+${event.completionTokens} token")
-                }
+            is RunEvent.Usage -> _usage.update {
+                it + (botId to "${event.promptTokens}+${event.completionTokens} token")
             }
 
             is RunEvent.Failed -> appendError(botId, messageId, event.message)
@@ -418,78 +439,67 @@ class BotEngine(
         setStatus(botId, BotStatus.ERROR)
     }
 
-    // ---------------------------------------------------------- zamanlama
+    // -------------------------------------------- agent'taki zamanlı işler
 
-    /** Yalnızca telefonda çalışması gereken botlar (Hermes Agent kendi zamanlamasını yürütür). */
-    fun locallyScheduledBots(): List<BotSpec> = _data.value.bots.filter {
-        it.enabled && it.schedule.isActive && serverFor(it)?.kind != ServerKind.HERMES
-    }
-
-    fun nextLocalTick(): Long = Scheduler.tickInterval(locallyScheduledBots())
-
-    /** Arka plan servisi tarafından çağrılır. Zamanı gelen yerel botları çalıştırır. */
-    suspend fun runDueSchedules() {
-        val now = System.currentTimeMillis()
-        val offset = TimeZone.getDefault().getOffset(now)
-        val due = Scheduler.dueBots(locallyScheduledBots(), _data.value.lastRuns, now, offset)
-        for (bot in due) {
-            markLastRun(bot.id, now)
-            runScheduled(bot)
-        }
-    }
-
-    private fun markLastRun(botId: String, at: Long) {
-        update { it.copy(lastRuns = it.lastRuns + (botId to at)) }
-    }
-
-    private suspend fun runScheduled(bot: BotSpec) {
-        val profile = serverFor(bot) ?: return
-        val prompt = bot.schedule.prompt
-        ensureChatLoaded(bot.id)
-        setStatus(bot.id, BotStatus.RUNNING)
-        val builder = StringBuilder()
-        val now = System.currentTimeMillis()
-        val history = messagesOf(bot.id)
-        runCatching {
-            backendOf(profile).run(bot, history, prompt).collect { event ->
-                when (event) {
-                    is RunEvent.Delta -> builder.append(event.text)
-                    is RunEvent.Message -> if (builder.isEmpty()) builder.append(event.content)
-                    is RunEvent.Failed -> builder.append("\n⚠️ ").append(event.message)
-                    else -> Unit
-                }
-            }
-        }.onFailure { builder.append("\n⚠️ ").append(HttpTransport.friendlyError(it)) }
-
-        val answer = builder.toString().trim()
-        updateChat(bot.id) { list ->
-            list +
-                ChatMessage(Ids.newId("m", now), Role.USER, "⏰ $prompt", now, botId = bot.id) +
-                ChatMessage(Ids.newId("m", now + 1), Role.ASSISTANT, answer, now + 1, botId = bot.id)
-        }
-        persist(bot.id)
-        setStatus(bot.id, BotStatus.IDLE)
-        if (bot.schedule.notify && answer.isNotEmpty()) {
-            withContext(Dispatchers.Main) {
-                Notifications.postResult(context, bot.id, "${bot.avatar} ${bot.name}", answer)
-            }
-        }
-    }
-
-    /** Hermes Agent üzerindeki çalışma geçmişi. */
+    /** Agent üzerindeki çalışma geçmişi (ekranda göstermek için). */
     suspend fun runHistory(botId: String, limit: Int = 20): List<RunSummary> {
         val bot = bot(botId) ?: return emptyList()
-        val profile = serverFor(bot) ?: return emptyList()
-        if (profile.kind != ServerKind.HERMES) return emptyList()
-        return runCatching { backendOf(profile).runHistory(botId, limit) }.getOrElse { emptyList() }
+        val client = clientFor(bot) ?: return emptyList()
+        return runCatching { client.runHistory(botId, limit) }.getOrElse { emptyList() }
+    }
+
+    /**
+     * Agent'ta çalışmış zamanlanmış görevlerin yeni sonuçlarını telefona getirir:
+     * sohbete ekler ve (bot bildirim istiyorsa) bildirim gösterir.
+     * Arka plan servisi tarafından çağrılır.
+     */
+    suspend fun pollScheduledResults() {
+        for (bot in scheduledBots()) {
+            val client = clientFor(bot) ?: continue
+            val runs = runCatching { client.runHistory(bot.id, 5) }.getOrElse { continue }
+            val newest = runs.firstOrNull { it.isScheduled && it.status == "ok" } ?: continue
+            val seen = _data.value.seenRuns[bot.id]
+            if (seen == newest.runId) continue
+
+            update { it.copy(seenRuns = it.seenRuns + (bot.id to newest.runId)) }
+            // İlk eşitlemede geçmişi bildirimle doldurma; yalnızca kaydı işaretle.
+            if (seen.isNullOrEmpty()) continue
+
+            val detail = runCatching { client.runDetail(newest.runId) }.getOrNull() ?: continue
+            val output = detail.output.ifBlank { detail.error }
+            if (output.isBlank()) continue
+
+            ensureChatLoaded(bot.id)
+            val now = System.currentTimeMillis()
+            updateChat(bot.id) { list ->
+                list +
+                    ChatMessage(Ids.newId("m", now), Role.USER, "⏰ ${detail.input}", now, botId = bot.id) +
+                    ChatMessage(Ids.newId("m", now + 1), Role.ASSISTANT, output, now + 1, botId = bot.id)
+            }
+            persist(bot.id)
+
+            if (bot.schedule.notify) {
+                withContext(Dispatchers.Main) {
+                    Notifications.postResult(context, bot.id, "${bot.avatar} ${bot.name}", output)
+                }
+            }
+        }
+    }
+
+    /** Sonuçların ne sıklıkta getirileceği: en sık zamanlanan bota göre, 5–30 dk arası. */
+    fun pollIntervalMillis(): Long {
+        val fastest = scheduledBots()
+            .filter { it.schedule.mode == ScheduleMode.INTERVAL }
+            .minOfOrNull { it.schedule.everyMinutes.coerceAtLeast(1) * 60_000L }
+            ?: 15 * 60_000L
+        return fastest.coerceIn(5 * 60_000L, 30 * 60_000L)
     }
 
     /** Agent'ta kayıtlı botları telefona indirir. */
     fun importBotsFromAgent(serverId: String) {
         val profile = server(serverId) ?: return
-        if (profile.kind != ServerKind.HERMES) return
         scope.launch {
-            runCatching { backendOf(profile).listBots() }
+            runCatching { clientFor(profile).listBots() }
                 .onSuccess { remote ->
                     if (remote.isEmpty()) {
                         notice("Sunucuda kayıtlı bot yok.")
@@ -507,6 +517,9 @@ class BotEngine(
                 .onFailure { notice("Botlar alınamadı: " + HttpTransport.friendlyError(it)) }
         }
     }
+
+    /** Telefonun saat dilimi (agent "her gün 08:30"u buna göre hesaplar). */
+    fun timeZoneOffsetMinutes(): Int = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
 
     // -------------------------------------------------------------- ayarlar
 

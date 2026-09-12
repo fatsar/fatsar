@@ -15,7 +15,6 @@ android {
         versionCode = 1
         versionName = "1.0"
         resourceConfigurations += listOf("tr", "en")
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Kendi imza anahtarınız varsa (HERMES_KEYSTORE_FILE ortam değişkeni ile
@@ -94,7 +93,6 @@ dependencies {
 
     val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
     implementation(composeBom)
-    androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -111,8 +109,4 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation(composeBom)
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-
-    // Aynı akışın gerçek cihaz/emülatör sürümü (elle çalıştırmak için)
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }

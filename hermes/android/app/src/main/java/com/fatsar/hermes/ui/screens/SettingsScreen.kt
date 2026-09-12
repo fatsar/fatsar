@@ -36,7 +36,7 @@ fun SettingsScreen(
     val clipboard = LocalClipboardManager.current
     var importText by remember { mutableStateOf("") }
     var showImport by remember { mutableStateOf(false) }
-    val localScheduled = engine.locallyScheduledBots().size
+    val scheduled = engine.scheduledBots().size
 
     Scaffold(
         modifier = modifier,
@@ -69,12 +69,12 @@ fun SettingsScreen(
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Zamanlanmış botları telefonda çalıştır", style = MaterialTheme.typography.bodyMedium)
+                    Text("Zamanlanmış sonuçları getir ve bildir", style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        if (localScheduled > 0) {
-                            "$localScheduled bot telefonda zamanlanmış"
+                        if (scheduled > 0) {
+                            "$scheduled zamanlanmış bot izleniyor"
                         } else {
-                            "Telefonda zamanlanmış bot yok"
+                            "Zamanlanmış bot yok"
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -83,8 +83,8 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(8.dp))
             InfoBanner(
-                "Hermes Agent'a bağlı botların zamanlaması zaten sunucuda çalışır; " +
-                    "bu ayar yalnızca doğrudan API'ye bağlı botlar içindir.",
+                "Zamanlanmış botlar sunucuda (agent'ta) çalışır; telefon kapalı olsa bile. " +
+                    "Bu ayar açıkken uygulama sonuçları arka planda getirip bildirim gösterir.",
             )
             Spacer(Modifier.height(10.dp))
             TextButton(onClick = onRequestNotifications) { Text("Bildirim iznini kontrol et") }

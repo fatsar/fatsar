@@ -7,9 +7,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
+import com.fatsar.hermes.core.logic.Pairing
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,10 +28,11 @@ class ArayuzAkisiTest {
     val rule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun kurulum_ekrani_acilir() {
+    fun kurulum_ekrani_agent_baglantisi_ister() {
         rule.onNodeWithText("Hermes Bot Konsol").assertIsDisplayed()
-        rule.onNodeWithText("Sunucumda Hermes Agent var").assertIsDisplayed()
-        rule.onNodeWithText("Doğrudan API kullanacağım").assertIsDisplayed()
+        rule.onNodeWithText("1. Sunucunuzda agent'ı başlatın").assertIsDisplayed()
+        rule.onNodeWithText("2. Eşleştirme kodunu yapıştırın").assertIsDisplayed()
+        rule.onNodeWithText("Önce bir bakayım").assertIsDisplayed()
     }
 
     @Test
@@ -68,28 +69,25 @@ class ArayuzAkisiTest {
     }
 
     /**
-     * Kurulum sihirbazındaki API formu. Adım adım doğrular ki hata çıkarsa
-     * nerede olduğu belli olsun (metin alana girdi mi, düğme etkin mi, ekran değişti mi).
+     * Eşleştirme kodu ile agent bağlantısı eklenir. Kod, bağlantının anında
+     * reddedildiği yerel bir adres taşır: test ağa çıkmaz.
      */
     @Test
-    fun kurulum_sihirbazindan_api_baglantisi_eklenebilir() {
-        rule.onNodeWithText("Doğrudan API kullanacağım").performClick()
-        rule.waitForIdle()
-        adim("API formu açıldı") { rule.onNodeWithText("API bilgileri").assertIsDisplayed() }
+    fun eslestirme_kodu_ile_agent_baglantisi_eklenir() {
+        val kod = Pairing.encode("http://127.0.0.1:1", "test-token", "Test VPS")
 
-        // Test ağa çıkmasın: kaydedince uygulama bağlantıyı sınıyor. Bağlantının
-        // anında reddedildiği yerel bir adres verilir, böylece test hızlı ve
-        // dış dünyadan bağımsız kalır.
-        rule.onNodeWithText("API adresi").performTextClearance()
-        rule.onNodeWithText("API adresi").performTextInput("http://127.0.0.1:1")
-        rule.onNodeWithText("API anahtarı").performTextInput("test-anahtari-123")
+        rule.onNodeWithText("Eşleştirme kodu").performTextInput(kod)
         rule.waitForIdle()
-        adim("anahtar alana yazıldı") { rule.onNodeWithText("test-anahtari-123").assertIsDisplayed() }
-        adim("kaydet düğmesi etkin") { rule.onNodeWithText("Kaydet").assertIsEnabled() }
+        adim("kaydet düğmesi etkin") { rule.onNodeWithText("Bağlan").assertIsEnabled() }
 
-        rule.onNodeWithText("Kaydet").performClick()
+        rule.onNodeWithText("Bağlan").performClick()
         rule.waitForIdle()
         adim("bot listesine geçildi") { rule.onNodeWithText("Botlarım").assertIsDisplayed() }
+
+        // Sunucular ekranında eklenen agent görünüyor mu?
+        rule.onNodeWithText("🛰").performClick()
+        rule.waitForIdle()
+        adim("agent listede") { rule.onAllNodesWithText("Test VPS").onFirst().assertIsDisplayed() }
     }
 
     /** Hata çıkarsa hangi adımda olduğunu ve ekranda ne olduğunu mesaja koyar. */

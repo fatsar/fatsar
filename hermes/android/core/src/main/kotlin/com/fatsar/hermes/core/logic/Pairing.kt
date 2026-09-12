@@ -1,6 +1,5 @@
 package com.fatsar.hermes.core.logic
 
-import com.fatsar.hermes.core.model.ServerKind
 import com.fatsar.hermes.core.model.ServerProfile
 import com.fatsar.hermes.core.net.HermesJson
 import java.util.Base64
@@ -54,7 +53,6 @@ object Pairing {
     fun toProfile(payload: PairingPayload, id: String, now: Long): ServerProfile = ServerProfile(
         id = id,
         name = payload.name.ifBlank { Urls.hostOf(payload.url) ?: "Hermes Agent" },
-        kind = ServerKind.HERMES,
         baseUrl = Urls.normalizeBase(payload.url),
         token = payload.token,
         createdAt = now,

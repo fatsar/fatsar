@@ -16,7 +16,8 @@ ya da agent'ı başka bir dille yeniden yazmak isterseniz bu belge yeterlidir.
 |---|---|---|
 | GET | `/` | Token gerektirmeyen durum sayfası (HTML) |
 | GET | `/v1/health` | Sunucu bilgisi |
-| GET | `/v1/models?backend=xai` | Model listesi |
+| GET | `/v1/backends` | Agent'ta tanımlı LLM sağlayıcıları ve hazır olup olmadıkları |
+| GET | `/v1/models?backend=xai` | Seçilen sağlayıcının model listesi |
 | GET | `/v1/bots` | Kayıtlı botlar |
 | GET/PUT/DELETE | `/v1/bots/{id}` | Bot oku / kaydet / sil |
 | POST | `/v1/bots/{id}/runs` | Botu çalıştır (akışlı veya tek yanıt) |
@@ -35,6 +36,7 @@ ya da agent'ı başka bir dille yeniden yazmak isterseniz bu belge yeterlidir.
   "ok": true, "name": "hermes-agent", "version": "1.0.0",
   "uptime_s": 3600, "host": "vps-1", "bots": 3,
   "backends": ["anthropic", "echo", "groq", "ollama", "openai", "openrouter", "xai"],
+  "backends_ready": ["echo", "ollama", "xai"],
   "default_backend": "xai",
   "tools": ["http_get", "now", "read_file", "web_search", "write_file"],
   "shell_enabled": false, "scheduler": true
@@ -42,6 +44,29 @@ ya da agent'ı başka bir dille yeniden yazmak isterseniz bu belge yeterlidir.
 ```
 
 `tools` yalnızca **kullanılabilir** araçları listeler: `shell` kapalıysa listede görünmez.
+`backends_ready`, anahtarı/adresi tanımlı olduğu için gerçekten kullanılabilecek sağlayıcılardır.
+
+### GET /v1/backends
+
+Uygulamanın LLM seçimi bu uca dayanır — **anahtarlar asla dönmez**, yalnızca hazır olup olmadığı bilgisi döner.
+
+```json
+{
+  "default_backend": "xai",
+  "backends": [
+    {"name": "xai", "ready": true, "is_default": true, "default_model": "grok-3",
+     "base_url": "https://api.x.ai/v1", "supports_tools": true, "note": ""},
+    {"name": "openai", "ready": false, "is_default": false, "default_model": "gpt-4o-mini",
+     "base_url": "https://api.openai.com/v1", "supports_tools": true,
+     "note": "API anahtarı ayarlı değil"},
+    {"name": "echo", "ready": true, "default_model": "echo",
+     "note": "Anahtarsız deneme arka ucu"}
+  ]
+}
+```
+
+Hazırlık kuralı: `echo` her zaman hazır; `ollama` için `base_url` yeterli; diğerleri için
+`base_url` **ve** `api_key` gerekir.
 
 ### Bot nesnesi
 
@@ -71,7 +96,9 @@ ya da agent'ı başka bir dille yeniden yazmak isterseniz bu belge yeterlidir.
 }
 ```
 
-- `backend` boşsa agent'ın `default_backend` ayarı kullanılır.
+- `backend` boşsa agent'ın `default_backend` ayarı kullanılır. Uygulama yalnızca
+  `/v1/backends` içinde `ready: true` dönen sağlayıcıları seçtirir.
+- `model` boşsa sağlayıcının `default_model` değeri kullanılır.
 - `schedule.mode`: `OFF` | `INTERVAL` | `DAILY`. `prompt` boşken zamanlama çalışmaz.
 - `tz_offset_minutes` telefonun saat dilimidir; `DAILY` bunun üzerinden hesaplanır
   (VPS UTC'de olsa bile "her gün 08:30" kullanıcının saatiyle çalışır).
@@ -164,5 +191,7 @@ tek dokunuşla oluşturur. `hermes://…` biçimindeki bağlantılar da aynı i�
 | `anthropic` | `POST {base}/v1/messages` | ❌ (yalnızca metin) |
 | `echo` | — | ❌ (anahtarsız test) |
 
-Uygulama ayrıca agent'sız, doğrudan OpenAI uyumlu bir API'ye veya Ollama'ya bağlanabilir;
-bu modda araçlar ve sunucu tarafı zamanlama devre dışıdır.
+Uygulama bu sağlayıcılara **doğrudan bağlanmaz**: tüm istekler agent üzerinden geçer,
+anahtarlar sunucuda kalır ve zamanlama agent'ın kendi zamanlayıcısında çalışır.
+Telefon, zamanlanmış çalışmaların sonuçlarını `/v1/bots/{id}/runs` ve `/v1/runs/{run_id}`
+uçlarından okuyup bildirim gösterir.

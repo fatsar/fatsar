@@ -21,7 +21,6 @@ import com.fatsar.hermes.core.logic.Tools
 import com.fatsar.hermes.core.model.BotSpec
 import com.fatsar.hermes.core.model.Schedule
 import com.fatsar.hermes.core.model.ScheduleMode
-import com.fatsar.hermes.core.model.ServerKind
 import com.fatsar.hermes.data.BotEngine
 import com.fatsar.hermes.ui.components.*
 import java.util.TimeZone
@@ -43,7 +42,8 @@ fun BotEditScreen(
 ) {
     val data by engine.data.collectAsState()
     val agents by engine.agents.collectAsState()
-    val modelsByServer by engine.models.collectAsState()
+    val modelsByBackend by engine.models.collectAsState()
+    val backendsByServer by engine.backends.collectAsState()
     val existing = remember(botId, data.bots) { data.bots.firstOrNull { it.id == botId } }
     val isNew = existing == null
 
@@ -63,11 +63,19 @@ fun BotEditScreen(
     val server = remember(draft.serverId, data.servers) {
         data.servers.firstOrNull { it.id == draft.serverId } ?: data.servers.firstOrNull()
     }
-    val isHermes = server?.kind == ServerKind.HERMES
-    val models = modelsByServer[server?.id].orEmpty()
+    val agentInfo = agents[server?.id]
+    val allBackends = backendsByServer[server?.id].orEmpty()
+    val readyBackends = allBackends.filter { it.ready }
+    // Hangi sağlayıcının modelleri listelenecek: bot seçmişse o, yoksa agent varsayılanı.
+    val etkinBackend = draft.backend.ifBlank { agentInfo?.defaultBackend.orEmpty() }
+    val models = modelsByBackend[engine.modelsKey(server?.id.orEmpty(), etkinBackend)].orEmpty()
 
     LaunchedEffect(server?.id) {
-        server?.id?.let { engine.loadModels(it) }
+        server?.id?.let { engine.loadBackends(it) }
+    }
+    LaunchedEffect(server?.id, etkinBackend) {
+        val id = server?.id
+        if (id != null && etkinBackend.isNotBlank()) engine.loadModels(id, etkinBackend)
     }
 
     Scaffold(
@@ -154,41 +162,60 @@ fun BotEditScreen(
                 }
             }
 
-            SectionTitle("Bağlantı")
+            SectionTitle("Bağlantı ve model")
             if (data.servers.isEmpty()) {
-                InfoBanner("Henüz sunucu yok. Botun çalışması için bir Hermes Agent ya da API bağlantısı ekleyin.")
+                InfoBanner(
+                    "Henüz sunucu yok. Botun çalışması için kendi sunucunuzdaki " +
+                        "Hermes Agent bağlantısını ekleyin.",
+                )
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = onAddServer, shape = RoundedCornerShape(14.dp)) {
-                    Text("Sunucu ekle")
+                    Text("Agent bağlantısı ekle")
                 }
             } else {
                 HermesDropdown(
-                    label = "Sunucu",
-                    value = server?.let { "${it.name} (${it.kind.label})" }.orEmpty(),
-                    options = data.servers.map { "${it.name} (${it.kind.label})" },
-                    onSelect = { label ->
-                        val picked = data.servers.firstOrNull { "${it.name} (${it.kind.label})" == label }
-                        if (picked != null) draft = draft.copy(serverId = picked.id)
+                    label = "Sunucu (Hermes Agent)",
+                    value = server?.name.orEmpty(),
+                    options = data.servers.map { it.name },
+                    onSelect = { name ->
+                        val picked = data.servers.firstOrNull { it.name == name }
+                        if (picked != null) draft = draft.copy(serverId = picked.id, model = "")
                     },
                 )
-                if (isHermes) {
-                    Spacer(Modifier.height(10.dp))
-                    val backends = agents[server?.id]?.backends.orEmpty()
-                    HermesDropdown(
-                        label = "Model sağlayıcı (agent üzerinde)",
-                        value = draft.backend.ifBlank { "(agent varsayılanı)" },
-                        options = listOf("(agent varsayılanı)") + backends,
-                        onSelect = { draft = draft.copy(backend = if (it.startsWith("(")) "" else it) },
-                        emptyHint = "Agent'a bağlanınca dolar",
+
+                Spacer(Modifier.height(10.dp))
+                // Sağlayıcılar agent'ta tanımlıdır; uygulama yalnızca hazır olanları seçtirir.
+                val ready = readyBackends
+                val varsayilan = "(agent varsayılanı: ${agentInfo?.defaultBackend.orEmpty().ifBlank { "?" }})"
+                HermesDropdown(
+                    label = "LLM sağlayıcı (agent'ta tanımlı)",
+                    value = ready.firstOrNull { it.name == draft.backend }?.label ?: varsayilan,
+                    options = listOf(varsayilan) + ready.map { it.label },
+                    onSelect = { label ->
+                        val picked = ready.firstOrNull { it.label == label }
+                        draft = draft.copy(backend = picked?.name.orEmpty(), model = picked?.defaultModel.orEmpty())
+                    },
+                    emptyHint = "Agent'a bağlanınca dolar",
+                )
+
+                val eksik = allBackends.filterNot { it.ready }
+                if (eksik.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Hazır değil: " + eksik.joinToString(", ") { it.name } +
+                            " — anahtarları sunucuda tanımlayın.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+
                 Spacer(Modifier.height(10.dp))
                 HermesDropdown(
                     label = "Model",
                     value = draft.model,
                     options = models,
                     onSelect = { draft = draft.copy(model = it) },
-                    emptyHint = "Model listesi alınamadı — aşağıya elle yazın",
+                    emptyHint = "Sağlayıcı model listesi vermiyor — aşağıya elle yazın",
                 )
                 Spacer(Modifier.height(8.dp))
                 HermesField(
@@ -196,6 +223,7 @@ fun BotEditScreen(
                     value = draft.model,
                     onValueChange = { draft = draft.copy(model = it) },
                     placeholder = "grok-3 / gpt-4o-mini / llama3.1:8b",
+                    supporting = "Boş bırakırsanız agent, sağlayıcının varsayılan modelini kullanır.",
                 )
             }
 
@@ -239,49 +267,51 @@ fun BotEditScreen(
             }
 
             SectionTitle("Araçlar")
-            if (!isHermes) {
+            val secilenBackend = readyBackends.firstOrNull { it.name == draft.backend }
+            if (secilenBackend != null && !secilenBackend.supportsTools) {
                 InfoBanner(
-                    "Araçlar yalnızca Hermes Agent bağlantısında çalışır. " +
-                        "Doğrudan API bağlantısında bot sadece sohbet eder.",
-                )
-            } else {
-                Text(
-                    "Botun sunucuda kullanabileceği yetenekler.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "Seçilen sağlayıcı (${secilenBackend.name}) araç kullanımını desteklemiyor; " +
+                        "bot yalnızca sohbet eder.",
+                    tone = BannerTone.WARNING,
                 )
                 Spacer(Modifier.height(8.dp))
-                val available = agents[server?.id]?.tools.orEmpty()
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Tools.all.forEach { tool ->
-                        val enabledOnServer = available.isEmpty() || available.contains(tool.id)
-                        ToggleChip(
-                            label = tool.label + if (!enabledOnServer) " (agent'ta kapalı)" else "",
-                            selected = draft.tools.contains(tool.id),
-                            risky = tool.risky,
-                            onToggle = {
-                                draft = draft.copy(
-                                    tools = if (draft.tools.contains(tool.id)) {
-                                        draft.tools - tool.id
-                                    } else {
-                                        draft.tools + tool.id
-                                    },
-                                )
-                            },
-                        )
-                    }
-                }
-                if (draft.tools.contains(Tools.SHELL)) {
-                    Spacer(Modifier.height(8.dp))
-                    InfoBanner(
-                        "Kabuk aracı sunucuda komut çalıştırır. Agent'ın --allow-shell ile " +
-                            "başlatılması ve komut izin listesi tanımlanması önerilir.",
-                        tone = BannerTone.WARNING,
+            }
+            Text(
+                "Botun sunucuda kullanabileceği yetenekler.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            val available = agentInfo?.tools.orEmpty()
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Tools.all.forEach { tool ->
+                    val enabledOnServer = available.isEmpty() || available.contains(tool.id)
+                    ToggleChip(
+                        label = tool.label + if (!enabledOnServer) " (agent'ta kapalı)" else "",
+                        selected = draft.tools.contains(tool.id),
+                        risky = tool.risky,
+                        onToggle = {
+                            draft = draft.copy(
+                                tools = if (draft.tools.contains(tool.id)) {
+                                    draft.tools - tool.id
+                                } else {
+                                    draft.tools + tool.id
+                                },
+                            )
+                        },
                     )
                 }
+            }
+            if (draft.tools.contains(Tools.SHELL)) {
+                Spacer(Modifier.height(8.dp))
+                InfoBanner(
+                    "Kabuk aracı sunucuda komut çalıştırır. Agent'ın --allow-shell ile " +
+                        "başlatılması ve komut izin listesi tanımlanması önerilir.",
+                    tone = BannerTone.WARNING,
+                )
             }
 
             SectionTitle("Zamanlama")
@@ -349,12 +379,9 @@ fun BotEditScreen(
                 }
                 Spacer(Modifier.height(6.dp))
                 InfoBanner(
-                    if (isHermes) {
-                        "Bu bot sunucuda zamanlanır: telefon kapalı olsa bile çalışır."
-                    } else {
-                        "Doğrudan API bağlantısında zamanlama telefonda çalışır; " +
-                            "uygulama arka planda kapatılırsa gecikebilir."
-                    },
+                    "Bu bot sunucuda zamanlanır: telefon kapalı olsa bile çalışır. " +
+                        "Sonuçlar uygulama açıldığında sohbete düşer; bildirim açıksa " +
+                        "arka planda da haber verilir.",
                 )
             }
 

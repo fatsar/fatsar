@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.fatsar.hermes.core.model.ConnectionState
-import com.fatsar.hermes.core.model.ServerKind
 import com.fatsar.hermes.data.BotEngine
 import com.fatsar.hermes.ui.components.ConnectionBadge
 import com.fatsar.hermes.ui.components.EmptyState
@@ -54,7 +53,7 @@ fun ServersScreen(
             ExtendedFloatingActionButton(
                 onClick = onAdd,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Bağlantı ekle") },
+                text = { Text("Agent ekle") },
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -63,7 +62,7 @@ fun ServersScreen(
             EmptyState(
                 emoji = "🛰",
                 title = "Bağlantı yok",
-                subtitle = "VPS'inizdeki Hermes Agent'ı ya da doğrudan bir API'yi (xAI Grok, OpenAI, Ollama) ekleyin.",
+                subtitle = "VPS'inizde ya da bilgisayarınızda çalışan Hermes Agent'ı ekleyin.",
                 actionLabel = "Bağlantı ekle",
                 onAction = onAdd,
             )
@@ -86,14 +85,7 @@ fun ServersScreen(
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                when (server.kind) {
-                                    ServerKind.HERMES -> "🤖"
-                                    ServerKind.OPENAI -> "🔌"
-                                    ServerKind.OLLAMA -> "🦙"
-                                },
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Text("🤖", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(server.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
@@ -113,12 +105,16 @@ fun ServersScreen(
                                     if (info.version.isNotBlank()) append(" · v${info.version}")
                                     if (info.bots > 0) append(" · ${info.bots} kayıtlı bot")
                                     if (info.tools.isNotEmpty()) append(" · ${info.tools.size} araç")
+                                    if (info.backendsReady.isNotEmpty()) {
+                                        append("\nHazır LLM: ")
+                                        append(info.backendsReady.joinToString(", "))
+                                    }
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        if (server.kind == ServerKind.HERMES && state == ConnectionState.ONLINE) {
+                        if (state == ConnectionState.ONLINE) {
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(onClick = { engine.importBotsFromAgent(server.id) }) {
@@ -134,7 +130,8 @@ fun ServersScreen(
                 Spacer(Modifier.height(12.dp))
                 InfoBanner(
                     "Hermes Agent = kendi sunucunuzda çalışan program. Botlar orada kayıtlıdır, " +
-                        "araç kullanabilir ve telefon kapalıyken de zamanlanmış görevleri çalıştırır.",
+                        "araç kullanabilir ve telefon kapalıyken de zamanlanmış görevleri çalıştırır. " +
+                        "LLM sağlayıcıları ve anahtarlar da agent'ta tanımlıdır.",
                 )
             }
         }

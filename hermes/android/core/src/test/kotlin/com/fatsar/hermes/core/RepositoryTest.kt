@@ -6,7 +6,6 @@ import com.fatsar.hermes.core.model.ChatMessage
 import com.fatsar.hermes.core.model.Role
 import com.fatsar.hermes.core.model.Schedule
 import com.fatsar.hermes.core.model.ScheduleMode
-import com.fatsar.hermes.core.model.ServerKind
 import com.fatsar.hermes.core.model.ServerProfile
 import com.fatsar.hermes.core.store.AppData
 import com.fatsar.hermes.core.store.MemoryStorage
@@ -21,7 +20,7 @@ class RepositoryTest {
 
     private fun sampleData() = AppData(
         servers = listOf(
-            ServerProfile(id = "s1", name = "VPS", kind = ServerKind.HERMES, baseUrl = "http://1.2.3.4:8713", token = "gizli"),
+            ServerProfile(id = "s1", name = "VPS", baseUrl = "http://1.2.3.4:8713", token = "gizli"),
         ),
         bots = listOf(
             BotSpec(
@@ -31,11 +30,12 @@ class RepositoryTest {
                 model = "grok-3",
                 systemPrompt = "Sen bir bekçisin",
                 tools = listOf("shell"),
+                backend = "xai",
                 schedule = Schedule(ScheduleMode.INTERVAL, everyMinutes = 30, prompt = "kontrol"),
             ),
         ),
         activeBotId = "b1",
-        lastRuns = mapOf("b1" to 1234L),
+        seenRuns = mapOf("b1" to "run_abc"),
     )
 
     @Test

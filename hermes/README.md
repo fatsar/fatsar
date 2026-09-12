@@ -18,23 +18,13 @@ Grok/ChatGPT gibi tek bir sohbet yerine, **her biri kendi görevine, modeline, a
                                         Groq · Ollama (yerel) · Anthropic
 ```
 
-Uygulama istersek **agent olmadan da** çalışır: doğrudan xAI/OpenAI/Ollama adresine bağlanıp telefondan sohbet edersiniz (bu modda araçlar ve sunucu tarafı zamanlama olmaz).
+Uygulama **yalnızca kendi agent'ınıza** bağlanır. Model sağlayıcıları (xAI/Grok, OpenAI, OpenRouter, Groq, Ollama, Claude) ve **API anahtarları agent'ta tanımlıdır**; telefon yalnızca agent'ın "hazır" bildirdiği sağlayıcılar arasından seçim yapar. Anahtarlar telefona hiç inmez — telefonu kaybederseniz tek yapmanız gereken agent token'ını değiştirmektir.
 
 ---
 
 ## 1. Hızlı başlangıç
 
-### A) Sadece telefon (2 dakika, sunucu gerekmez)
-
-1. APK'yı telefona kurun (aşağıdaki *Kurulum* bölümü).
-2. Açılıştaki **"Doğrudan API kullanacağım"** seçeneğine dokunun.
-3. Adres ve anahtarınızı girin:
-   - xAI (Grok): `https://api.x.ai/v1` + `xai-…`
-   - OpenAI: `https://api.openai.com/v1` + `sk-…`
-   - OpenRouter: `https://openrouter.ai/api/v1`
-4. **Yeni bot** → bir şablon seçin (ör. *Sohbet Botu*) → model adını yazın (`grok-3`, `gpt-4o-mini`…) → **Kaydet**.
-
-### B) VPS (Hostinger vb.) — botlar 7/24 çalışsın
+### A) VPS (Hostinger vb.) — botlar 7/24 çalışsın
 
 Sunucuya SSH ile bağlanın ve tek satır:
 
@@ -49,9 +39,9 @@ Betik şunları yapar: `hermes` sistem kullanıcısı açar, `/opt/hermes` altı
 HERMES1:eyJ1IjoiaHR0cDovLzE5My4xODEuMS4xOjg3MTMiLCJ0IjoiWm...
 ```
 
-Bu kodu kopyalayın → uygulamada **"Sunucumda Hermes Agent var"** → kodu yapıştırın → **Bağlan**. Adres, token ve ad otomatik dolar.
+Bu kodu kopyalayın → uygulamayı açın → kodu yapıştırın → **Bağlan**. Adres, token ve ad otomatik dolar.
 
-Ardından sunucuda bir model sağlayıcı anahtarı tanımlayın:
+### B) LLM sağlayıcınızı **sunucuda** tanımlayın
 
 ```bash
 sudo -u hermes python3 /opt/hermes/hermes_agent.py --data-dir /opt/hermes/data \
@@ -59,15 +49,17 @@ sudo -u hermes python3 /opt/hermes/hermes_agent.py --data-dir /opt/hermes/data \
 sudo systemctl restart hermes-agent
 ```
 
-> Anahtar sunucuda kalır; telefona hiç inmez. Telefon kaybolsa bile sadece agent token'ını iptal etmeniz yeterlidir.
+Tanımlayabileceğiniz sağlayıcılar: `xai` (Grok), `openai`, `openrouter`, `groq`, `anthropic` (Claude), `ollama` (yerel modeller), `echo` (anahtarsız deneme).
 
-### C) Kendi bilgisayarınız (deneme için en kolayı)
+Uygulama bunları **Sunucular** ekranında ve bot ayarlarında listeler: anahtarı tanımlı olanlar ✅ ile seçilebilir, eksik olanlar nedeniyle birlikte gösterilir. Model listesi de agent üzerinden gelir (`/v1/models`), böylece telefonda hiçbir anahtar tutulmaz.
+
+### C) Kendi bilgisayarınız (denemek için en kolayı)
 
 ```bash
 python3 hermes_agent.py          # Windows: py hermes_agent.py
 ```
 
-Hiçbir kurulum gerekmez (Python 3.8+ yeterli). Telefon ile bilgisayar **aynı Wi-Fi ağında** olmalı; ekranda yazan `http://192.168.x.x:8713` adresi kullanılır. Anahtarınız yoksa `--default-backend echo` ile her şeyi anahtarsız deneyebilirsiniz (bot söylediğinizi yankılar).
+Hiçbir kurulum gerekmez (Python 3.8+ yeterli). Telefon ile bilgisayar **aynı Wi-Fi ağında** olmalı; ekranda yazan `http://192.168.x.x:8713` adresi kullanılır. Anahtarınız yoksa varsayılan `echo` arka ucuyla her şeyi anahtarsız deneyebilirsiniz (bot söylediğinizi yankılar).
 
 ---
 
@@ -97,13 +89,13 @@ Hiçbir kurulum gerekmez (Python 3.8+ yeterli). Telefon ile bilgisayar **aynı W
 
 Bot ayarlarında bulunanlar:
 
-- **Sunucu / model sağlayıcı / model** — hangi bağlantı, agent üzerinde hangi sağlayıcı (`xai`, `openai`, `ollama`, `anthropic`, `echo`), hangi model.
+- **Sunucu / LLM sağlayıcı / model** — hangi agent, agent'ta tanımlı hangi sağlayıcı (yalnızca hazır olanlar seçilebilir) ve o sağlayıcının hangi modeli. Model boş bırakılırsa agent sağlayıcının varsayılan modelini kullanır.
 - **Sistem istemi** — botun kişiliği ve görevi.
 - **Yaratıcılık (temperature)**, **en fazla yanıt uzunluğu**, **hatırlanan tur sayısı** (0 = hafızasız).
 - **Araçlar** — botun sunucuda kullanabileceği yetenekler (aşağıda).
 - **Zamanlama** — *Kapalı* / *Aralıklı* (ör. 60 dakikada bir) / *Her gün* (ör. 08:30) + çalıştırılacak istem + sonuç bildirimi.
 
-### Araçlar (yalnızca Hermes Agent bağlantısında)
+### Araçlar
 
 | Araç | Açıklama |
 |---|---|
@@ -152,10 +144,10 @@ Bu program telefonunuza **sunucunuzu kullanma yetkisi** verir. Varsayılanlar g�
 |---|---|
 | Uygulamada "Sunucuya bağlanılamadı" | Agent çalışıyor mu: `systemctl status hermes-agent`. Port açık mı: `sudo ufw allow 8713/tcp`. Hostinger panelinde de güvenlik duvarı olabilir. |
 | "Token hatalı veya eksik (401)" | Eşleştirme kodunu yeniden alın: `sudo -u hermes python3 /opt/hermes/hermes_agent.py --data-dir /opt/hermes/data --show-pairing` |
-| "model adı boş" uyarısı | Bot ayarlarında model yazın (`grok-3`, `gpt-4o-mini`, `llama3.1:8b`…). |
+| Model listesi boş | Sağlayıcı `/v1/models` desteklemiyor olabilir; bot ayarlarında model adını elle yazın. |
 | "API anahtarı ayarlı değil" | `--set backends.<sağlayıcı>.api_key=...` sonra `systemctl restart hermes-agent`. |
-| Model listesi boş geliyor | Sağlayıcı `/v1/models` desteklemiyor olabilir; model adını elle yazın. |
-| Zamanlanmış bot çalışmıyor | Agent botu: `tail -f /var/log/hermes-agent.log`. Telefon botu: Ayarlar → arka plan anahtarı açık ve pil optimizasyonunda uygulamaya izin verilmiş olmalı. |
+| Zamanlanmış bot çalışmıyor | Zamanlama agent'ta çalışır: `tail -f /var/log/hermes-agent.log`. Sonuç bildirimi için Ayarlar → "Zamanlanmış sonuçları getir ve bildir" açık olmalı. |
+| Bot ayarlarında sağlayıcı listesi boş | Agent'a bağlantı kurulmamış ya da hiçbir sağlayıcının anahtarı yok: `--set backends.<ad>.api_key=…` sonra servisi yeniden başlatın. |
 | Yanıt yarıda kesiliyor | Telefon uykuya geçse bile çalışma sunucuda tamamlanır; sonucu bot sohbetinde/çalışma geçmişinde görürsünüz. |
 
 Agent'ı elle denemek:
@@ -176,17 +168,15 @@ hermes/
 │   ├── hermes-agent.service   # systemd birimi
 │   └── tests/test_agent.py    # 33 test
 ├── android/
-│   ├── core/                  # Saf Kotlin: protokol, arka uçlar, zamanlayıcı, depo (51 test)
+│   ├── core/                  # Saf Kotlin: Hermes protokol istemcisi, depo, şablonlar
 │   └── app/                   # Jetpack Compose arayüz
 └── docs/PROTOKOL.md           # Hermes Agent HTTP/SSE protokolü
 ```
 
-**Test durumu:** çekirdek (53) ve sunucu (36) testleri her derlemede zorunlu olarak koşar.
+**Test durumu:** çekirdek ve sunucu testleri her derlemede zorunlu olarak koşar.
 Arayüz testleri (Robolectric) *bilgilendirme* amaçlıdır: uygulamanın açıldığını ve
 ekranlar arasında gezinildiğini doğrular, ama koşucuya göre yavaşlayabildiği için
-APK üretimini durdurmaz. Sonuçları CI günlüğünün sonundaki "Arayüz testi özeti"
-adımında görebilirsiniz. Gerçek emülatörde denemek için `Hermes arayüz testi (emülatör)`
-iş akışını Actions sekmesinden elle çalıştırın.
+APK üretimini durdurmaz. Sonuçları CI günlüğünün sonundaki "Arayüz testi özeti" adımında görebilirsiniz.
 
 ```bash
 # Sunucu testleri

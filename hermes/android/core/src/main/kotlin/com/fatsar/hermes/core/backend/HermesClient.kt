@@ -1,9 +1,12 @@
 package com.fatsar.hermes.core.backend
 
+import com.fatsar.hermes.core.logic.Prompts
 import com.fatsar.hermes.core.logic.Urls
 import com.fatsar.hermes.core.model.AgentInfo
+import com.fatsar.hermes.core.model.BackendInfo
 import com.fatsar.hermes.core.model.BotSpec
 import com.fatsar.hermes.core.model.ChatMessage
+import com.fatsar.hermes.core.model.RunDetail
 import com.fatsar.hermes.core.model.RunEvent
 import com.fatsar.hermes.core.model.RunSummary
 import com.fatsar.hermes.core.model.ServerProfile
@@ -18,18 +21,18 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
 /**
- * Kendi sunucunuzda (VPS / ev bilgisayarı) çalışan Hermes Agent ile konuşur.
- * Botlar sunucuda kayıtlı tutulur; telefon kapalıyken de zamanlanmış görevler çalışır.
+ * Uygulamanın tek istemcisi: kendi sunucunuzda (VPS / ev bilgisayarı) çalışan
+ * Hermes Agent. Model sağlayıcıları ve anahtarları agent'ta tanımlıdır;
+ * uygulama yalnızca agent'ın hazır bildirdiği sağlayıcılar arasından seçim yapar.
  */
-class HermesBackend(
-    override val profile: ServerProfile,
+class HermesClient(
+    val profile: ServerProfile,
     private val http: HttpTransport,
-) : Backend {
+) {
 
     private fun headers(): Map<String, String> = buildMap {
         put("Content-Type", "application/json")
@@ -39,19 +42,31 @@ class HermesBackend(
 
     private fun url(path: String) = Urls.hermesUrl(profile.baseUrl, path)
 
-    override suspend fun health(): AgentInfo {
+    suspend fun health(): AgentInfo {
         val body = http.request(url("/v1/health"), "GET", headers())
         return runCatching { HermesJson.decodeFromString(AgentInfo.serializer(), body) }
             .getOrElse { AgentInfo(ok = true, name = "hermes-agent") }
     }
 
-    override suspend fun models(): List<String> {
-        val body = http.request(url("/v1/models"), "GET", headers())
+    /** Agent'ta tanımlı LLM sağlayıcıları (hangileri kullanıma hazır bilgisiyle). */
+    suspend fun backends(): List<BackendInfo> {
+        val body = http.request(url("/v1/backends"), "GET", headers())
+        val root = runCatching { HermesJson.parseToJsonElement(body).obj() }.getOrNull() ?: return emptyList()
+        val arr = root["backends"] ?: return emptyList()
+        return runCatching {
+            HermesJson.decodeFromJsonElement(ListSerializer(BackendInfo.serializer()), arr)
+        }.getOrElse { emptyList() }
+    }
+
+    /** Seçilen sağlayıcının agent üzerinden görünen modelleri. */
+    suspend fun models(backend: String): List<String> {
+        val query = if (backend.isBlank()) "" else "?backend=" + Urls.encodeQuery(backend)
+        val body = http.request(url("/v1/models$query"), "GET", headers())
         val root = runCatching { HermesJson.parseToJsonElement(body).obj() }.getOrNull() ?: return emptyList()
         return root["models"].arr()?.mapNotNull { it.text() } ?: emptyList()
     }
 
-    override suspend fun listBots(): List<BotSpec> {
+    suspend fun listBots(): List<BotSpec> {
         val body = http.request(url("/v1/bots"), "GET", headers())
         val root = runCatching { HermesJson.parseToJsonElement(body).obj() }.getOrNull() ?: return emptyList()
         val arr = root["bots"] ?: return emptyList()
@@ -60,16 +75,16 @@ class HermesBackend(
         }.getOrElse { emptyList() }
     }
 
-    override suspend fun pushBot(bot: BotSpec) {
+    suspend fun pushBot(bot: BotSpec) {
         val body = HermesJson.encodeToString(BotSpec.serializer(), bot)
         http.request(url("/v1/bots/${bot.id}"), "PUT", headers(), body)
     }
 
-    override suspend fun deleteBot(botId: String) {
+    suspend fun deleteBot(botId: String) {
         http.request(url("/v1/bots/$botId"), "DELETE", headers())
     }
 
-    override suspend fun runHistory(botId: String, limit: Int): List<RunSummary> {
+    suspend fun runHistory(botId: String, limit: Int = 20): List<RunSummary> {
         val body = http.request(url("/v1/bots/$botId/runs?limit=$limit"), "GET", headers())
         val root = runCatching { HermesJson.parseToJsonElement(body).obj() }.getOrNull() ?: return emptyList()
         val arr = root["runs"] ?: return emptyList()
@@ -78,11 +93,24 @@ class HermesBackend(
         }.getOrElse { emptyList() }
     }
 
-    override suspend fun cancel(runId: String) {
+    /** Tek bir çalışmanın tam çıktısı (zamanlanmış sonuçları telefona getirmek için). */
+    suspend fun runDetail(runId: String): RunDetail? {
+        val body = http.request(url("/v1/runs/$runId"), "GET", headers())
+        val root = runCatching { HermesJson.parseToJsonElement(body).obj() }.getOrNull() ?: return null
+        val run = root["run"] ?: return null
+        return runCatching { HermesJson.decodeFromJsonElement(RunDetail.serializer(), run) }.getOrNull()
+    }
+
+    suspend fun clearMessages(botId: String) {
+        runCatching { http.request(url("/v1/bots/$botId/messages"), "DELETE", headers()) }
+    }
+
+    suspend fun cancel(runId: String) {
         runCatching { http.request(url("/v1/runs/$runId/cancel"), "POST", headers(), "{}") }
     }
 
-    override fun run(bot: BotSpec, history: List<ChatMessage>, input: String): Flow<RunEvent> = flow {
+    /** Botu agent üzerinde çalıştırır ve olayları akıtır. Akış istisna fırlatmaz. */
+    fun run(bot: BotSpec, history: List<ChatMessage>, input: String): Flow<RunEvent> = flow {
         val payload = buildJsonObject {
             put("input", input)
             put("stream", true)
@@ -90,7 +118,7 @@ class HermesBackend(
             // Bot tanımı istekle birlikte gider: sunucuda kayıtlı değilse otomatik kaydedilir.
             put("bot", HermesJson.encodeToJsonElement(BotSpec.serializer(), bot))
             putJsonArray("history") {
-                com.fatsar.hermes.core.logic.Prompts.history(bot, history).forEach { m ->
+                Prompts.history(bot, history).forEach { m ->
                     addJsonObject {
                         put("role", m.role)
                         put("content", m.content)
@@ -107,6 +135,7 @@ class HermesBackend(
     }.catch { e ->
         if (e is CancellationException) throw e
         emit(RunEvent.Failed(HttpTransport.friendlyError(e)))
+        emit(RunEvent.Finished("error"))
     }
 
     private fun mapEvent(name: String, data: String): RunEvent? {
