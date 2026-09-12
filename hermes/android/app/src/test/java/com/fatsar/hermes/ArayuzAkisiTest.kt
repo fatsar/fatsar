@@ -91,12 +91,20 @@ class ArayuzAkisiTest {
         adim("agent listede") { rule.onAllNodesWithText("Test VPS").onFirst().assertIsDisplayed() }
     }
 
-    /** Gerekiyorsa öğeye kaydırır; kaydırılamayan (ör. üst çubuk) öğelerde sessizce geçer. */
+    /**
+     * Gerekiyorsa öğeye kaydırır; kaydırılamayan (ör. üst çubuk) öğelerde sessizce geçer.
+     * Bölüm başlıkları ekranda büyük harfe çevrildiği için eşleşme harf büyüklüğünden
+     * bağımsız yapılır. Kaydırma başarısız olursa nedeni hata mesajına eklenir.
+     */
     private fun kaydir(metin: String): SemanticsNodeInteraction {
-        val dugum = rule.onNodeWithText(metin)
+        val dugum = rule.onNodeWithText(metin, ignoreCase = true)
         runCatching { dugum.performScrollTo() }
+            .onFailure { sonKaydirmaHatasi = "'$metin' öğesine kaydırılamadı: ${it.message}" }
+        rule.waitForIdle()
         return dugum
     }
+
+    private var sonKaydirmaHatasi: String? = null
 
     private fun gorunur(metin: String) = kaydir(metin).assertIsDisplayed()
 
@@ -112,7 +120,10 @@ class ArayuzAkisiTest {
         } catch (e: Throwable) {
             val agac = runCatching { rule.onRoot().printToString(maxDepth = 12) }
                 .getOrElse { "(ekran ağacı okunamadı)" }
-            throw AssertionError("ADIM BAŞARISIZ: $aciklama\n${e.message}\n--- EKRAN ---\n$agac", e)
+            val kaydirma = sonKaydirmaHatasi?.let { "\n(kaydırma: $it)" }.orEmpty()
+            throw AssertionError(
+                "ADIM BAŞARISIZ: $aciklama$kaydirma\n${e.message}\n--- EKRAN ---\n$agac", e
+            )
         }
     }
 }
