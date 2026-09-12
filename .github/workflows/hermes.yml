@@ -86,9 +86,10 @@ jobs:
 
       # Arayüz gerçekten çalıştırılır (Robolectric, emülatör gerekmez):
       # açılış → bağlantı ekleme → şablondan bot oluşturma → sohbet ekranı.
-      # Sonuç bilgilendirme amaçlıdır: bu adım APK üretimini durdurmaz, çünkü
-      # Compose testleri koşucuya göre yavaşlayabiliyor.
-      - name: Arayüz testleri (bilgilendirme)
+      # Adımın kendisi derlemeyi durdurmaz (Compose testleri koşucuya göre
+      # yavaşlayabiliyor); asıl karar aşağıdaki "Arayüz testi özeti" adımında
+      # verilir: sonuç dosyası yoksa ya da test kırmızıysa iş başarısız olur.
+      - name: Arayüz testleri
         working-directory: hermes/android
         continue-on-error: true
         timeout-minutes: 12
@@ -131,13 +132,14 @@ jobs:
 
       # Arayüz testlerinin sonucu günlüğün sonunda tek bakışta görünsün.
       - name: Arayüz testi özeti
-        if: always()
         run: |
           python3 - <<'PY'
-          import glob, xml.etree.ElementTree as ET
+          import glob, sys, xml.etree.ElementTree as ET
           files = sorted(glob.glob("hermes/android/app/build/test-results/testDebugUnitTest/*.xml"))
           if not files:
-              print("ARAYÜZ TESTİ: sonuç dosyası yok (adım çalışmamış olabilir)")
+              print("ARAYÜZ TESTİ: sonuç dosyası yok — testler hiç koşmadı "
+                    "(çoğunlukla test kaynakları derlenmemiştir). Önceki adımın günlüğüne bakın.")
+              sys.exit(1)
           total = fails = 0
           for f in files:
               root = ET.parse(f).getroot()
@@ -153,6 +155,8 @@ jobs:
                   else:
                       print("GEÇTİ    : %s" % tc.get("name"))
           print("ARAYÜZ TESTİ ÖZETİ: %d testten %d başarısız" % (total, fails))
+          if fails:
+              sys.exit(1)
           PY
 
       - name: Sürüm olarak yayınla (indirme bağlantısı)
