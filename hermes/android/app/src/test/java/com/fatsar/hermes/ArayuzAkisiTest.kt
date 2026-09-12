@@ -1,5 +1,6 @@
 package com.fatsar.hermes
 
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -8,6 +9,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
 import com.fatsar.hermes.core.logic.Pairing
@@ -20,9 +22,14 @@ import org.robolectric.annotation.Config
 /**
  * Uygulamayı emülatörsüz (JVM üzerinde, Robolectric ile) gerçekten çalıştırır.
  * Böylece her derlemede arayüzün açıldığı ve ana akışın yürüdüğü doğrulanır.
+ *
+ * Ekran boyutu sıradan bir telefona sabitlenir (411×891 dp, xhdpi): Robolectric'in
+ * varsayılanı 320×470 dp'lik çok eski bir ekrandır ve hiçbir güncel cihazı temsil
+ * etmez. Yine de uzun ekranlarda içerik kaydırılabildiği için aşağıdaki yardımcılar
+ * bir öğeye dokunmadan/bakmadan önce gerekiyorsa ona kaydırır.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
+@Config(sdk = [33], qualifiers = "w411dp-h891dp-xhdpi")
 class ArayuzAkisiTest {
 
     @get:Rule
@@ -30,43 +37,38 @@ class ArayuzAkisiTest {
 
     @Test
     fun kurulum_ekrani_agent_baglantisi_ister() {
-        rule.onNodeWithText("Hermes Bot Konsol").assertIsDisplayed()
-        rule.onNodeWithText("1. Sunucunuzda agent'ı başlatın").assertIsDisplayed()
-        rule.onNodeWithText("2. Eşleştirme kodunu yapıştırın").assertIsDisplayed()
-        rule.onNodeWithText("Önce bir bakayım").assertIsDisplayed()
+        gorunur("Hermes Bot Konsol")
+        gorunur("1. Sunucunuzda agent'ı başlatın")
+        gorunur("2. Eşleştirme kodunu yapıştırın")
+        gorunur("Önce bir bakayım")
     }
 
     @Test
     fun kurulum_atlanip_bot_listesine_gecilebilir() {
-        rule.onNodeWithText("Önce bir bakayım").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithText("Botlarım").assertIsDisplayed()
-        rule.onNodeWithText("Henüz botunuz yok").assertIsDisplayed()
+        tikla("Önce bir bakayım")
+        gorunur("Botlarım")
+        gorunur("Henüz botunuz yok")
     }
 
     /** Asıl iş: şablondan bot oluşturup sohbet ekranına ulaşmak. */
     @Test
     fun sablondan_bot_olusturulup_sohbet_ekrani_acilir() {
-        rule.onNodeWithText("Önce bir bakayım").performClick()
-        rule.waitForIdle()
+        tikla("Önce bir bakayım")
 
-        rule.onNodeWithText("İlk botu oluştur").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithText("Nasıl bir bot istiyorsunuz?").assertIsDisplayed()
+        adim("boş liste botu oluşturmaya yönlendiriyor") { tikla("İlk botu oluştur") }
+        adim("şablon listesi açıldı") { gorunur("Nasıl bir bot istiyorsunuz?") }
 
-        rule.onNodeWithText("Sohbet Botu").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithText("Görev tanımı").assertIsDisplayed()
-        rule.onNodeWithText("Kaydet").assertIsEnabled()
+        tikla("Sohbet Botu")
+        adim("bot düzenleme ekranı açıldı") { gorunur("Görev tanımı") }
 
-        rule.onNodeWithText("Kaydet").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithText("Mesaj yazın…").assertIsDisplayed()
+        adim("kaydet düğmesi etkin") { kaydir("Kaydet").assertIsEnabled() }
+        tikla("Kaydet")
+        adim("sohbet ekranı açıldı") { gorunur("Mesaj yazın…") }
 
         // Geri dönünce bot listede duruyor mu?
         rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         rule.waitForIdle()
-        rule.onAllNodesWithText("Sohbet Botu").onFirst().assertIsDisplayed()
+        adim("bot listede") { rule.onAllNodesWithText("Sohbet Botu").onFirst().assertIsDisplayed() }
     }
 
     /**
@@ -77,18 +79,30 @@ class ArayuzAkisiTest {
     fun eslestirme_kodu_ile_agent_baglantisi_eklenir() {
         val kod = Pairing.encode("http://127.0.0.1:1", "test-token", "Test VPS")
 
-        rule.onNodeWithText("Eşleştirme kodu").performTextInput(kod)
+        kaydir("Eşleştirme kodu").performTextInput(kod)
         rule.waitForIdle()
-        adim("kaydet düğmesi etkin") { rule.onNodeWithText("Bağlan").assertIsEnabled() }
+        adim("bağlan düğmesi etkin") { kaydir("Bağlan").assertIsEnabled() }
 
-        rule.onNodeWithText("Bağlan").performClick()
-        rule.waitForIdle()
-        adim("bot listesine geçildi") { rule.onNodeWithText("Botlarım").assertIsDisplayed() }
+        tikla("Bağlan")
+        adim("bot listesine geçildi") { gorunur("Botlarım") }
 
         // Sunucular ekranında eklenen agent görünüyor mu?
-        rule.onNodeWithText("🛰").performClick()
-        rule.waitForIdle()
+        tikla("🛰")
         adim("agent listede") { rule.onAllNodesWithText("Test VPS").onFirst().assertIsDisplayed() }
+    }
+
+    /** Gerekiyorsa öğeye kaydırır; kaydırılamayan (ör. üst çubuk) öğelerde sessizce geçer. */
+    private fun kaydir(metin: String): SemanticsNodeInteraction {
+        val dugum = rule.onNodeWithText(metin)
+        runCatching { dugum.performScrollTo() }
+        return dugum
+    }
+
+    private fun gorunur(metin: String) = kaydir(metin).assertIsDisplayed()
+
+    private fun tikla(metin: String) {
+        kaydir(metin).performClick()
+        rule.waitForIdle()
     }
 
     /** Hata çıkarsa hangi adımda olduğunu ve ekranda ne olduğunu mesaja koyar. */
